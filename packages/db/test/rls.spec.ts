@@ -9,6 +9,35 @@ import { APP_DB_ROLE, createPrismaClient, withTenant } from '../src/index.js';
 /** Owner connection: provisions tenants, which the application itself may not do. */
 const owner = createPrismaClient();
 
+/**
+ * A pool of exactly one connection, so every query below provably lands on the same
+ * Postgres backend — the condition under which a leaked session setting would be
+ * visible to the next request. The tests assert the backend pid to make sure of it.
+ */
+const pooled = createPrismaClient({ maxConnections: 1 });
+
+interface ConnectionState {
+  pid: number;
+  role: string;
+  tenant: string | null;
+}
+
+/** What the connection currently believes it is: backend, role and tenant setting. */
+async function connectionState(client: {
+  $queryRaw: <T>(query: TemplateStringsArray, ...values: unknown[]) => Promise<T>;
+}): Promise<ConnectionState> {
+  const rows = await client.$queryRaw<ConnectionState[]>`
+    SELECT pg_backend_pid() AS pid,
+           current_user::text AS role,
+           current_setting('app.tenant_id', true) AS tenant
+  `;
+  const [state] = rows;
+  if (!state) {
+    throw new Error('connectionState: no row');
+  }
+  return state;
+}
+
 /** Unique per run, so a leftover row from a failed run cannot collide. */
 const run = Date.now().toString(36);
 
@@ -52,6 +81,7 @@ afterAll(async () => {
   await owner.company.deleteMany({ where: { tenantId: { in: [tenantA.id, tenantB.id] } } });
   await owner.tenant.deleteMany({ where: { id: { in: [tenantA.id, tenantB.id] } } });
   await owner.$disconnect();
+  await pooled.$disconnect();
 });
 
 describe('M21 tenant isolation (row-level security)', () => {
@@ -205,5 +235,88 @@ describe('M21 every tenant-scoped table is protected', () => {
 
     expect(rows[0]?.rls_enabled).toBe(true);
     expect(rows[0]?.policy_count).toBeGreaterThan(0);
+  });
+});
+
+describe('M21 the tenant context is transaction-scoped', () => {
+  // withTenant uses SET LOCAL ROLE and set_config(..., is_local => true). Both end
+  // with the transaction, so a pooled connection cannot carry one request's tenant
+  // into the next one. Every test here pins the backend pid, so it would fail rather
+  // than pass vacuously if the queries happened to land on different connections.
+
+  it('sets the role and the tenant inside the transaction', async () => {
+    const inside = await withTenant(pooled, tenantA.id, (tx) => connectionState(tx));
+
+    expect(inside.role).toBe(APP_DB_ROLE);
+    expect(inside.tenant).toBe(tenantA.id);
+  });
+
+  it('leaves no tenant and no role behind on the connection it borrowed', async () => {
+    const inside = await withTenant(pooled, tenantA.id, (tx) => connectionState(tx));
+    const after = await connectionState(pooled);
+
+    // Same backend, so this is the very connection that had tenant A's context.
+    expect(after.pid).toBe(inside.pid);
+    expect(after.tenant).toBeFalsy();
+    expect(after.role).not.toBe(APP_DB_ROLE);
+  });
+
+  it('leaves nothing behind when the transaction fails', async () => {
+    const before = await connectionState(pooled);
+
+    await expect(
+      withTenant(pooled, tenantA.id, async (tx) => {
+        await tx.company.findMany();
+        throw new Error('something went wrong mid-request');
+      }),
+    ).rejects.toThrow('something went wrong mid-request');
+
+    const after = await connectionState(pooled);
+
+    expect(after.pid).toBe(before.pid);
+    expect(after.tenant).toBeFalsy();
+    expect(after.role).not.toBe(APP_DB_ROLE);
+  });
+
+  it('gives consecutive requests on one connection their own tenant', async () => {
+    const first = await withTenant(pooled, tenantA.id, async (tx) => ({
+      state: await connectionState(tx),
+      companies: await tx.company.findMany(),
+    }));
+    const second = await withTenant(pooled, tenantB.id, async (tx) => ({
+      state: await connectionState(tx),
+      companies: await tx.company.findMany(),
+    }));
+
+    expect(second.state.pid).toBe(first.state.pid);
+    expect(first.companies.map((c) => c.id)).toEqual([companyA.id]);
+    expect(second.companies.map((c) => c.id)).toEqual([companyB.id]);
+  });
+
+  it('is not fooled by a stale session-level setting on the connection', async () => {
+    // Postgres lets any role set a custom setting session-wide, and unlike the
+    // transaction-local one withTenant uses, that value would survive a commit.
+    // Two things keep it harmless, and this test holds both in place:
+    //  - withTenant sets the tenant at the start of every transaction, so the local
+    //    value always wins for the duration of a request;
+    //  - outside a withTenant transaction the connection is back to the owner role,
+    //    which the policies do not apply to anyway, so the stale value selects
+    //    nothing on its own.
+    try {
+      await pooled.$queryRaw`SELECT set_config('app.tenant_id', ${tenantB.id}, false)`;
+      expect((await connectionState(pooled)).tenant).toBe(tenantB.id);
+
+      const seen = await withTenant(pooled, tenantA.id, async (tx) => ({
+        state: await connectionState(tx),
+        companies: await tx.company.findMany(),
+      }));
+
+      expect(seen.state.tenant).toBe(tenantA.id);
+      expect(seen.companies.map((c) => c.id)).toEqual([companyA.id]);
+    } finally {
+      await pooled.$queryRaw`SELECT set_config('app.tenant_id', '', false)`;
+    }
+
+    expect((await connectionState(pooled)).tenant).toBeFalsy();
   });
 });

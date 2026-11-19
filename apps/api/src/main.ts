@@ -2,10 +2,13 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
-
-const DEFAULT_PORT = 3100;
+import { loadAppConfig } from './common/config/app-config.js';
 
 async function bootstrap(): Promise<void> {
+  // Read and check the environment before anything is wired up, so a bad
+  // configuration stops the process here with one clear message.
+  const config = loadAppConfig();
+
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
 
@@ -19,9 +22,11 @@ async function bootstrap(): Promise<void> {
   );
   SwaggerModule.setup('api/docs', app, document);
 
-  const port = Number(process.env.API_PORT ?? DEFAULT_PORT);
-  await app.listen(port);
-  console.log(`CPeople API on http://localhost:${port}/api (docs at /api/docs)`);
+  await app.listen(config.port);
+  console.log(
+    `CPeople API on http://localhost:${config.port}/api (docs at /api/docs)` +
+      (config.tenantHeaderAllowed ? ' — x-tenant-id header accepted (local development)' : ''),
+  );
 }
 
 void bootstrap();

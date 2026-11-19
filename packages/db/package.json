@@ -10,11 +10,11 @@
     "generate": "prisma generate",
     "build": "prisma generate && tsc -p tsconfig.build.json",
     "typecheck": "prisma generate && tsc -p tsconfig.json --noEmit",
-    "migrate": "prisma migrate dev",
-    "migrate:deploy": "prisma migrate deploy",
-    "migrate:reset": "prisma migrate reset",
-    "seed": "pnpm run build && node dist/seed.js",
-    "test": "prisma generate && vitest run"
+    "migrate": "cross-env CPEOPLE_LOCAL_DEV=true prisma migrate dev",
+    "migrate:deploy": "cross-env CPEOPLE_LOCAL_DEV=true prisma migrate deploy",
+    "migrate:reset": "cross-env CPEOPLE_LOCAL_DEV=true prisma migrate reset",
+    "seed": "pnpm run build && cross-env CPEOPLE_LOCAL_DEV=true node dist/seed.js",
+    "test": "prisma generate && cross-env CPEOPLE_LOCAL_DEV=true vitest run"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.1",
@@ -22,6 +22,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
+    "cross-env": "^10.1.0",
     "dotenv": "^17.2.4",
     "prisma": "7.10.1",
     "typescript": "~6.0.3",

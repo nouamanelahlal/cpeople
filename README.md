@@ -14,8 +14,14 @@ pnpm db:seed                                   # two fake tenants
 pnpm dev                                       # web on :3000, API on :3100
 ```
 
-No `.env` is needed locally: with `DATABASE_URL` unset everything uses the Docker
-credentials in `infra/docker/docker-compose.yml`. Dev, Test and Prod each set their own.
+No `.env` is needed locally: the scripts above set `CPEOPLE_LOCAL_DEV=true`, which lets the
+Docker credentials in `infra/docker/docker-compose.yml` stand in for `DATABASE_URL`. That
+fallback is local only — in Dev, Test or Prod a missing `DATABASE_URL` stops the API at
+startup rather than quietly pointing it at a localhost database.
+
+The same goes for the tenant: until Keycloak lands (M02) an `x-tenant-id` header can choose it,
+and that is honoured only when `TENANT_HEADER_ALLOWED=true` *and* `CPEOPLE_LOCAL_DEV=true`.
+Setting it in a deployed environment stops the API at boot. See CLAUDE.md for both settings.
 
 | Command | What it does |
 |---|---|

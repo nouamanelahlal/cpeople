@@ -15,10 +15,16 @@ export type TenantClient = Prisma.TransactionClient;
 /**
  * Runs `fn` in a transaction that can only see and write one tenant's rows.
  *
- * Inside the transaction it does two things, both reverted when the transaction ends:
+ * Inside the transaction it does two things, both of them transaction-scoped, so a
+ * pooled connection cannot carry one request's tenant into the next:
  *  - `SET LOCAL ROLE cpeople_app` drops the owner privileges, so the policies apply
- *    even when the pool connects as the database owner;
- *  - `set_config('app.tenant_id', ...)` tells the policies which tenant this is.
+ *    even when the pool connects as the database owner. `LOCAL` ends it at commit
+ *    or rollback;
+ *  - `set_config('app.tenant_id', ..., true)` tells the policies which tenant this
+ *    is. The third argument is `is_local`: the value is dropped with the
+ *    transaction, rather than staying on the connection.
+ *
+ * Both are proved in test/rls.spec.ts, on a pool of one connection.
  *
  * `tenantId` must come from the verified session (Keycloak token), never from a
  * request body or query string: it is the whole tenant boundary (M21 / HR-08).

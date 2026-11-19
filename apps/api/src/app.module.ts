@@ -1,4 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { ConfigModule } from './common/config/config.module.js';
 import { PrismaModule } from './common/prisma/prisma.module.js';
 import { TenantMiddleware } from './common/tenant/tenant.middleware.js';
 import { TenantModule } from './common/tenant/tenant.module.js';
@@ -10,7 +11,7 @@ import { OrganisationModule } from './modules/organisation/organisation.module.j
 // employees, time-absence, payroll, payslips, declarations, accounting, expenses,
 // integrations, migration, administration.
 @Module({
-  imports: [TenantModule, PrismaModule, HealthModule, OrganisationModule],
+  imports: [ConfigModule, TenantModule, PrismaModule, HealthModule, OrganisationModule],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

@@ -61,8 +61,19 @@ Day to day:
 - `pnpm e2e` · `pnpm e2e:ui` · `pnpm e2e:report`
 - `pnpm db:deploy` (apply migrations) · `pnpm db:reset` (drop and rebuild, dev only)
 
-`pnpm test` and `pnpm db:*` need the local Postgres up. With no `DATABASE_URL` set they use the
-local Docker credentials; Dev, Test and Prod each set their own.
+`pnpm test` and `pnpm db:*` need the local Postgres up.
+
+## Settings that must never be set in a deployed environment
+Both default to off, and the API refuses to start if the combination is wrong.
+- `CPEOPLE_LOCAL_DEV=true` — marks a developer's checkout. The repository's own scripts set it;
+  no deployment does. It is what allows the local Docker database credentials to stand in for a
+  missing `DATABASE_URL`. Without it, a missing `DATABASE_URL` is a startup failure.
+- `TENANT_HEADER_ALLOWED=true` — lets an `x-tenant-id` request header choose the tenant, standing
+  in for the Keycloak token until M02. A client choosing its own tenant would reach every other
+  tenant's payroll, so it is honoured only together with `CPEOPLE_LOCAL_DEV`; set in Dev, Test or
+  Prod, it stops the API at boot.
+
+Dev, Test and Prod set `DATABASE_URL` and neither flag.
 
 ## Browser automation
 Playwright only (tests in `e2e/`, live browser via `.mcp.json`). Do not add Puppeteer: it duplicates Playwright. Payslip and contract PDFs come from Gotenberg, not a headless browser in the app.
