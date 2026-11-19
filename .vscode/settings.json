@@ -1,0 +1,10 @@
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": { "source.fixAll.eslint": "explicit" },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "files.associations": { "*.dc.html": "html" },
+  "files.exclude": { "**/.turbo": true, "**/test-results": true, "**/playwright-report": true },
+  "i18n-ally.localesPaths": ["packages/shared/messages"],
+  "i18n-ally.sourceLanguage": "en"
+}

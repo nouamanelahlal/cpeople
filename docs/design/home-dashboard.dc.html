@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CPeople home</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F0F0F0}
+a{color:#0E7BB0}a:hover{color:#0F1937}
+button{font-family:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #3FB3D7;outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion: no-preference){.navlink{transition:background-color .15s}}
+.navlink:hover{background:#F3F8FC}
+button{transition:background-color .2s ease,border-color .2s ease,box-shadow .2s ease,transform .2s ease,filter .2s ease}
+.kpi{transition:box-shadow .25s ease,transform .25s ease}
+.cmark{transition:transform .35s ease}
+button:hover{box-shadow:0 6px 18px rgba(15,25,55,0.10)}
+button:active{box-shadow:none}
+.btn-light:hover{background:#F3F8FC !important;border-color:#BFDDEB !important}
+.btn-hero-primary:hover{background:#EAF6FC !important;box-shadow:0 8px 22px rgba(6,10,20,0.22)}
+.btn-hero-ghost:hover{background:rgba(255,255,255,0.12) !important;border-color:#FFFFFF !important}
+.kpi:hover{box-shadow:0 10px 26px rgba(15,25,55,0.08)}
+.scrim:hover,.scrim:active{box-shadow:none;transform:none}
+@media (prefers-reduced-motion: no-preference){
+button:hover{transform:translateY(-1px)}
+button:active{transform:translateY(0)}
+.kpi:hover{transform:translateY(-2px)}
+.kpi:hover .cmark{transform:translate(-4px,-4px) rotate(-4deg)}
+.scrim:hover{transform:none}
+}
+.mtop,.scrim,.mclose{display:none}
+.cmark{-webkit-mask:url(/_blob/456543344e7f82aa0ab5641fe189e154) no-repeat center/contain;mask:url(/_blob/456543344e7f82aa0ab5641fe189e154) no-repeat center/contain}
+@media (prefers-reduced-motion: no-preference){.rail{transition:width .18s ease, box-shadow .18s ease}.railslot{transition:flex-basis .18s ease, width .18s ease}}
+@media (max-width: 720px){
+.mtop{display:flex !important}
+.railslot{position:fixed !important;top:0;bottom:0;inset-inline-start:0;width:0 !important;flex:none !important;z-index:40 !important}
+.railslot .rail{display:none !important}
+.railslot.mopen .rail{display:flex !important;position:fixed !important;top:0;bottom:0;width:280px !important}
+.scrim{display:block !important}
+.pin{display:none !important}
+.mclose{display:flex !important}
+}
+</style>
+</helmet>
+<div style="font-family: Montserrat, sans-serif; color: #0F1937; background: #F0F0F0; display: flex; flex-wrap: wrap; align-items: stretch; min-height: 100%; box-sizing: border-box">
+
+<!-- Mobile top bar (phones only) -->
+<div class="mtop" style="flex: 1 1 100%; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; background: #FFFFFF; border-bottom: 1px solid #E3E7EE; box-sizing: border-box">
+<button type="button" class="btn-light" aria-label="Open menu" onClick="{{openMobile}}" style="width: 44px; height: 44px; border-radius: 12px; border: 1px solid #E3E7EE; background: #FFFFFF; color: #0F1937; display: flex; align-items: center; justify-content: center">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+</button>
+<a href="#" aria-label="CPeople home" style="display: flex; align-items: center; gap: 10px; text-decoration: none">
+<img src="/_blob/725c4a29b9a2c3d97110a40620d17f68" alt="" style="width: 34px; height: 34px; display: block">
+<img src="/_blob/7736010e684caaa59f919a26998e2bbb" alt="" style="height: 30px; width: auto; display: block">
+</a>
+<span style="width: 44px" aria-hidden="true"></span>
+</div>
+
+<!-- Sidebar: icons only when collapsed, names on hover, focus or pin -->
+<sc-if value="{{mobileOpen}}" hint-placeholder-val="{{false}}">
+<button type="button" class="scrim" aria-label="Close menu" onClick="{{closeMobile}}" style="position: fixed; inset: 0; border: 0; background: rgba(15,25,55,0.4); z-index: 35"></button>
+</sc-if>
+<div class="railslot {{openCls}}" style="flex: 0 0 {{slotW}}px; width: {{slotW}}px; position: relative; z-index: 20">
+<nav aria-label="Main" class="rail" onMouseEnter="{{enter}}" onMouseLeave="{{leave}}" onFocus="{{focusIn}}" onBlur="{{focusOut}}" style="position: absolute; top: 0; bottom: 0; inset-inline-start: 0; width: {{navW}}px; background: #FFFFFF; border-inline-end: 1px solid #E3E7EE; box-shadow: {{shadow}}; box-sizing: border-box; padding: 24px 16px; display: flex; flex-direction: column; gap: 24px; overflow-x: hidden; overflow-y: auto">
+
+<div style="display: flex; align-items: center; gap: 12px; min-height: 44px">
+<a href="#" aria-label="CPeople home" style="display: flex; align-items: center; gap: 12px; text-decoration: none; flex: 1; min-width: 0">
+<img src="/_blob/725c4a29b9a2c3d97110a40620d17f68" alt="" width="44" height="44" style="width: 44px; height: 44px; flex: 0 0 44px; display: block">
+<sc-if value="{{exp}}" hint-placeholder-val="{{false}}">
+<img src="/_blob/7736010e684caaa59f919a26998e2bbb" alt="" style="height: 32px; width: auto; display: block">
+</sc-if>
+</a>
+<sc-if value="{{exp}}" hint-placeholder-val="{{false}}">
+<button type="button" class="pin btn-light" aria-pressed="{{pinnedStr}}" aria-label="{{pinLabel}}" title="{{pinLabel}}" onClick="{{togglePin}}" style="width: 40px; height: 40px; flex: 0 0 40px; border-radius: 10px; border: 1px solid #E3E7EE; background: {{pinBg}}; color: {{pinFg}}; display: flex; align-items: center; justify-content: center">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4zM10 4v16"></path></svg>
+</button>
+<button type="button" class="mclose btn-light" aria-label="Close menu" onClick="{{closeMobile}}" style="width: 40px; height: 40px; flex: 0 0 40px; border-radius: 10px; border: 1px solid #E3E7EE; background: #FFFFFF; color: #0F1937; align-items: center; justify-content: center">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+</button>
+</sc-if>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 18px">
+<sc-for list="{{nav}}" as="group" hint-placeholder-count="5">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<sc-if value="{{group.showTitle}}" hint-placeholder-val="{{false}}">
+<div style="font-size: 12px; font-weight: 600; color: #6B7286; padding: 0 12px 6px; white-space: nowrap">{{group.title}}</div>
+</sc-if>
+<sc-if value="{{group.showDivider}}" hint-placeholder-val="{{true}}">
+<div aria-hidden="true" style="height: 1px; background: #EEF1F5; margin: 0 8px 8px"></div>
+</sc-if>
+<sc-for list="{{group.items}}" as="item" hint-placeholder-count="3">
+<a href="#" class="navlink" aria-label="{{item.aria}}" aria-current="{{item.current}}" style="position: relative; display: flex; align-items: center; gap: 14px; padding: 10px 12px; min-height: 44px; box-sizing: border-box; border-radius: 10px; text-decoration: none; font-size: 14px; white-space: nowrap; {{item.style}}">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 20px"><path d="{{item.d}}"></path></svg>
+<sc-if value="{{item.exp}}" hint-placeholder-val="{{false}}">
+<span style="flex: 1">{{item.label}}</span>
+</sc-if>
+<sc-if value="{{item.showPill}}" hint-placeholder-val="{{false}}">
+<span class="num" style="font-size: 12px; font-weight: 600; background: #0E7BB0; color: #FFFFFF; border-radius: 999px; padding: 2px 8px">{{item.badge}}</span>
+</sc-if>
+<sc-if value="{{item.showDot}}" hint-placeholder-val="{{false}}">
+<span aria-hidden="true" style="position: absolute; top: 7px; inset-inline-start: 28px; width: 9px; height: 9px; border-radius: 50%; background: #0E7BB0; border: 2px solid #FFFFFF"></span>
+</sc-if>
+</a>
+</sc-for>
+</div>
+</sc-for>
+</div>
+
+<sc-if value="{{exp}}" hint-placeholder-val="{{false}}">
+<div style="border: 1px solid #E3E7EE; border-radius: 14px; padding: 12px; display: flex; align-items: center; gap: 12px; white-space: nowrap">
+<div style="width: 36px; height: 36px; flex: 0 0 36px; border-radius: 10px; background: #0F1937; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600">DC</div>
+<div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<div style="font-size: 13px; font-weight: 600">Demo Company</div>
+<div style="font-size: 12px; color: #4E566B">Rabat, Morocco pack</div>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{collapsed}}" hint-placeholder-val="{{true}}">
+<div title="Demo Company, Rabat" style="width: 36px; height: 36px; margin-inline-start: 4px; border-radius: 10px; background: #0F1937; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600">DC</div>
+</sc-if>
+</nav>
+</div>
+
+<!-- Content -->
+<main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 24px clamp(16px, 3vw, 40px) 48px; display: flex; flex-direction: column; gap: 24px">
+
+<!-- Top bar -->
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px">
+<div style="flex: 1 1 280px; display: flex; flex-direction: column; gap: 4px">
+<h1 style="margin: 0; font-size: 26px; font-weight: 400; letter-spacing: -0.01em">Good morning, Salma</h1>
+<p style="margin: 0; font-size: 14px; color: #4E566B">Wednesday 18 November 2026. November payroll is in review.</p>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+<label style="display: flex; align-items: center; gap: 10px; background: #FFFFFF; border: 1px solid #E3E7EE; border-radius: 12px; padding: 0 14px; height: 44px; width: 380px; max-width: 100%; box-sizing: border-box">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4E566B" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16M21 21l-4.3-4.3"></path></svg>
+<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Search</span>
+<input type="search" placeholder="Search people, payslips, requests" style="border: 0; outline: none; background: transparent; font-family: inherit; font-size: 14px; color: #0F1937; flex: 1; min-width: 0; text-overflow: ellipsis"></label>
+<button type="button" class="btn-light" aria-label="Language: English" style="height: 44px; min-width: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid #E3E7EE; background: #FFFFFF; font-size: 13px; font-weight: 600; color: #0F1937">EN</button>
+<button type="button" class="btn-light" aria-label="Notifications, 4 unread" style="position: relative; width: 44px; height: 44px; border-radius: 12px; border: 1px solid #E3E7EE; background: #FFFFFF; display: flex; align-items: center; justify-content: center; color: #0F1937">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"></path></svg>
+<span style="position: absolute; top: 9px; inset-inline-end: 10px; width: 8px; height: 8px; border-radius: 50%; background: #3FB3D7; border: 2px solid #FFFFFF"></span>
+</button>
+<button type="button" class="btn-light" aria-label="Account: Salma Benali" style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px 0 6px; border-radius: 12px; border: 1px solid #E3E7EE; background: #FFFFFF; color: #0F1937">
+<span style="width: 32px; height: 32px; border-radius: 9px; background: #E6F3FA; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">SB</span>
+<span style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2">
+<span style="font-size: 13px; font-weight: 600">Salma Benali</span>
+<span style="font-size: 12px; color: #4E566B">HR manager</span>
+</span>
+</button>
+</div>
+</header>
+
+<!-- Hero: payroll month -->
+<section aria-labelledby="run-title" style="position: relative; overflow: hidden; background: #0E7BB0; color: #FFFFFF; border-radius: 24px; padding: clamp(24px, 3vw, 40px); display: flex; flex-direction: column; gap: 32px">
+<img src="/_blob/456543344e7f82aa0ab5641fe189e154" alt="" aria-hidden="true" style="position: absolute; inset-inline-end: -40px; bottom: -150px; height: 620px; width: auto; opacity: 0.13; pointer-events: none">
+
+<div style="position: relative; display: flex; flex-wrap: wrap; gap: 24px 48px; align-items: flex-end; justify-content: space-between">
+<div style="display: flex; flex-direction: column; gap: 10px; max-width: 560px">
+<div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #FFFFFF">
+<span style="width: 8px; height: 8px; border-radius: 50%; background: #FFFFFF"></span>
+<span>Pay date in 12 days, on 30 November</span>
+</div>
+<h2 id="run-title" style="margin: 0; font-size: clamp(30px, 3.4vw, 44px); font-weight: 300; letter-spacing: -0.02em; line-height: 1.1">November 2026 payroll</h2>
+<p style="margin: 0; font-size: 15px; line-height: 1.55; color: #FFFFFF">Version 2 was calculated today at 09:12 for 148 employees. Check 3 points, then send it for HR approval.</p>
+</div>
+<div style="display: flex; gap: 12px; flex-wrap: wrap">
+<button type="button" class="btn-hero-ghost" style="height: 48px; padding: 0 22px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.7); background: transparent; color: #FFFFFF; font-size: 14px; font-weight: 600">See employee results</button>
+<button type="button" class="btn-hero-primary" style="height: 48px; padding: 0 24px; border-radius: 12px; border: 0; background: #FFFFFF; color: #0F1937; font-size: 14px; font-weight: 600">Continue review</button>
+</div>
+</div>
+
+<div style="position: relative; display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px">
+<sc-for list="{{figures}}" as="f" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 6px; padding: 18px 20px; border-radius: 16px; background: rgba(15,25,55,0.16); border: 1px solid rgba(255,255,255,0.2)">
+<div style="font-size: 13px; color: #FFFFFF">{{f.label}}</div>
+<div class="num" style="font-size: 26px; font-weight: 300; letter-spacing: -0.01em"><span style="font-size: 14px; font-weight: 500; color: #FFFFFF; margin-inline-end: 6px">{{f.unit}}</span>{{f.value}}</div>
+<div class="num" style="font-size: 12px; color: #FFFFFF">{{f.note}}</div>
+</div>
+</sc-for>
+</div>
+
+<ol aria-label="Payroll run steps" style="position: relative; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(110px, 1fr)); gap: 10px; overflow-x: auto">
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="7">
+<li aria-current="{{s.current}}" style="display: flex; flex-direction: column; gap: 10px; min-width: 110px">
+<div style="height: 4px; border-radius: 4px; background: {{s.bar}}"></div>
+<div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: {{s.text}}">
+<sc-if value="{{s.done}}" hint-placeholder-val="{{true}}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"></path></svg>
+</sc-if>
+<span>{{s.label}}</span>
+</div>
+<div class="num" style="font-size: 12px; color: {{s.sub}}">{{s.note}}</div>
+</li>
+</sc-for>
+</ol>
+</section>
+
+<!-- KPIs -->
+<section aria-label="Today at a glance" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+<a href="#" class="kpi" style="position: relative; overflow: hidden; text-decoration: none; color: #0F1937; background: {{k.bg}}; border: 1px solid rgba(15,25,55,0.06); border-radius: 18px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px">
+<span class="cmark" aria-hidden="true" style="position: absolute; inset-inline-end: -22px; bottom: -48px; width: 124px; height: 132px; background: {{k.mark}}"></span>
+<div style="position: relative; display: flex; align-items: center; justify-content: space-between">
+<span style="font-size: 14px; font-weight: 600">{{k.label}}</span>
+<span style="width: 36px; height: 36px; border-radius: 10px; background: #FFFFFF; color: {{k.ink}}; display: flex; align-items: center; justify-content: center">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{k.d}}"></path></svg>
+</span>
+</div>
+<div class="num" style="position: relative; font-size: 34px; font-weight: 300; letter-spacing: -0.02em; line-height: 1">{{k.value}}<span style="font-size: 15px; color: #4E566B; margin-inline-start: 6px">{{k.suffix}}</span></div>
+<div style="position: relative; font-size: 13px; color: #4E566B">{{k.note}}</div>
+</a>
+</sc-for>
+</section>
+
+<!-- Actions + away -->
+<div style="display: flex; flex-wrap: wrap; gap: 24px">
+<section aria-labelledby="todo-title" style="flex: 2 1 560px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7EE; border-radius: 20px; padding: 24px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px">
+<h2 id="todo-title" style="margin: 0; font-size: 18px; font-weight: 600">Waiting for you</h2>
+<a href="#" style="font-size: 14px; font-weight: 600; text-decoration: none">Open inbox</a>
+</div>
+<ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+<sc-for list="{{actions}}" as="a" hint-placeholder-count="5">
+<li style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 14px 0; border-top: 1px solid #EEF1F5">
+<span style="width: 40px; height: 40px; flex: 0 0 40px; border-radius: 12px; background: #F3F5F8; color: #0F1937; display: flex; align-items: center; justify-content: center">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{a.d}}"></path></svg>
+</span>
+<div style="flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+<div style="font-size: 14px; font-weight: 600">{{a.title}}</div>
+<div class="num" style="font-size: 13px; color: #4E566B">{{a.detail}}</div>
+</div>
+<span style="font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; background: {{a.pillBg}}; color: {{a.pillFg}}">{{a.status}}</span>
+<button type="button" class="btn-light" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid #D5DCE6; background: #FFFFFF; color: #0F1937; font-size: 13px; font-weight: 600">{{a.cta}}</button>
+</li>
+</sc-for>
+</ul>
+</section>
+
+<section aria-labelledby="away-title" style="flex: 1 1 300px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7EE; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: baseline; justify-content: space-between">
+<h2 id="away-title" style="margin: 0; font-size: 18px; font-weight: 600">Away this week</h2>
+<a href="#" style="font-size: 14px; font-weight: 600; text-decoration: none">Leave calendar</a>
+</div>
+<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px">
+<sc-for list="{{week}}" as="d" hint-placeholder-count="5">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; border-radius: 12px; background: {{d.bg}}; color: {{d.fg}}">
+<span style="font-size: 12px">{{d.day}}</span>
+<span class="num" style="font-size: 18px; font-weight: 600">{{d.date}}</span>
+<span class="num" style="font-size: 12px">{{d.away}}</span>
+</div>
+</sc-for>
+</div>
+<p style="margin: 0; font-size: 13px; color: #4E566B">Today is Independence Day, a public holiday. 42 people are scheduled to work.</p>
+<ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px">
+<sc-for list="{{away}}" as="p" hint-placeholder-count="4">
+<li style="display: flex; align-items: center; gap: 12px">
+<span style="width: 36px; height: 36px; flex: 0 0 36px; border-radius: 50%; background: #E6F3FA; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">{{p.initials}}</span>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 14px; font-weight: 600">{{p.name}}</span>
+<span style="font-size: 12px; color: #4E566B">{{p.type}}</span>
+</div>
+<span class="num" style="font-size: 13px; color: #0F1937">{{p.when}}</span>
+</li>
+</sc-for>
+</ul>
+</section>
+</div>
+
+<!-- Charts -->
+<div style="display: flex; flex-wrap: wrap; gap: 24px">
+<section aria-labelledby="cost-title" style="flex: 2 1 560px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7EE; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 20px">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 id="cost-title" style="margin: 0; font-size: 18px; font-weight: 600">Payroll cost, last 12 months</h2>
+<span style="font-size: 13px; color: #4E566B">Gross pay and employer charges, in MAD</span>
+</div>
+<div style="display: flex; gap: 18px; font-size: 13px; color: #4E566B">
+<span style="display: flex; align-items: center; gap: 8px"><span style="width: 12px; height: 12px; border-radius: 50%; background: #0E7BB0"></span>Gross pay</span>
+<span style="display: flex; align-items: center; gap: 8px"><span style="width: 12px; height: 12px; border-radius: 50%; background: #1E96C2; opacity: 0.6"></span>Employer charges</span>
+</div>
+</div>
+<div style="display: flex; gap: 12px">
+<div class="num" aria-hidden="true" style="display: flex; flex-direction: column; justify-content: space-between; height: 220px; font-size: 12px; color: #4E566B; text-align: end; margin-top: -7px">
+<span>1.5M</span><span>1.0M</span><span>0.5M</span><span>0</span>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+<div style="position: relative; height: 220px">
+<svg viewBox="0 0 1000 220" preserveAspectRatio="none" role="img" aria-label="Payroll cost from December 2025 to November 2026: gross pay between 1.19 and 1.29 million MAD, employer charges between 248 and 269 thousand MAD" style="position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible">
+<defs>
+<linearGradient id="fillGross" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0E7BB0" stop-opacity="0.26"></stop><stop offset="1" stop-color="#0E7BB0" stop-opacity="0.02"></stop></linearGradient>
+<linearGradient id="fillCharges" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3FB3D7" stop-opacity="0.38"></stop><stop offset="1" stop-color="#3FB3D7" stop-opacity="0.04"></stop></linearGradient>
+</defs>
+<line x1="0" x2="1000" y1="0.5" y2="0.5" stroke="#E3E7EE" stroke-dasharray="4 6" vector-effect="non-scaling-stroke"></line>
+<line x1="0" x2="1000" y1="73.3" y2="73.3" stroke="#E3E7EE" stroke-dasharray="4 6" vector-effect="non-scaling-stroke"></line>
+<line x1="0" x2="1000" y1="146.7" y2="146.7" stroke="#E3E7EE" stroke-dasharray="4 6" vector-effect="non-scaling-stroke"></line>
+<line x1="0" x2="1000" y1="219.5" y2="219.5" stroke="#D5DCE6" vector-effect="non-scaling-stroke"></line>
+<path d="{{chart.gArea}}" fill="url(#fillGross)"></path>
+<path d="{{chart.cArea}}" fill="url(#fillCharges)"></path>
+<line x1="{{chart.fx}}" x2="{{chart.fx}}" y1="0" y2="220" stroke="#0E7BB0" stroke-opacity="0.35" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"></line>
+<path d="{{chart.gLine}}" fill="none" stroke="#0E7BB0" stroke-width="2.5" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>
+<path d="{{chart.cLine}}" fill="none" stroke="#1E96C2" stroke-width="2.5" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>
+</svg>
+<span aria-hidden="true" style="position: absolute; left: {{chart.fpct}}%; top: {{chart.gy}}px; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #FFFFFF; border: 3px solid #0E7BB0; box-sizing: border-box"></span>
+<span aria-hidden="true" style="position: absolute; left: {{chart.fpct}}%; top: {{chart.cy}}px; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #FFFFFF; border: 3px solid #1E96C2; box-sizing: border-box"></span>
+<div style="position: absolute; inset: 0; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr))">
+<sc-for list="{{chart.cols}}" as="c" hint-placeholder-count="12">
+<div onMouseEnter="{{c.pick}}" style="height: 100%"></div>
+</sc-for>
+</div>
+<div class="num" style="position: absolute; top: 72px; left: {{chart.fpct}}%; transform: {{chart.tipShift}}; background: #0F1937; color: #FFFFFF; border-radius: 12px; padding: 10px 14px; font-size: 12px; white-space: nowrap; pointer-events: none; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 8px 24px rgba(15,25,55,0.18)">
+<span style="font-weight: 600">{{chart.tipTitle}}</span>
+<span style="display: flex; align-items: center; gap: 8px"><span style="width: 8px; height: 8px; border-radius: 50%; background: #5DCBE5"></span>Gross pay {{chart.tipGross}}</span>
+<span style="display: flex; align-items: center; gap: 8px"><span style="width: 8px; height: 8px; border-radius: 50%; background: #9ED8EC"></span>Employer charges {{chart.tipCharges}}</span>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(12, minmax(0, 1fr))">
+<sc-for list="{{chart.cols}}" as="c" hint-placeholder-count="12">
+<span style="text-align: center; font-size: 12px; color: {{c.lc}}; font-weight: {{c.lw}}">{{c.label}}</span>
+</sc-for>
+</div>
+</div>
+</div>
+</section>
+
+<section aria-labelledby="dept-title" style="flex: 1 1 300px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7EE; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 id="dept-title" style="margin: 0; font-size: 18px; font-weight: 600">Headcount by department</h2>
+<span class="num" style="font-size: 13px; color: #4E566B">148 employees, 12 on fixed-term contracts</span>
+</div>
+<ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 16px">
+<sc-for list="{{depts}}" as="d" hint-placeholder-count="5">
+<li style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; font-size: 14px"><span>{{d.name}}</span><span class="num" style="font-weight: 600">{{d.count}}</span></div>
+<div style="height: 8px; border-radius: 8px; background: #EEF1F5; overflow: hidden"><div style="height: 100%; width: {{d.pct}}%; border-radius: 8px; background: #3FB3D7"></div></div>
+</li>
+</sc-for>
+</ul>
+</section>
+</div>
+
+<!-- Connections -->
+<section aria-labelledby="conn-title" style="background: #FFFFFF; border: 1px solid #E3E7EE; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+<h2 id="conn-title" style="margin: 0; font-size: 18px; font-weight: 600">Declarations and connections</h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px">
+<sc-for list="{{links}}" as="l" hint-placeholder-count="4">
+<div style="display: flex; gap: 14px; align-items: flex-start; padding: 16px; border-radius: 14px; background: #F7F9FB">
+<span style="width: 28px; height: 28px; flex: 0 0 28px; border-radius: 50%; background: {{l.bg}}; color: {{l.fg}}; display: flex; align-items: center; justify-content: center">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{l.d}}"></path></svg>
+</span>
+<div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<span style="font-size: 14px; font-weight: 600">{{l.title}}</span>
+<span class="num" style="font-size: 13px; color: #4E566B; line-height: 1.45">{{l.detail}}</span>
+</div>
+</div>
+</sc-for>
+</div>
+</section>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1680}}'>
+class Component extends DCLogic {
+  componentWillUnmount() { clearTimeout(this._t); }
+  renderVals() {
+    var I = {
+      home: 'M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z',
+      users: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8',
+      onboard: 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2M9 14l2 2 4-4',
+      contract: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h6',
+      org: 'M9 3h6v5H9zM3 16h6v5H3zM15 16h6v5h-6zM12 8v4M6 16v-4h12v4',
+      clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7v5l3 2',
+      cal: 'M8 2v4M16 2v4M3 9h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2',
+      pay: 'M3 6h18v12H3zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6M6 9v.01M18 15v.01',
+      slip: 'M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2zM9 8h6M9 12h6M9 16h3',
+      exp: 'M3 5h18v14H3zM3 10h18M7 15h4',
+      decl: 'M3 21h18M5 21V10M10 21V10M14 21V10M19 21V10M2 10l10-7 10 7z',
+      sap: 'M7 7h11l-3-3M17 17H6l3 3',
+      cog: 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 4v4M8 10v4M16 16v4',
+      doc: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M12 12v3M12 18h.01',
+      check: 'M5 12l5 5L20 7',
+      alert: 'M12 8v5M12 16.5h.01'
+    };
+    var self = this;
+    var st = this.state || {};
+    var exp = !!(st.hover || st.focus || st.pinned || st.mobileOpen);
+    var on = 'background: #E6F3FA; color: #0F1937; font-weight: 600;';
+    var off = 'color: #4E566B;';
+    function it(label, d, active, badge) {
+      return { label: label, d: d, style: active ? on : off, badge: badge || '', exp: exp,
+        aria: badge ? label + ', ' + badge + ' waiting' : label, current: active ? 'page' : 'false',
+        showPill: exp && !!badge, showDot: !exp && !!badge };
+    }
+    function grp(title, items) { return { title: title, showTitle: exp && !!title, showDivider: !exp && !!title, items: items }; }
+    var nav = [
+      grp('', [it('Home', I.home, true)]),
+      grp('People', [it('Employees', I.users), it('Onboarding', I.onboard), it('Contracts', I.contract), it('Organisation chart', I.org)]),
+      grp('Time', [it('Attendance', I.clock), it('Leave', I.cal, false, '7')]),
+      grp('Pay', [it('Payroll', I.pay), it('Payslips', I.slip), it('Expenses', I.exp, false, '3'), it('Declarations', I.decl)]),
+      grp('Company', [it('SAP posting', I.sap), it('Settings', I.cog)])
+    ];
+    var shell = {
+      exp: exp, collapsed: !exp, mobileOpen: !!st.mobileOpen, openCls: st.mobileOpen ? 'mopen' : '',
+      slotW: st.pinned ? 260 : 76, navW: exp ? 260 : 76,
+      shadow: exp && !st.pinned ? '0 16px 48px rgba(15,25,55,0.16)' : 'none',
+      pinnedStr: st.pinned ? 'true' : 'false', pinLabel: st.pinned ? 'Let the menu collapse' : 'Keep the menu open',
+      pinBg: st.pinned ? '#E6F3FA' : '#FFFFFF', pinFg: st.pinned ? '#0E7BB0' : '#4E566B',
+      enter: function () { clearTimeout(self._t); self._t = setTimeout(function () { self.setState({ hover: true }); }, 120); },
+      leave: function () { clearTimeout(self._t); self._t = setTimeout(function () { self.setState({ hover: false }); }, 220); },
+      focusIn: function () { self.setState({ focus: true }); },
+      focusOut: function (e) { if (!e.currentTarget.contains(e.relatedTarget)) self.setState({ focus: false }); },
+      togglePin: function () { var s2 = self.state || {}; self.setState({ pinned: !s2.pinned, hover: false }); },
+      openMobile: function () { self.setState({ mobileOpen: true }); },
+      closeMobile: function () { self.setState({ mobileOpen: false }); }
+    };
+
+    var figures = [
+      { label: 'Gross pay', unit: 'MAD', value: '1,284,650.00', note: '+1.8% on October' },
+      { label: 'Net to pay', unit: 'MAD', value: '1,012,480.40', note: '148 payslips' },
+      { label: 'Employer charges', unit: 'MAD', value: '268,903.15', note: 'CNSS, AMO, CIMR' },
+      { label: 'Income tax withheld', unit: 'MAD', value: '139,227.60', note: 'IR, monthly data ready after lock' }
+    ];
+
+    var stepDefs = [
+      ['Opened', '1 Nov', 'done'], ['Variables', 'Attendance 18 Nov', 'done'], ['Calculated', 'Version 2', 'done'],
+      ['Review', '3 points to check', 'current'], ['HR approval', 'Salma Benali', 'todo'], ['Lock and payslips', '148 by email', 'todo'], ['Post to SAP', 'S/4HANA journal entry', 'todo']
+    ];
+    var steps = stepDefs.map(function (s) {
+      var st = s[2];
+      return {
+        label: s[0], note: s[1], done: st === 'done', current: st === 'current' ? 'step' : 'false',
+        bar: st === 'done' ? '#FFFFFF' : st === 'current' ? 'linear-gradient(90deg, #FFFFFF 50%, rgba(255,255,255,0.3) 50%)' : 'rgba(255,255,255,0.3)',
+        text: '#FFFFFF',
+        sub: '#FFFFFF'
+      };
+    });
+
+    var kpis = [
+      { label: 'Headcount', value: '148', suffix: '', note: '3 joined and 1 left in November', d: I.users, bg: '#E4F2FA', mark: '#C3E2F2', ink: '#0E7BB0' },
+      { label: 'Present today', value: '41', suffix: 'of 42', note: 'Imported from devices at 07:15', d: I.clock, bg: '#E3F5EE', mark: '#C2E7D7', ink: '#17785A' },
+      { label: 'Leave requests', value: '7', suffix: 'pending', note: '2 are waiting for N+2 approval', d: I.cal, bg: '#EEEBFA', mark: '#D6CFF3', ink: '#5B4DB0' },
+      { label: 'Documents expiring', value: '5', suffix: 'in 30 days', note: '2 residence permits, 3 medical certificates', d: I.doc, bg: '#FCEFE3', mark: '#F4D6B9', ink: '#A65A12' }
+    ];
+
+    var warn = { bg: '#FFF4E5', fg: '#8A4B00' };
+    var info = { bg: '#E6F3FA', fg: '#0B5E86' };
+    var neutral = { bg: '#F0F2F5', fg: '#4E566B' };
+    function act(d, title, detail, status, tone, cta) { return { d: d, title: title, detail: detail, status: status, pillBg: tone.bg, pillFg: tone.fg, cta: cta }; }
+    var actions = [
+      act(I.alert, 'Review: 42 employees worked the 18 November holiday', 'Holiday premium applied to all 42. Confirm before approval.', 'Payroll review', warn, 'Check'),
+      act(I.cal, 'Karim Alaoui, annual leave', '24 to 28 November, 4 working days. Approved by his manager.', 'Your approval (N+2)', info, 'Review'),
+      act(I.exp, 'Nadia Berrada, transport expenses', 'MAD 640.00 with 2 receipts, for the November payroll', 'Your approval', info, 'Review'),
+      act(I.contract, 'Omar Chraibi, fixed-term contract ends', 'CDD ends on 30 November. Renew or end it this week.', 'Due in 12 days', warn, 'Prepare'),
+      act(I.clock, '3 attendance punches without an employee', 'From the kitchen device, import of 18 November 07:15', 'Import', neutral, 'Fix')
+    ];
+
+    var week = [
+      { day: 'Mon', date: '16', away: '2 away' }, { day: 'Tue', date: '17', away: '3 away' }, { day: 'Wed', date: '18', away: 'Holiday', today: true },
+      { day: 'Thu', date: '19', away: '4 away' }, { day: 'Fri', date: '20', away: '4 away' }
+    ].map(function (d) { d.bg = d.today ? '#0E7BB0' : '#F3F5F8'; d.fg = d.today ? '#FFFFFF' : '#0F1937'; return d; });
+
+    var away = [
+      { initials: 'LF', name: 'Leila Fassi', type: 'Annual leave', when: '16 to 20 Nov' },
+      { initials: 'MI', name: 'Mehdi Idrissi', type: 'Sick leave', when: '17 to 19 Nov' },
+      { initials: 'SA', name: 'Sara Amrani', type: 'Training', when: '19 to 20 Nov' },
+      { initials: 'YT', name: 'Yassine Tazi', type: 'Annual leave', when: '19 to 20 Nov' }
+    ];
+
+    var data = [
+      ['Dec', 'December 2025', 1238, 259], ['Jan', 'January 2026', 1186, 248], ['Feb', 'February 2026', 1192, 249], ['Mar', 'March 2026', 1205, 252],
+      ['Apr', 'April 2026', 1211, 253], ['May', 'May 2026', 1224, 256], ['Jun', 'June 2026', 1219, 255], ['Jul', 'July 2026', 1240, 260],
+      ['Aug', 'August 2026', 1233, 258], ['Sep', 'September 2026', 1251, 262], ['Oct', 'October 2026', 1262, 264], ['Nov', 'November 2026', 1285, 269]
+    ];
+    var H = 220, MAX = 1500;
+    function px(i) { return (i + 0.5) / data.length * 1000; }
+    function py(v) { return H - v / MAX * H; }
+    function spline(col) {
+      var p = data.map(function (r, i) { return [px(i), py(r[col])]; });
+      var d = 'M' + p[0][0].toFixed(1) + ',' + p[0][1].toFixed(1);
+      for (var i = 0; i < p.length - 1; i++) {
+        var p0 = p[i - 1] || p[i], p1 = p[i], p2 = p[i + 1], p3 = p[i + 2] || p2;
+        d += ' C' + (p1[0] + (p2[0] - p0[0]) / 6).toFixed(1) + ',' + (p1[1] + (p2[1] - p0[1]) / 6).toFixed(1) + ' ' +
+          (p2[0] - (p3[0] - p1[0]) / 6).toFixed(1) + ',' + (p2[1] - (p3[1] - p1[1]) / 6).toFixed(1) + ' ' + p2[0].toFixed(1) + ',' + p2[1].toFixed(1);
+      }
+      return { line: d, area: d + ' L' + p[p.length - 1][0].toFixed(1) + ',' + H + ' L' + p[0][0].toFixed(1) + ',' + H + ' Z' };
+    }
+    var g = spline(2), c = spline(3);
+    var fi = (st.cm === undefined || st.cm === null) ? data.length - 1 : st.cm;
+    function fmt(k) { return 'MAD ' + k.toLocaleString('en-US') + 'k'; }
+    var chart = {
+      gLine: g.line, gArea: g.area, cLine: c.line, cArea: c.area,
+      fx: px(fi).toFixed(1), fpct: (px(fi) / 10).toFixed(2), gy: py(data[fi][2]).toFixed(1), cy: py(data[fi][3]).toFixed(1),
+      tipShift: fi >= 8 ? 'translateX(calc(-100% - 16px))' : 'translateX(16px)',
+      tipTitle: data[fi][1], tipGross: fmt(data[fi][2]), tipCharges: fmt(data[fi][3]),
+      cols: data.map(function (r, i) {
+        return { label: r[0], lc: i === fi ? '#0F1937' : '#4E566B', lw: i === fi ? '600' : '400', pick: function () { self.setState({ cm: i }); } };
+      })
+    };
+
+    var depts = [['Kitchen', 46], ['Outlet', 38], ['Pastry', 29], ['Administration', 20], ['Warehouse', 15]]
+      .map(function (d) { return { name: d[0], count: d[1], pct: Math.round(d[1] / 46 * 100) }; });
+
+    var ok = { bg: '#E3F4EA', fg: '#17663F', d: I.check };
+    var wn = { bg: '#FFF4E5', fg: '#8A4B00', d: I.alert };
+    function ln(t, detail, tone) { return { title: t, detail: detail, bg: tone.bg, fg: tone.fg, d: tone.d }; }
+    var links = [
+      ln('SAP S/4HANA', 'October payroll posted by cost centre on 31 Oct. Journal entry 100000482.', ok),
+      ln('CNSS Damancom', 'October declaration data ready. November after the payroll is locked.', ok),
+      ln('Income tax (IR)', 'October data ready to download.', ok),
+      ln('Attendance devices', 'Last import today at 07:15. 3 punches need an employee.', wn)
+    ];
+
+    return { exp: shell.exp, collapsed: shell.collapsed, mobileOpen: shell.mobileOpen, openCls: shell.openCls, slotW: shell.slotW, navW: shell.navW, shadow: shell.shadow, pinnedStr: shell.pinnedStr, pinLabel: shell.pinLabel, pinBg: shell.pinBg, pinFg: shell.pinFg, enter: shell.enter, leave: shell.leave, focusIn: shell.focusIn, focusOut: shell.focusOut, togglePin: shell.togglePin, openMobile: shell.openMobile, closeMobile: shell.closeMobile, nav: nav, figures: figures, steps: steps, kpis: kpis, actions: actions, week: week, away: away, chart: chart, depts: depts, links: links };
+  }
+}
+</script>
+</body>
+</html>

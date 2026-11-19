@@ -1,0 +1,49 @@
+# Local development stack for CPeople. Fake data only.
+# Usage: docker compose -f infra/docker/docker-compose.yml up -d
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: cpeople
+      POSTGRES_PASSWORD: cpeople_dev
+      POSTGRES_DB: cpeople
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+
+  redis:
+    image: redis:7
+    ports: ["6379:6379"]
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: start-dev
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin_dev
+    ports: ["8080:8080"]
+
+  # S3-compatible file storage. MinIO no longer publishes Docker images (removed from
+  # Docker Hub and Quay in Sept 2026), so RustFS replaces it: same S3 API, same ports.
+  storage:
+    image: rustfs/rustfs:latest
+    environment:
+      RUSTFS_ACCESS_KEY: cpeople
+      RUSTFS_SECRET_KEY: cpeople_dev
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+    ports: ["9000:9000", "9001:9001"]
+    volumes: [storagedata:/data]
+
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    ports: ["3001:3000"]
+
+  mailpit:
+    image: axllent/mailpit
+    ports: ["8025:8025", "1025:1025"]
+
+volumes:
+  pgdata:
+  storagedata:
