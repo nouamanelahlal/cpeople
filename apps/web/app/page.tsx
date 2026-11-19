@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import logo from '../public/brand/cpeople-logo-lockup.png';
+import logo from '../public/brand/cpeople-logo-lockup-white.png';
 
 export default function HomePage() {
   return (
