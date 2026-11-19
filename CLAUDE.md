@@ -63,17 +63,32 @@ Day to day:
 
 `pnpm test` and `pnpm db:*` need the local Postgres up.
 
+## Two database connections, never interchangeable
+- `DATABASE_URL` — the **runtime** pool. Connects as `cpeople_app`, which owns no table and has
+  only the grants it needs, so the row-level-security policies apply to every query it runs: a
+  query that skips `withTenant()` returns nothing instead of every tenant's rows. The API has
+  only this one.
+- `MIGRATION_DATABASE_URL` — the **owner**. Migrations, seeds and tenant provisioning, on the
+  command line. Never used to serve a request. In a deployed environment this role needs
+  `BYPASSRLS` to provision tenants, because every tenant table is `FORCE ROW LEVEL SECURITY`.
+
+The migrations create `cpeople_app` with no password; each environment gives it credentials when
+the database is provisioned. Locally `pnpm db:migrate` does it on the throwaway Docker database.
+
 ## Settings that must never be set in a deployed environment
 Both default to off, and the API refuses to start if the combination is wrong.
-- `CPEOPLE_LOCAL_DEV=true` — marks a developer's checkout. The repository's own scripts set it;
-  no deployment does. It is what allows the local Docker database credentials to stand in for a
-  missing `DATABASE_URL`. Without it, a missing `DATABASE_URL` is a startup failure.
+- `CPEOPLE_LOCAL_DEV=true` — marks a developer's checkout (and the CI database, which is the
+  same throwaway stack). The repository's own scripts set it; no deployment does. It is what
+  allows the local Docker credentials to stand in for the two URLs above, and what lets
+  `local-dev-role` give `cpeople_app` a development password. Without it, a missing
+  `DATABASE_URL` is a startup failure.
 - `TENANT_HEADER_ALLOWED=true` — lets an `x-tenant-id` request header choose the tenant, standing
   in for the Keycloak token until M02. A client choosing its own tenant would reach every other
   tenant's payroll, so it is honoured only together with `CPEOPLE_LOCAL_DEV`; set in Dev, Test or
   Prod, it stops the API at boot.
 
-Dev, Test and Prod set `DATABASE_URL` and neither flag.
+Dev, Test and Prod set `DATABASE_URL` (and `MIGRATION_DATABASE_URL` for the migration job) and
+neither flag.
 
 ## Browser automation
 Playwright only (tests in `e2e/`, live browser via `.mcp.json`). Do not add Puppeteer: it duplicates Playwright. Payslip and contract PDFs come from Gotenberg, not a headless browser in the app.

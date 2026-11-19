@@ -4,21 +4,41 @@
 // Fixtures are fake data only (rule 6).
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { APP_DB_ROLE, createPrismaClient, withTenant } from '../src/index.js';
-
-/** Owner connection: provisions tenants, which the application itself may not do. */
-const owner = createPrismaClient();
+import {
+  APP_DB_ROLE,
+  createMigrationPrismaClient,
+  createPrismaClient,
+  withTenant,
+} from '../src/index.js';
 
 /**
- * A pool of exactly one connection, so every query below provably lands on the same
- * Postgres backend — the condition under which a leaked session setting would be
- * visible to the next request. The tests assert the backend pid to make sure of it.
+ * The runtime pool, exactly as the API has it: connected as cpeople_app, which owns
+ * nothing and is subject to every policy.
+ */
+const runtime = createPrismaClient();
+
+/** Owner connection: provisions tenants, which the application itself may not do. */
+const owner = createMigrationPrismaClient();
+
+/**
+ * The runtime pool narrowed to exactly one connection, so every query below provably
+ * lands on the same Postgres backend — the condition under which a leaked session
+ * setting would be visible to the next request. The tests assert the backend pid to
+ * make sure of it.
  */
 const pooled = createPrismaClient({ maxConnections: 1 });
+
+/**
+ * One owner connection. withTenant() is meant to be safe even here � the belt to the
+ * runtime role's braces � so the role change it makes is visible and testable.
+ */
+const pooledOwner = createMigrationPrismaClient({ maxConnections: 1 });
 
 interface ConnectionState {
   pid: number;
   role: string;
+  /** The role the connection logged in as, which SET LOCAL ROLE reverts to. */
+  session_role: string;
   tenant: string | null;
 }
 
@@ -29,6 +49,7 @@ async function connectionState(client: {
   const rows = await client.$queryRaw<ConnectionState[]>`
     SELECT pg_backend_pid() AS pid,
            current_user::text AS role,
+           session_user::text AS session_role,
            current_setting('app.tenant_id', true) AS tenant
   `;
   const [state] = rows;
@@ -55,7 +76,7 @@ beforeAll(async () => {
   });
 
   // Created through withTenant, the same path the API uses.
-  companyA = await withTenant(owner, tenantA.id, (tx) =>
+  companyA = await withTenant(runtime, tenantA.id, (tx) =>
     tx.company.create({
       data: {
         tenantId: tenantA.id,
@@ -65,7 +86,7 @@ beforeAll(async () => {
       },
     }),
   );
-  companyB = await withTenant(owner, tenantB.id, (tx) =>
+  companyB = await withTenant(runtime, tenantB.id, (tx) =>
     tx.company.create({
       data: {
         tenantId: tenantB.id,
@@ -81,20 +102,22 @@ afterAll(async () => {
   await owner.company.deleteMany({ where: { tenantId: { in: [tenantA.id, tenantB.id] } } });
   await owner.tenant.deleteMany({ where: { id: { in: [tenantA.id, tenantB.id] } } });
   await owner.$disconnect();
+  await runtime.$disconnect();
   await pooled.$disconnect();
+  await pooledOwner.$disconnect();
 });
 
 describe('M21 tenant isolation (row-level security)', () => {
   it('shows a tenant only its own companies', async () => {
-    const seenByA = await withTenant(owner, tenantA.id, (tx) => tx.company.findMany());
-    const seenByB = await withTenant(owner, tenantB.id, (tx) => tx.company.findMany());
+    const seenByA = await withTenant(runtime, tenantA.id, (tx) => tx.company.findMany());
+    const seenByB = await withTenant(runtime, tenantB.id, (tx) => tx.company.findMany());
 
     expect(seenByA.map((c) => c.id)).toEqual([companyA.id]);
     expect(seenByB.map((c) => c.id)).toEqual([companyB.id]);
   });
 
   it('hides another tenant’s company even when its id is known', async () => {
-    const stolen = await withTenant(owner, tenantA.id, (tx) =>
+    const stolen = await withTenant(runtime, tenantA.id, (tx) =>
       tx.company.findUnique({ where: { id: companyB.id } }),
     );
 
@@ -102,36 +125,36 @@ describe('M21 tenant isolation (row-level security)', () => {
   });
 
   it('counts only its own rows', async () => {
-    const count = await withTenant(owner, tenantA.id, (tx) => tx.company.count());
+    const count = await withTenant(runtime, tenantA.id, (tx) => tx.company.count());
 
     expect(count).toBe(1);
   });
 
   it('cannot update another tenant’s company', async () => {
-    const result = await withTenant(owner, tenantA.id, (tx) =>
+    const result = await withTenant(runtime, tenantA.id, (tx) =>
       tx.company.updateMany({ where: { id: companyB.id }, data: { name: 'taken over' } }),
     );
 
     expect(result.count).toBe(0);
 
-    const untouched = await withTenant(owner, tenantB.id, (tx) =>
+    const untouched = await withTenant(runtime, tenantB.id, (tx) =>
       tx.company.findUniqueOrThrow({ where: { id: companyB.id } }),
     );
     expect(untouched.name).toBe('Tenant B Company');
   });
 
   it('cannot delete another tenant’s company', async () => {
-    const result = await withTenant(owner, tenantA.id, (tx) =>
+    const result = await withTenant(runtime, tenantA.id, (tx) =>
       tx.company.deleteMany({ where: { id: companyB.id } }),
     );
 
     expect(result.count).toBe(0);
-    expect(await withTenant(owner, tenantB.id, (tx) => tx.company.count())).toBe(1);
+    expect(await withTenant(runtime, tenantB.id, (tx) => tx.company.count())).toBe(1);
   });
 
   it('cannot create a company for another tenant', async () => {
     await expect(
-      withTenant(owner, tenantA.id, (tx) =>
+      withTenant(runtime, tenantA.id, (tx) =>
         tx.company.create({
           data: {
             tenantId: tenantB.id,
@@ -148,15 +171,15 @@ describe('M21 tenant isolation (row-level security)', () => {
 
   it('cannot move its own company to another tenant', async () => {
     await expect(
-      withTenant(owner, tenantA.id, (tx) =>
+      withTenant(runtime, tenantA.id, (tx) =>
         tx.company.update({ where: { id: companyA.id }, data: { tenantId: tenantB.id } }),
       ),
     ).rejects.toThrow(/row-level security/i);
   });
 
   it('shows a tenant only its own tenant row', async () => {
-    const tenants = await withTenant(owner, tenantA.id, (tx) => tx.tenant.findMany());
-    const other = await withTenant(owner, tenantA.id, (tx) =>
+    const tenants = await withTenant(runtime, tenantA.id, (tx) => tx.tenant.findMany());
+    const other = await withTenant(runtime, tenantA.id, (tx) =>
       tx.tenant.findUnique({ where: { id: tenantB.id } }),
     );
 
@@ -176,65 +199,130 @@ describe('M21 tenant isolation (row-level security)', () => {
 
   it('does not let the application role switch the policy off', async () => {
     await expect(
-      withTenant(owner, tenantA.id, (tx) =>
+      withTenant(runtime, tenantA.id, (tx) =>
         tx.$executeRawUnsafe('ALTER TABLE "company" DISABLE ROW LEVEL SECURITY'),
       ),
     ).rejects.toThrow();
 
     // Still enforced afterwards.
-    expect(await withTenant(owner, tenantA.id, (tx) => tx.company.count())).toBe(1);
+    expect(await withTenant(runtime, tenantA.id, (tx) => tx.company.count())).toBe(1);
   });
 
   it('rejects a tenant id that is not a UUID', async () => {
     await expect(
-      withTenant(owner, "' OR 1=1 --", (tx) => tx.company.findMany()),
+      withTenant(runtime, "' OR 1=1 --", (tx) => tx.company.findMany()),
     ).rejects.toThrow(/must be a UUID/);
   });
 });
 
-describe('M21 every tenant-scoped table is protected', () => {
-  // Guards rule 1 for tables added later: a new table with tenant_id and no policy
-  // fails here instead of leaking in production.
-  it('has row-level security enabled, forced and a policy on every table with tenant_id', async () => {
-    const tables = await owner.$queryRaw<
-      { table_name: string; rls_enabled: boolean; rls_forced: boolean; policy_count: number }[]
-    >`
-      SELECT c.relname::text AS table_name,
-             c.relrowsecurity AS rls_enabled,
-             c.relforcerowsecurity AS rls_forced,
-             (SELECT count(*) FROM pg_policy p WHERE p.polrelid = c.oid)::int AS policy_count
-      FROM pg_class c
-      JOIN pg_namespace n ON n.oid = c.relnamespace
-      WHERE n.nspname = 'public'
-        AND c.relkind = 'r'
-        AND EXISTS (
+interface TableProtection {
+  table_name: string;
+  rls_enabled: boolean;
+  rls_forced: boolean;
+  policy_count: number;
+}
+
+/**
+ * Every tenant-scoped table: anything carrying tenant_id, plus `tenant` itself,
+ * which is scoped by its own id.
+ */
+async function tenantScopedTables(): Promise<TableProtection[]> {
+  return owner.$queryRaw<TableProtection[]>`
+    SELECT c.relname::text AS table_name,
+           c.relrowsecurity AS rls_enabled,
+           c.relforcerowsecurity AS rls_forced,
+           (SELECT count(*) FROM pg_policy p WHERE p.polrelid = c.oid)::int AS policy_count
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public'
+      AND c.relkind = 'r'
+      AND (
+        c.relname = 'tenant'
+        OR EXISTS (
           SELECT 1 FROM pg_attribute a
           WHERE a.attrelid = c.oid AND a.attname = 'tenant_id' AND NOT a.attisdropped
         )
-      ORDER BY c.relname
-    `;
+      )
+    ORDER BY c.relname
+  `;
+}
 
-    expect(tables.length).toBeGreaterThan(0);
+describe('M21 every tenant-scoped table is protected', () => {
+  // Guards rule 1 for tables added later: a new table with tenant_id and no policy,
+  // or with row-level security enabled but not forced, fails here instead of leaking
+  // in production.
+  it('has row-level security enabled, forced and a policy on every tenant-scoped table', async () => {
+    const tables = await tenantScopedTables();
+
+    expect(tables.map((t) => t.table_name)).toEqual(expect.arrayContaining(['company', 'tenant']));
     for (const table of tables) {
-      expect(table, `${table.table_name}: row-level security`).toMatchObject({
-        rls_enabled: true,
-        rls_forced: true,
-      });
-      expect(table.policy_count, `${table.table_name}: policies`).toBeGreaterThan(0);
+      expect(table.rls_enabled, `${table.table_name}: row-level security is enabled`).toBe(true);
+      // Without FORCE, the policies do not apply to the table's owner, so anything
+      // connecting as the owner would read every tenant's rows.
+      expect(table.rls_forced, `${table.table_name}: row-level security is FORCEd`).toBe(true);
+      expect(table.policy_count, `${table.table_name}: has a policy`).toBeGreaterThan(0);
     }
   });
 
   it('protects the tenant table itself', async () => {
-    const rows = await owner.$queryRaw<{ rls_enabled: boolean; policy_count: number }[]>`
-      SELECT c.relrowsecurity AS rls_enabled,
-             (SELECT count(*) FROM pg_policy p WHERE p.polrelid = c.oid)::int AS policy_count
-      FROM pg_class c
-      JOIN pg_namespace n ON n.oid = c.relnamespace
-      WHERE n.nspname = 'public' AND c.relname = 'tenant'
-    `;
+    const tenantTable = (await tenantScopedTables()).find((t) => t.table_name === 'tenant');
 
-    expect(rows[0]?.rls_enabled).toBe(true);
-    expect(rows[0]?.policy_count).toBeGreaterThan(0);
+    expect(tenantTable).toMatchObject({ rls_enabled: true, rls_forced: true });
+    expect(tenantTable?.policy_count).toBeGreaterThan(0);
+  });
+});
+
+describe('M21 the runtime pool fails closed', () => {
+  // The API's pool connects as cpeople_app, which owns no table. Any query it runs
+  // is subject to the policies, so forgetting withTenant() returns nothing instead
+  // of every tenant's rows.
+
+  it('connects as the unprivileged runtime role, not as the owner', async () => {
+    const state = await connectionState(runtime);
+
+    expect(state.role).toBe(APP_DB_ROLE);
+    expect(state.tenant).toBeFalsy();
+  });
+
+  it('returns zero rows, not every row, for a query that skips withTenant', async () => {
+    // The rows exist: the owner can see them.
+    expect(await owner.company.count()).toBeGreaterThanOrEqual(2);
+    expect(await owner.tenant.count()).toBeGreaterThanOrEqual(2);
+
+    // The runtime pool, with no tenant context, sees none of them.
+    expect(await runtime.company.findMany()).toEqual([]);
+    expect(await runtime.company.count()).toBe(0);
+    expect(await runtime.tenant.findMany()).toEqual([]);
+    expect(await runtime.company.findUnique({ where: { id: companyA.id } })).toBeNull();
+  });
+
+  it('cannot write outside a tenant context either', async () => {
+    await expect(
+      runtime.company.create({
+        data: {
+          tenantId: tenantA.id,
+          name: `unscoped-${run}`,
+          legalName: 'Unscoped SARL',
+          defaultCurrency: 'MAD',
+        },
+      }),
+    ).rejects.toThrow(/row-level security/i);
+
+    expect(await owner.company.count({ where: { name: `unscoped-${run}` } })).toBe(0);
+  });
+
+  it('cannot provision a tenant, which is the owner’s job', async () => {
+    await expect(
+      runtime.tenant.create({
+        data: { slug: `runtime-${run}`, name: 'Runtime Tenant', countryCode: 'MA' },
+      }),
+    ).rejects.toThrow(/permission denied/i);
+  });
+
+  it('cannot read a table it was never granted', async () => {
+    await expect(
+      runtime.$queryRawUnsafe('SELECT count(*) FROM _prisma_migrations'),
+    ).rejects.toThrow(/permission denied/i);
   });
 });
 
@@ -258,7 +346,8 @@ describe('M21 the tenant context is transaction-scoped', () => {
     // Same backend, so this is the very connection that had tenant A's context.
     expect(after.pid).toBe(inside.pid);
     expect(after.tenant).toBeFalsy();
-    expect(after.role).not.toBe(APP_DB_ROLE);
+    // SET LOCAL ROLE is gone: the connection is back to whoever it logged in as.
+    expect(after.role).toBe(after.session_role);
   });
 
   it('leaves nothing behind when the transaction fails', async () => {
@@ -275,7 +364,7 @@ describe('M21 the tenant context is transaction-scoped', () => {
 
     expect(after.pid).toBe(before.pid);
     expect(after.tenant).toBeFalsy();
-    expect(after.role).not.toBe(APP_DB_ROLE);
+    expect(after.role).toBe(after.session_role);
   });
 
   it('gives consecutive requests on one connection their own tenant', async () => {
@@ -318,5 +407,34 @@ describe('M21 the tenant context is transaction-scoped', () => {
     }
 
     expect((await connectionState(pooled)).tenant).toBeFalsy();
+  });
+});
+
+describe('M21 withTenant protects an owner connection too', () => {
+  // The runtime pool is cpeople_app, so the policies apply to it whatever it does.
+  // withTenant does not rely on that: it drops to the same role itself, which is what
+  // keeps a command-line tool or a future provisioning job from reading across
+  // tenants when it means to work inside one.
+
+  it('drops the owner to the runtime role for the transaction, then gives it back', async () => {
+    const inside = await withTenant(pooledOwner, tenantA.id, (tx) => connectionState(tx));
+    const after = await connectionState(pooledOwner);
+
+    expect(inside.role).toBe(APP_DB_ROLE);
+    expect(inside.session_role).not.toBe(APP_DB_ROLE);
+    expect(inside.tenant).toBe(tenantA.id);
+
+    expect(after.pid).toBe(inside.pid);
+    expect(after.role).toBe(after.session_role);
+    expect(after.role).not.toBe(APP_DB_ROLE);
+    expect(after.tenant).toBeFalsy();
+  });
+
+  it('isolates an owner connection to one tenant', async () => {
+    const seen = await withTenant(pooledOwner, tenantA.id, (tx) => tx.company.findMany());
+
+    expect(seen.map((c) => c.id)).toEqual([companyA.id]);
+    // The same connection, outside withTenant, is the owner again and sees everything.
+    expect(await pooledOwner.company.count()).toBeGreaterThanOrEqual(2);
   });
 });

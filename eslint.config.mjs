@@ -39,6 +39,17 @@ export default tseslint.config(
   },
 
   {
+    // Plain Node scripts: no TypeScript to describe the runtime for them.
+    files: ['**/*.mjs'],
+    languageOptions: {
+      globals: { process: 'readonly', console: 'readonly' },
+    },
+    rules: {
+      'no-console': 'off',
+    },
+  },
+
+  {
     files: ['apps/web/**/*.{ts,tsx}'],
     plugins: { 'react-hooks': reactHooks },
     rules: {

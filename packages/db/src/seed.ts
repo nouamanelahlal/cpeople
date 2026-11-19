@@ -4,9 +4,9 @@
 // Runs as the database owner, which bypasses the row-level-security policies, so it
 // can provision tenants. Application code cannot do this.
 
-import { createPrismaClient } from './client.js';
+import { createMigrationPrismaClient } from './client.js';
 
-const prisma = createPrismaClient();
+const prisma = createMigrationPrismaClient();
 
 async function main(): Promise<void> {
   const tenants = [

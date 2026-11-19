@@ -32,7 +32,11 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgresql://cpeople:cpeople_dev@localhost:5432/cpeople?schema=public
+      # The service container above is a throwaway database with the committed
+      # development credentials, so CI runs the same path a developer does: the
+      # scripts provision the cpeople_app login role and fall back to those URLs.
+      # Deployed environments set DATABASE_URL and MIGRATION_DATABASE_URL instead.
+      CPEOPLE_LOCAL_DEV: 'true'
 
     steps:
       - uses: actions/checkout@v4

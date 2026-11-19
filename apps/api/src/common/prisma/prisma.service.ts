@@ -1,40 +1,41 @@
 import { Injectable, OnApplicationShutdown, OnModuleInit } from '@nestjs/common';
-import {
-  createPrismaClient,
-  withTenant,
-  type CPeoplePrismaClient,
-  type TenantClient,
-} from '@cpeople/db';
+import { createPrismaClient, withTenant, type TenantClient } from '@cpeople/db';
 import { TenantContextService } from '../tenant/tenant-context.service.js';
 
 /**
  * Database access for the API.
  *
- * Everything that serves a request goes through forCurrentTenant(), which opens a
- * transaction as the unprivileged cpeople_app role with app.tenant_id set, so the
- * row-level-security policies decide what it can see (CLAUDE.md rule 1, M21).
+ * Two things keep a request inside its own tenant, and they are independent:
+ *
+ *  - the pool connects as cpeople_app, which owns no table and holds only the grants
+ *    it needs, so the row-level-security policies apply to everything it runs. A
+ *    query that skips the tenant context therefore returns nothing, rather than
+ *    every tenant's rows;
+ *  - forCurrentTenant() opens a transaction with that tenant set, which is what
+ *    makes the policies select the right rows.
+ *
+ * The client itself is private: forTenant() and forCurrentTenant() are the only ways
+ * to reach the database from here (CLAUDE.md rule 1, M21). There is no owner
+ * connection in the API at all — migrations and tenant provisioning are
+ * command-line work, on their own connection.
  */
 @Injectable()
 export class PrismaService implements OnModuleInit, OnApplicationShutdown {
-  /**
-   * The owner connection. It can read every tenant, so it is reserved for
-   * provisioning, migration and platform jobs. Never use it to serve a request.
-   */
-  readonly owner: CPeoplePrismaClient = createPrismaClient();
+  readonly #client = createPrismaClient();
 
   constructor(private readonly tenantContext: TenantContextService) {}
 
   async onModuleInit(): Promise<void> {
-    await this.owner.$connect();
+    await this.#client.$connect();
   }
 
   async onApplicationShutdown(): Promise<void> {
-    await this.owner.$disconnect();
+    await this.#client.$disconnect();
   }
 
   /** Runs `fn` scoped to one tenant. */
   forTenant<T>(tenantId: string, fn: (tx: TenantClient) => Promise<T>): Promise<T> {
-    return withTenant(this.owner, tenantId, fn);
+    return withTenant(this.#client, tenantId, fn);
   }
 
   /** Runs `fn` scoped to the tenant of the current request. */

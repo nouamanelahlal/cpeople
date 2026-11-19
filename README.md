@@ -33,12 +33,22 @@ Setting it in a deployed environment stops the API at boot. See CLAUDE.md for bo
 
 ## Tenant isolation
 
-Every business table carries `tenant_id` and is protected by a Postgres row-level-security
-policy (`packages/db/prisma/migrations/*_row_level_security`). Application code reaches the
-database only through `withTenant()`, which opens a transaction as the unprivileged
-`cpeople_app` role with `app.tenant_id` set, so the policies — not the query — decide what
-is visible. `packages/db/test/rls.spec.ts` proves it, and fails if a new table with a
-`tenant_id` ever ships without a policy.
+Every tenant table carries `tenant_id`, has a Postgres row-level-security policy, and is
+`FORCE ROW LEVEL SECURITY` so the policy applies to the table owner too.
+
+Two independent things keep a request inside its own tenant:
+
+1. **The runtime pool connects as `cpeople_app`**, which owns no table and holds only the
+   grants it needs, so the policies apply to everything it runs. A query that skips
+   `withTenant()` returns **zero rows**, not every tenant's rows. The owner role is used only
+   by migrations and seeds, on its own connection (`MIGRATION_DATABASE_URL`).
+2. **`withTenant()`** opens a transaction with `SET LOCAL ROLE cpeople_app` and
+   `app.tenant_id` set, which is what makes the policies select the right rows. It is the only
+   way to run a tenant-scoped query — `PrismaService` keeps its client private, and the API has
+   no owner connection at all.
+
+`packages/db/test/rls.spec.ts` proves all of it, and fails if a new tenant table ever ships
+without row-level security, without `FORCE`, or without a policy.
 
 ## Layout
 
