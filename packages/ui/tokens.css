@@ -1,0 +1,29 @@
+/* ConSAP design tokens — the single source of truth for CPeople colour and type.
+   Approved brand, fixed (CLAUDE.md rule 10). Never redefine these values in an app:
+   import this file and use the tokens.
+
+   Tailwind v4 reads the @theme block and exposes every token as a utility
+   (--color-navy -> text-navy / bg-navy / border-navy). */
+
+@theme {
+  /* Brand */
+  --color-navy: #0f1937; /* ink: headings, body emphasis. No large navy surfaces. */
+  --color-cyan: #3fb3d7; /* fills, icons, focus ring, badges. Too light for small text. */
+  --color-blue: #0e7bb0; /* hero panels, links, secondary actions, "BY CONSAP" */
+  --color-light-cyan: #5dcbe5; /* accents on dark backgrounds */
+  --color-night: #060a14; /* dark surfaces only */
+
+  /* Surfaces */
+  --color-page: #f0f0f0; /* app background */
+  --color-tint: #e6f3fa; /* selected rows, info panels */
+  --color-card-border: #e3e7ee; /* border of white cards */
+
+  /* Text */
+  --color-body: #4e566b; /* body text */
+
+  /* Type: Montserrat only. 300 for display figures and page titles,
+     400 for body, 600 for labels and buttons.
+     --font-montserrat is set by next/font in apps/web; the literal name is the
+     fallback for locally installed Montserrat. */
+  --font-sans: var(--font-montserrat), Montserrat, ui-sans-serif, system-ui, sans-serif;
+}

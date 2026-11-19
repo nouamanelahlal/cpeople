@@ -1,0 +1,31 @@
+@import 'tailwindcss';
+@import '@cpeople/ui/tokens.css';
+
+/* House rules from the approved brand (docs/design/home-dashboard.dc.html).
+   Anything brand-wide belongs in @cpeople/ui, not here. */
+
+@layer base {
+  body {
+    background-color: var(--color-page);
+    color: var(--color-body);
+    font-family: var(--font-sans);
+  }
+
+  /* Tabular figures everywhere an amount, a date or a count is shown. */
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+
+  a {
+    color: var(--color-blue);
+  }
+
+  a:hover {
+    color: var(--color-navy);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-cyan);
+    outline-offset: 2px;
+  }
+}

@@ -1,0 +1,59 @@
+// CPeople database schema.
+//
+// Rules that apply to every model here (CLAUDE.md):
+//  1. Every business table carries tenant_id and is protected by a row-level-security
+//     policy. See the migration 0002_row_level_security and test/rls.spec.ts.
+//  2. Nothing country-specific in the core: Moroccan identifiers (CIN, CNSS, CIMR...)
+//     belong to packages/country-packs/ma, never to a core table.
+//  4. Money is stored in integer minor units with its currency, never as a float.
+//  6. Salary, CIN and RIB are encrypted at field level.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  // ESM with .js specifiers: NestJS 12 and Prisma 7 are both ESM-only, and tsc
+  // resolves "./x.js" to the generated "./x.ts" source when it compiles the package.
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+  runtime             = "nodejs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// A customer of CPeople (M01 / HR-08). The root of tenant isolation: every other
+/// table points at it through tenant_id.
+model Tenant {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  /// Short stable key used in URLs and configuration, e.g. "smg".
+  slug        String   @unique
+  name        String
+  /// ISO 3166-1 alpha-2. Selects the country pack (M24), e.g. "MA".
+  countryCode String   @map("country_code") @db.Char(2)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  companies Company[]
+
+  @@map("tenant")
+}
+
+/// A legal entity inside a tenant (M01 / IMP-01). Country-neutral by design:
+/// the Moroccan employer identifiers hang off the MA country pack, not off this table.
+model Company {
+  id       String @id @default(uuid(7)) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  name     String
+  legalName String @map("legal_name")
+  /// ISO 4217. Stored with the company so every amount it owns carries a currency.
+  defaultCurrency String   @map("default_currency") @db.Char(3)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("company")
+}

@@ -10,3 +10,10 @@ coverage/
 playwright-report/
 test-results/
 blob-report/
+
+# Prisma client, generated from packages/db/prisma/schema.prisma
+packages/db/src/generated/
+# TypeScript incremental build state
+*.tsbuildinfo
+# Screenshots from the Playwright MCP browser
+.playwright-mcp/

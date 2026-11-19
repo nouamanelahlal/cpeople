@@ -1,5 +1,4 @@
 # CPeople CI: runs on every push to main and on every pull request.
-# Steps that need code that doesn't exist yet are skipped until it does.
 name: CI
 
 on:
@@ -15,6 +14,26 @@ jobs:
   checks:
     name: Lint, types and unit tests
     runs-on: ubuntu-latest
+
+    # The row-level-security tests run against a real Postgres: a policy cannot be
+    # proved against a mock. Fake local credentials, the same as infra/docker.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: cpeople
+          POSTGRES_PASSWORD: cpeople_dev
+          POSTGRES_DB: cpeople
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://cpeople:cpeople_dev@localhost:5432/cpeople?schema=public
+
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -23,9 +42,10 @@ jobs:
           node-version: lts/*
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm -r --if-present lint
-      - run: pnpm -r --if-present typecheck
-      - run: pnpm -r --if-present test
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
 
   e2e:
     name: Playwright end-to-end
@@ -33,24 +53,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Skip until the web app exists
-        id: app
-        run: echo "exists=$([ -f apps/web/package.json ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
       - uses: pnpm/action-setup@v4
-        if: steps.app.outputs.exists == 'true'
       - uses: actions/setup-node@v4
-        if: steps.app.outputs.exists == 'true'
         with:
           node-version: lts/*
           cache: pnpm
-      - if: steps.app.outputs.exists == 'true'
-        run: pnpm install --frozen-lockfile
-      - if: steps.app.outputs.exists == 'true'
-        run: pnpm exec playwright install --with-deps chromium
-      - if: steps.app.outputs.exists == 'true'
-        run: pnpm e2e
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm e2e
       - uses: actions/upload-artifact@v4
-        if: failure() && steps.app.outputs.exists == 'true'
+        if: failure()
         with:
           name: playwright-report
           path: playwright-report/

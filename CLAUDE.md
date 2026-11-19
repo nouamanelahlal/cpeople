@@ -49,11 +49,20 @@ organisation · employees · time-absence · payroll · payslips · declarations
 ## Environments
 Dev (dev.cpeople.ma), Test (test.cpeople.ma), Prod (app.cpeople.ma). Each has its own database, Keycloak realm, secrets and storage. The same build moves Dev → Test → Prod and is never rebuilt in between.
 
-## Commands (to fill in once scaffolded)
-- `pnpm install`
+## Commands
+Once, on a new machine:
+- `corepack enable` · `pnpm install` · `pnpm exec playwright install chromium`
 - `docker compose -f infra/docker/docker-compose.yml up -d`
-- `pnpm dev` · `pnpm test` · `pnpm lint` · `pnpm db:migrate`
-- `pnpm exec playwright install chromium` (once) · `pnpm e2e` · `pnpm e2e:ui` · `pnpm e2e:report`
+- `pnpm db:migrate` (creates the schema and the row-level-security policies) · `pnpm db:seed` (fake tenants)
+
+Day to day:
+- `pnpm dev` — web on :3000, API on :3100 (`/api/docs` for OpenAPI)
+- `pnpm test` · `pnpm lint` · `pnpm typecheck` · `pnpm build`
+- `pnpm e2e` · `pnpm e2e:ui` · `pnpm e2e:report`
+- `pnpm db:deploy` (apply migrations) · `pnpm db:reset` (drop and rebuild, dev only)
+
+`pnpm test` and `pnpm db:*` need the local Postgres up. With no `DATABASE_URL` set they use the
+local Docker credentials; Dev, Test and Prod each set their own.
 
 ## Browser automation
 Playwright only (tests in `e2e/`, live browser via `.mcp.json`). Do not add Puppeteer: it duplicates Playwright. Payslip and contract PDFs come from Gotenberg, not a headless browser in the app.
