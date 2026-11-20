@@ -1,7 +1,7 @@
 import type { JSX } from 'react';
 import type { KcContext } from '../KcContext';
 import type { I18n } from '../i18n';
-import { Alert, SignInLayout } from '../components/SignInLayout';
+import { SignInLayout } from '../components/SignInLayout';
 import { IdentityProviders } from '../components/IdentityProviders';
 import { MailIcon, PersonIcon } from '../components/Icons';
 import { PageMessage } from './PageMessage';
@@ -53,11 +53,7 @@ export default function LoginUsername(
         </>
       }
     >
-      <PageMessage kcContext={kcContext} i18n={i18n} />
-
-      {messagesPerField.existsError('username') && (
-        <Alert kind="error">{messagesPerField.getFirstError('username')}</Alert>
-      )}
+      <PageMessage kcContext={kcContext} i18n={i18n} field="username" />
 
       <form className="cp-fields" action={url.loginAction} method="post">
         <IdentityProviders i18n={i18n} providers={providers} />

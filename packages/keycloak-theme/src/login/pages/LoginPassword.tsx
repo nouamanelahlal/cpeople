@@ -31,7 +31,7 @@ export default function LoginPassword(
         </>
       }
     >
-      <PageMessage kcContext={kcContext} i18n={i18n} />
+      <PageMessage kcContext={kcContext} i18n={i18n} field="password" />
 
       {signingInAs !== undefined && (
         <div className="cp-identity">

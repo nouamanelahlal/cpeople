@@ -22,7 +22,7 @@ export default function LoginResetPassword(
       subhead={msgStr('cpResetSubtitle')}
       back={{ href: url.loginUrl, label: msgStr('cpBackToSignIn') }}
     >
-      <PageMessage kcContext={kcContext} i18n={i18n} />
+      <PageMessage kcContext={kcContext} i18n={i18n} field="username" />
 
       <form className="cp-fields" action={url.loginAction} method="post">
         <label className="cp-visually-hidden" htmlFor="username">

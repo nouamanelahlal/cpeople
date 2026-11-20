@@ -22,7 +22,7 @@ export default function LoginUpdatePassword(
       headline={msgStr('cpNewPasswordTitle')}
       subhead={msgStr('cpNewPasswordSubtitle')}
     >
-      <PageMessage kcContext={kcContext} i18n={i18n} />
+      <PageMessage kcContext={kcContext} i18n={i18n} field="password" />
 
       <form className="cp-fields" action={url.loginAction} method="post">
         <PasswordField

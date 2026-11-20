@@ -48,17 +48,21 @@ export function Showcase(props: { i18n: I18n; iconUrl: string }): JSX.Element {
   return (
     <aside className="cp-showcase" aria-label={msgStr('cpShowcaseAria')}>
       <div className="cp-showcase-panel">
-        <div className="cp-tiles" aria-hidden="true">
-          {Array.from({ length: TILE_COUNT }, (_, index) => (
-            <div key={index} className="cp-tile" />
-          ))}
-        </div>
+        <div className="cp-showcase-top">
+          <div className="cp-tiles-area" aria-hidden="true">
+            <div className="cp-tiles">
+              {Array.from({ length: TILE_COUNT }, (_, index) => (
+                <div key={index} className="cp-tile" />
+              ))}
+            </div>
+          </div>
 
-        <img className="cp-float" src={iconUrl} alt="" aria-hidden="true" />
+          <img className="cp-float" src={iconUrl} alt="" aria-hidden="true" />
 
-        <div className="cp-showcase-copy">
-          <h2>{msgStr('cpShowcaseTitle')}</h2>
-          <p>{msgStr('cpShowcaseBody')}</p>
+          <div className="cp-showcase-copy">
+            <h2>{msgStr('cpShowcaseTitle')}</h2>
+            <p>{msgStr('cpShowcaseBody')}</p>
+          </div>
         </div>
 
         <ul className="cp-activity" aria-label={msgStr('cpActivityAria')}>
