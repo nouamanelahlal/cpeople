@@ -23,6 +23,30 @@ unknown fields, so the JSON carries no comments; this file is where the reasonin
 
 Admin console: http://localhost:8080 (`admin` / `admin_dev`, local only).
 
+## The sign-in pages
+
+The pages themselves are a Keycloakify theme in `packages/keycloak-theme`: React, built
+into a Keycloak theme jar. Build it, then reload Keycloak:
+
+```bash
+pnpm kc:theme
+docker compose -f infra/docker/docker-compose.yml up -d --force-recreate keycloak
+```
+
+The jar lands in `infra/keycloak/providers/`, which is mounted into the container and is
+**not** committed — it is a build artifact. Without it Keycloak falls back to its own pages
+and sign-in still works, which is why a fresh clone is never broken, only unbranded.
+
+Keycloakify packages the theme with Apache Maven. Nothing here needs a JDK installed:
+`infra/keycloak/theme-builder/bin/mvn` runs the real Maven in a container, and the `.cmd`
+beside it does the same on Windows, where Node looks for `mvn.cmd`.
+
+`CPEOPLE_BOOK_A_DEMO_URL` on the Keycloak container is where the header's "Book a demo"
+points; each environment sets its own.
+
+The e-mails are a plain folder theme in `themes/cpeople/email`, with the same wording in
+English and French as the pages.
+
 ### Organisation membership is not in the import
 
 Realm import reads the organisations before it reads the user file, so a `members` list in

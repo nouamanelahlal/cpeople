@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Apache Maven, in a container.
+#
+# Keycloakify packages the built theme into a jar with Maven. Rather than ask every
+# developer (and CI) to install a JDK and Maven, this runs the real thing in Docker,
+# in the directory Keycloakify invoked it from. Keycloakify cannot tell the
+# difference: `mvn --version` answers exactly as the real command does.
+#
+# The ~/.m2 cache lives in a named volume, so only the first build downloads plugins.
+set -euo pipefail
+
+export MSYS_NO_PATHCONV=1
+export MSYS2_ARG_CONV_EXCL='*'
+
+# A Windows-shaped path when run from Git Bash, the plain one everywhere else.
+workdir="$(pwd -W 2>/dev/null || pwd)"
+
+exec docker run --rm \
+  -v "$workdir:/workdir" \
+  -v cpeople-maven-cache:/root/.m2 \
+  -w /workdir \
+  maven:3.9-eclipse-temurin-21 \
+  mvn "$@"

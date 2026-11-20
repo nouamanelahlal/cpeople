@@ -1,0 +1,37 @@
+/* ConSAP design tokens — the single source of truth for CPeople colour and type.
+   Approved brand, fixed (CLAUDE.md rule 10).
+
+   Plain custom properties, so anything can use them: Tailwind maps them into its
+   theme in tokens.css, and the Keycloak sign-in theme imports this file directly. */
+
+:root {
+  /* Brand */
+  --cp-navy: #0f1937; /* ink: headings, body emphasis. No large navy surfaces. */
+  --cp-cyan: #3fb3d7; /* fills, icons, focus ring, badges. Too light for small text. */
+  --cp-blue: #0e7bb0; /* hero panels, links, secondary actions, "BY CONSAP" */
+  --cp-blue-hover: #0b6a98; /* the only darker blue: primary button hover */
+  --cp-light-cyan: #5dcbe5; /* accents on dark backgrounds */
+  --cp-night: #060a14; /* dark surfaces only */
+
+  /* Surfaces */
+  --cp-page: #f0f0f0; /* app background */
+  --cp-tint: #e6f3fa; /* selected rows, info panels */
+  --cp-card-border: #e3e7ee; /* border of white cards */
+  --cp-field-border: #dce2ea; /* border of inputs and quiet buttons */
+
+  /* Text */
+  --cp-body: #4e566b; /* body text */
+
+  /* Status. Checked for AA on their own background. */
+  --cp-danger-bg: #fdedec;
+  --cp-danger-border: #f5c2c0;
+  --cp-danger-ink: #8e1f1b; /* 7.4:1 on --cp-danger-bg */
+  --cp-success-bg: #eaf7f0;
+  --cp-success-border: #bde5cf;
+  --cp-success-ink: #1b6b45; /* 5.5:1 on --cp-success-bg */
+  --cp-working: #ffc46b; /* in-progress dot, on dark glass only */
+  --cp-done: #9df0c6; /* done tick, on dark glass only */
+
+  /* Type: Montserrat only. 300 display, 400 body, 600 labels and buttons. */
+  --cp-font-sans: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+}

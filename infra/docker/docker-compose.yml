@@ -35,10 +35,17 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin_dev
+      # Read by the sign-in theme: where "Book a demo" in the header points.
+      # Each environment sets its own.
+      CPEOPLE_BOOK_A_DEMO_URL: https://consap.ma/cpeople
     volumes:
       - ../keycloak/import:/keycloak-import-base:ro
       - ../keycloak/import-local-dev:/keycloak-import-local-dev:ro
       - ../keycloak/themes:/opt/keycloak/themes:ro
+      # The Keycloakify sign-in theme, built by `pnpm kc:theme`. It is a build
+      # artifact, so it is not committed; without it Keycloak falls back to the
+      # stock pages and everything still works.
+      - ../keycloak/providers:/opt/keycloak/providers
     depends_on: [mailpit]
     ports: ["8080:8080"]
 

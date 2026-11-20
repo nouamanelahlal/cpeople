@@ -64,6 +64,10 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
+      # The sign-in pages are ours (packages/keycloak-theme), so the tests need the
+      # theme in place. Node runs here, Maven in a container; see the build script.
+      - name: Build the sign-in theme
+        run: pnpm kc:theme
       # Sign-in is tested against the real Keycloak realm, and the password-reset
       # test reads the message out of Mailpit, so the whole local stack comes up.
       - name: Start the local stack

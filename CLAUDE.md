@@ -88,6 +88,9 @@ Keycloak. See `infra/keycloak/README.md`; in short:
   match `DEMO_TENANT_IDS` in `packages/db/src/seed.ts`.
 - Membership of the local fake users is applied by `pnpm kc:local-dev`, because realm import
   reads the organisations before the user file. The end-to-end suite runs it itself.
+- The sign-in pages are ours: a Keycloakify (React) theme in `packages/keycloak-theme`,
+  following `docs/design/login*.dc.html`. Build it with `pnpm kc:theme`; the jar is a build
+  artifact and is not committed.
 - The web app is a plain OpenID Connect client (`openid-client`): authorization code with PKCE,
   an encrypted httpOnly session cookie, refresh through `/api/auth/refresh`, and sign-out that
   ends the Keycloak session too. Every page is protected unless it is listed in `PUBLIC_PATHS`

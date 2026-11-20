@@ -1,0 +1,681 @@
+/* CPeople sign-in theme.
+   Values follow docs/design/login*.dc.html; colours come from the ConSAP tokens and
+   are never redefined here (CLAUDE.md rule 10).
+   Spacing uses logical properties throughout, so Arabic works later without a rewrite. */
+
+@import '@cpeople/ui/tokens.vars.css';
+
+:root {
+  --cp-radius-field: 12px;
+  --cp-radius-panel: 28px;
+  --cp-field-height: 48px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--cp-page);
+  color: var(--cp-navy);
+  font-family: var(--cp-font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--cp-blue);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--cp-navy);
+}
+
+button,
+input {
+  font-family: inherit;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--cp-cyan);
+  outline-offset: 2px;
+}
+
+/* ---------- Shell ---------- */
+
+.cp-shell {
+  display: flex;
+  flex-wrap: wrap;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.cp-main {
+  flex: 1 1 480px;
+  min-width: 0;
+  padding: 28px clamp(20px, 4vw, 48px);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.cp-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cp-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cp-logo img {
+  display: block;
+}
+
+.cp-logo-wordmark {
+  height: 32px;
+  width: auto;
+}
+
+.cp-header-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--cp-body);
+}
+
+.cp-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.cp-card {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.cp-badge {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid var(--cp-card-border);
+  box-shadow: 0 6px 16px rgba(15, 25, 55, 0.06);
+  color: var(--cp-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  flex: none;
+}
+
+.cp-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: center;
+}
+
+.cp-heading h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  /* French headings run longer than English ones. */
+  text-wrap: balance;
+}
+
+.cp-heading p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--cp-body);
+}
+
+.cp-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cp-legal {
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--cp-body);
+}
+
+.cp-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--cp-body);
+}
+
+.cp-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  align-self: flex-start;
+}
+
+.cp-back svg {
+  /* Points back, whichever way the page reads. */
+  transform: scaleX(1);
+}
+
+[dir='rtl'] .cp-back svg {
+  transform: scaleX(-1);
+}
+
+/* ---------- Form controls ---------- */
+
+.cp-input {
+  height: var(--cp-field-height);
+  width: 100%;
+  padding-inline: 14px;
+  border: 1px solid var(--cp-field-border);
+  border-radius: var(--cp-radius-field);
+  font-size: 15px;
+  color: var(--cp-navy);
+  background: #ffffff;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.cp-input::placeholder {
+  color: var(--cp-body);
+  opacity: 0.75;
+}
+
+.cp-input:focus {
+  outline: none;
+  border-color: var(--cp-blue);
+  box-shadow: 0 0 0 4px rgba(63, 179, 215, 0.25);
+}
+
+.cp-input[aria-invalid='true'] {
+  border-color: #c0392b;
+}
+
+.cp-password {
+  position: relative;
+}
+
+.cp-password .cp-input {
+  padding-inline-end: 52px;
+}
+
+.cp-password-toggle {
+  position: absolute;
+  inset-inline-end: 4px;
+  top: 4px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--cp-body);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.cp-code {
+  height: 60px;
+  padding-inline: 18px;
+  font-size: 24px;
+  font-weight: 300;
+  letter-spacing: 0.3em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The wide spacing is for the digits. Applied to the placeholder it runs the
+   wording off the end of the field on a phone. */
+.cp-code::placeholder {
+  font-size: 15px;
+  letter-spacing: normal;
+}
+
+.cp-identity {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--cp-radius-field);
+  background: #ffffff;
+  border: 1px solid var(--cp-field-border);
+  font-size: 14px;
+}
+
+.cp-identity span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cp-identity a,
+.cp-identity button {
+  border: 0;
+  background: none;
+  padding: 4px;
+  color: var(--cp-blue);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  flex: none;
+}
+
+.cp-forgot {
+  align-self: flex-end;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ---------- Buttons ---------- */
+
+.cp-button {
+  height: var(--cp-field-height);
+  width: 100%;
+  border-radius: var(--cp-radius-field);
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 0;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.cp-button--primary {
+  background: var(--cp-blue);
+  color: #ffffff;
+}
+
+.cp-button--primary:hover {
+  background: var(--cp-blue-hover);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(14, 123, 176, 0.28);
+}
+
+.cp-button--light {
+  background: #ffffff;
+  color: var(--cp-navy);
+  border: 1px solid var(--cp-field-border);
+  height: 46px;
+}
+
+.cp-button--light:hover {
+  background: #f7fafc;
+  border-color: #bfddeb;
+  box-shadow: 0 4px 12px rgba(15, 25, 55, 0.06);
+}
+
+.cp-button--header {
+  height: 40px;
+  width: auto;
+  padding-inline: 16px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cp-button--primary:hover {
+    transform: translateY(-1px);
+  }
+}
+
+/* ---------- Identity providers ---------- */
+
+.cp-providers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cp-provider-logo {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.cp-separator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--cp-body);
+}
+
+.cp-separator::before,
+.cp-separator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--cp-field-border);
+}
+
+/* ---------- Messages ---------- */
+
+.cp-alert {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: var(--cp-radius-field);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.cp-alert svg {
+  flex: 0 0 18px;
+  margin-top: 2px;
+}
+
+.cp-alert--error {
+  background: var(--cp-danger-bg);
+  border: 1px solid var(--cp-danger-border);
+  color: var(--cp-danger-ink);
+}
+
+.cp-alert--error a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.cp-alert--success {
+  background: var(--cp-success-bg);
+  border: 1px solid var(--cp-success-border);
+  color: var(--cp-success-ink);
+}
+
+.cp-alert--info {
+  background: var(--cp-tint);
+  border: 1px solid #bfddeb;
+  color: var(--cp-navy);
+}
+
+/* ---------- Language ---------- */
+
+.cp-language {
+  position: relative;
+}
+
+.cp-language-button {
+  height: 36px;
+  padding-inline: 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--cp-body);
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.cp-language-button:hover {
+  background: #ffffff;
+  border-color: var(--cp-field-border);
+}
+
+.cp-language-menu {
+  position: absolute;
+  inset-inline-end: 0;
+  bottom: calc(100% + 6px);
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  min-width: 160px;
+  background: #ffffff;
+  border: 1px solid var(--cp-card-border);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(15, 25, 55, 0.12);
+  z-index: 10;
+}
+
+.cp-language-menu a {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--cp-navy);
+}
+
+.cp-language-menu a:hover {
+  background: var(--cp-tint);
+}
+
+/* ---------- Showcase ---------- */
+
+.cp-showcase {
+  flex: 1 1 560px;
+  min-width: 0;
+  padding: 16px;
+  display: flex;
+}
+
+.cp-showcase-panel {
+  position: relative;
+  overflow: hidden;
+  flex: 1;
+  min-height: calc(100vh - 32px);
+  border-radius: var(--cp-radius-panel);
+  background: linear-gradient(
+    180deg,
+    #f7fbfe 0%,
+    #e3f2fa 28%,
+    #a6daee 55%,
+    #3fa3d2 78%,
+    var(--cp-blue) 100%
+  );
+  box-shadow: inset 0 0 0 1px rgba(15, 25, 55, 0.05);
+}
+
+.cp-tiles {
+  position: absolute;
+  inset-inline-end: -40px;
+  top: 120px;
+  width: 520px;
+  height: 520px;
+  transform: rotateX(55deg) rotateZ(-45deg);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  opacity: 0.9;
+}
+
+.cp-tile {
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.12));
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 14px 30px rgba(14, 123, 176, 0.12);
+}
+
+.cp-float {
+  position: absolute;
+  inset-inline-end: 96px;
+  top: 96px;
+  width: 136px;
+  height: 136px;
+  filter: drop-shadow(0 26px 40px rgba(14, 123, 176, 0.45));
+  animation: cp-float 6s ease-in-out infinite;
+}
+
+.cp-showcase-copy {
+  position: relative;
+  padding: 44px 44px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 400px;
+}
+
+.cp-showcase-copy h2 {
+  margin: 0;
+  font-size: 38px;
+  font-weight: 300;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--cp-navy);
+  white-space: pre-line;
+}
+
+.cp-showcase-copy p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--cp-body);
+}
+
+.cp-activity {
+  position: absolute;
+  inset-inline: 32px;
+  bottom: 32px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cp-activity li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: rgba(6, 40, 70, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #ffffff;
+}
+
+.cp-activity-avatar {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.cp-activity-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.cp-activity-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.cp-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cp-working);
+  animation: cp-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes cp-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes cp-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* The panel is decoration: it says nothing the form does not, so on a phone it
+   simply goes, leaving the whole screen to signing in. */
+@media (max-width: 900px) {
+  .cp-showcase {
+    display: none;
+  }
+
+  .cp-main {
+    flex-basis: 100%;
+  }
+}
+
+/* On a phone the header keeps the logo and the one action; the lead-in line is
+   the first thing that can go. */
+@media (max-width: 480px) {
+  .cp-header-cta > span {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-float,
+  .cp-dot {
+    animation: none;
+  }
+}
+
+.cp-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

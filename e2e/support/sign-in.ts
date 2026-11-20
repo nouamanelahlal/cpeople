@@ -9,32 +9,56 @@ export const REALM = 'cpeople';
 /** Fake demo users, seeded by the realm import. Fake data only (CLAUDE.md rule 6). */
 export const TEST_PASSWORD = 'CPeople-Test-2027!';
 
+/**
+ * Each Playwright project gets its own people.
+ *
+ * Sign-in state lives in Keycloak, not in the browser — failed-attempt counts,
+ * single-use authenticator codes, and a guard against the same user signing in
+ * repeatedly within a second — so three browsers sharing one user fight over all
+ * three. A set each, and the whole flow can run on every project at once.
+ *
+ * The `fr` set prefers French in Keycloak, which is what makes the French run a
+ * real one rather than English pages with a French button.
+ */
+export type ProjectUsers = {
+  readonly employee: { readonly email: string; readonly name: string };
+  readonly payroll: { readonly email: string; readonly name: string; readonly otpSecret: string };
+  readonly wrongPassword: { readonly email: string };
+  readonly lockout: { readonly email: string };
+};
+
+function slugFor(projectName: string): 'desktop' | 'mobile' | 'fr' {
+  if (projectName.startsWith('mobile')) return 'mobile';
+  if (projectName.endsWith('fr')) return 'fr';
+  return 'desktop';
+}
+
+const LABELS = { desktop: 'Desktop', mobile: 'Mobile', fr: 'Francais' } as const;
+
+/** The fake users belonging to this project. Seeded by the local-dev realm import. */
+export function usersFor(projectName: string): ProjectUsers {
+  const slug = slugFor(projectName);
+  const label = LABELS[slug];
+
+  return {
+    employee: { email: `employee-${slug}@smg-demo.test`, name: `Employee ${label}` },
+    payroll: {
+      email: `payroll-${slug}@smg-demo.test`,
+      name: `Payroll ${label}`,
+      // The realm seeds this secret, so a test can produce a valid code.
+      otpSecret: `cpeople-test-payroll-${slug}`,
+    },
+    wrongPassword: { email: `wrongpass-${slug}@smg-demo.test` },
+    lockout: { email: `lockout-${slug}@smg-demo.test` },
+  };
+}
+
+/** Users that belong to no project in particular. */
 export const USERS = {
-  /** Needs an authenticator code: payroll-manager is composed of mfa-required. */
-  payroll: {
-    email: 'payroll@smg-demo.test',
-    name: 'Pierre Paie',
-    /** The secret the realm seeds, so a test can produce a valid code. */
-    otpSecret: 'cpeople-test-payroll-secret',
-  },
-  /** No code step: employee is not an mfa-required role. */
-  employee: { email: 'employee@smg-demo.test', name: 'Salma Salarie' },
-  /** Prefers French in Keycloak, and holds an mfa-required role. */
-  frenchHr: {
-    email: 'hr@smg-demo.test',
-    name: 'Hind Ressources',
-    otpSecret: 'cpeople-test-hr-secret',
-  },
-  manager: { email: 'manager@smg-demo.test', name: 'Mounir Manager' },
   /** A second tenant, for anything that needs to prove the two stay apart. */
   otherTenant: { email: 'employee@atlas-demo.test', name: 'Anas Atlas' },
-  /**
-   * These two exist only so a test can fail a password on purpose. Failed-attempt
-   * counts are server-side and shared, so a user whose password gets deliberately
-   * mistyped must not be one another test needs to sign in with.
-   */
-  wrongPassword: { email: 'wrong-password-test@smg-demo.test', name: 'Wrong Password' },
-  lockout: { email: 'lockout-test@smg-demo.test', name: 'Locked Out' },
+  /** Used by hand when poking at the stack; no test signs in as these. */
+  manager: { email: 'manager@smg-demo.test', name: 'Mounir Manager' },
 } as const;
 
 /**

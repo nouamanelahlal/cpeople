@@ -4,7 +4,11 @@
   "private": true,
   "description": "ConSAP design tokens and shared React components for CPeople",
   "exports": {
-    "./tokens.css": "./tokens.css"
+    "./tokens.css": "./tokens.css",
+    "./tokens.vars.css": "./tokens.vars.css"
   },
-  "files": ["tokens.css"]
+  "files": [
+    "tokens.css",
+    "tokens.vars.css"
+  ]
 }

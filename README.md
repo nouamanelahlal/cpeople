@@ -12,6 +12,7 @@ docker compose -f infra/docker/docker-compose.yml up -d
 pnpm db:migrate                                # schema + row-level-security policies
 pnpm db:seed                                   # two fake tenants
 pnpm kc:local-dev                              # puts the fake users in their organisations
+pnpm kc:theme                                  # builds the CPeople sign-in pages
 pnpm dev                                       # web on :3000, API on :3100
 ```
 

@@ -19,7 +19,8 @@
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:report": "playwright show-report",
-    "kc:local-dev": "cross-env CPEOPLE_LOCAL_DEV=true node infra/keycloak/local-dev/join-organisations.mjs"
+    "kc:local-dev": "cross-env CPEOPLE_LOCAL_DEV=true node infra/keycloak/local-dev/join-organisations.mjs",
+    "kc:theme": "bash infra/keycloak/theme-builder/build.sh"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

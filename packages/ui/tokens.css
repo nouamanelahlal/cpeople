@@ -1,29 +1,34 @@
-/* ConSAP design tokens — the single source of truth for CPeople colour and type.
-   Approved brand, fixed (CLAUDE.md rule 10). Never redefine these values in an app:
-   import this file and use the tokens.
+/* Tailwind's view of the ConSAP tokens.
 
-   Tailwind v4 reads the @theme block and exposes every token as a utility
-   (--color-navy -> text-navy / bg-navy / border-navy). */
+   The values live in tokens.vars.css so that non-Tailwind consumers — the Keycloak
+   sign-in theme — use the very same ones. `@theme inline` maps them in, which is
+   what gives Tailwind its utilities (--color-navy -> text-navy / bg-navy). */
 
-@theme {
-  /* Brand */
-  --color-navy: #0f1937; /* ink: headings, body emphasis. No large navy surfaces. */
-  --color-cyan: #3fb3d7; /* fills, icons, focus ring, badges. Too light for small text. */
-  --color-blue: #0e7bb0; /* hero panels, links, secondary actions, "BY CONSAP" */
-  --color-light-cyan: #5dcbe5; /* accents on dark backgrounds */
-  --color-night: #060a14; /* dark surfaces only */
+@import './tokens.vars.css';
 
-  /* Surfaces */
-  --color-page: #f0f0f0; /* app background */
-  --color-tint: #e6f3fa; /* selected rows, info panels */
-  --color-card-border: #e3e7ee; /* border of white cards */
+@theme inline {
+  --color-navy: var(--cp-navy);
+  --color-cyan: var(--cp-cyan);
+  --color-blue: var(--cp-blue);
+  --color-blue-hover: var(--cp-blue-hover);
+  --color-light-cyan: var(--cp-light-cyan);
+  --color-night: var(--cp-night);
 
-  /* Text */
-  --color-body: #4e566b; /* body text */
+  --color-page: var(--cp-page);
+  --color-tint: var(--cp-tint);
+  --color-card-border: var(--cp-card-border);
+  --color-field-border: var(--cp-field-border);
 
-  /* Type: Montserrat only. 300 for display figures and page titles,
-     400 for body, 600 for labels and buttons.
-     --font-montserrat is set by next/font in apps/web; the literal name is the
+  --color-body: var(--cp-body);
+
+  --color-danger-bg: var(--cp-danger-bg);
+  --color-danger-border: var(--cp-danger-border);
+  --color-danger-ink: var(--cp-danger-ink);
+  --color-success-bg: var(--cp-success-bg);
+  --color-success-border: var(--cp-success-border);
+  --color-success-ink: var(--cp-success-ink);
+
+  /* --font-montserrat is set by next/font in apps/web; the literal name is the
      fallback for locally installed Montserrat. */
-  --font-sans: var(--font-montserrat), Montserrat, ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-montserrat), var(--cp-font-sans);
 }

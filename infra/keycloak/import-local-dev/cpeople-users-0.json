@@ -210,6 +210,312 @@
         "default-roles-cpeople",
         "employee"
       ]
+    },
+    {
+      "username": "employee-desktop@smg-demo.test",
+      "email": "employee-desktop@smg-demo.test",
+      "firstName": "Employee",
+      "lastName": "Desktop",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "locale": [
+          "en"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "CPeople-Test-2027!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-cpeople",
+        "employee"
+      ]
+    },
+    {
+      "username": "payroll-desktop@smg-demo.test",
+      "email": "payroll-desktop@smg-demo.test",
+      "firstName": "Payroll",
+      "lastName": "Desktop",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "locale": [
+          "en"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "CPeople-Test-2027!",
+          "temporary": false
+        },
+        {
+          "type": "otp",
+          "userLabel": "Test authenticator",
+          "secretData": "{\"value\": \"cpeople-test-payroll-desktop\"}",
+          "credentialData": "{\"subType\": \"totp\", \"digits\": 6, \"counter\": 0, \"period\": 30, \"algorithm\": \"HmacSHA1\"}"
+        }
+      ],
+      "realmRoles": [
+        "default-roles-cpeople",
+        "payroll-manager"
+      ]
+    },
+    {
+      "username": "wrongpass-desktop@smg-demo.test",
+      "email": "wrongpass-desktop@smg-demo.test",
+      "firstName": "Wrong",
+      "lastName": "Desktop",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "locale": [
+          "en"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "CPeople-Test-2027!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-cpeople",
+        "employee"
+      ]
+    },
+    {
+      "username": "lockout-desktop@smg-demo.test",
+      "email": "lockout-desktop@smg-demo.test",
+      "firstName": "Locked",
+      "lastName": "Desktop",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "locale": [
+          "en"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "CPeople-Test-2027!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-cpeople",
+        "employee"
+      ]
+    },
+    {
+      "username": "employee-mobile@smg-demo.test",
+      "email": "employee-mobile@smg-demo.test",
+      "firstName": "Employee",
+      "lastName": "Mobile",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "locale": [
+          "en"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "CPeople-Test-2027!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-cpeople",
+        "employee"
+      ]
+    },
+    {
+      "username": "payroll-mobile@smg-demo.test",
+      "email": "payroll-mobile@smg-demo.test",
+      "firstName": "Payroll",
+      "lastName": "Mobile",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "locale": [
+          "en"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "CPeople-Test-2027!",
+          "temporary": false
+        },
+        {
+          "type": "otp",
+          "userLabel": "Test authenticator",
+          "secretData": "{\"value\": \"cpeople-test-payroll-mobile\"}",
+          "credentialData": "{\"subType\": \"totp\", \"digits\": 6, \"counter\": 0, \"period\": 30, \"algorithm\": \"HmacSHA1\"}"
+        }
+      ],
+      "realmRoles": [
+        "default-roles-cpeople",
+        "payroll-manager"
+      ]
+    },
+    {
+      "username": "wrongpass-mobile@smg-demo.test",
+      "email": "wrongpass-mobile@smg-demo.test",
+      "firstName": "Wrong",
+      "lastName": "Mobile",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "locale": [
+          "en"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "CPeople-Test-2027!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-cpeople",
+        "employee"
+      ]
+    },
+    {
+      "username": "lockout-mobile@smg-demo.test",
+      "email": "lockout-mobile@smg-demo.test",
+      "firstName": "Locked",
+      "lastName": "Mobile",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "locale": [
+          "en"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "CPeople-Test-2027!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-cpeople",
+        "employee"
+      ]
+    },
+    {
+      "username": "employee-fr@smg-demo.test",
+      "email": "employee-fr@smg-demo.test",
+      "firstName": "Employee",
+      "lastName": "Francais",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "locale": [
+          "fr"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "CPeople-Test-2027!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-cpeople",
+        "employee"
+      ]
+    },
+    {
+      "username": "payroll-fr@smg-demo.test",
+      "email": "payroll-fr@smg-demo.test",
+      "firstName": "Payroll",
+      "lastName": "Francais",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "locale": [
+          "fr"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "CPeople-Test-2027!",
+          "temporary": false
+        },
+        {
+          "type": "otp",
+          "userLabel": "Test authenticator",
+          "secretData": "{\"value\": \"cpeople-test-payroll-fr\"}",
+          "credentialData": "{\"subType\": \"totp\", \"digits\": 6, \"counter\": 0, \"period\": 30, \"algorithm\": \"HmacSHA1\"}"
+        }
+      ],
+      "realmRoles": [
+        "default-roles-cpeople",
+        "payroll-manager"
+      ]
+    },
+    {
+      "username": "wrongpass-fr@smg-demo.test",
+      "email": "wrongpass-fr@smg-demo.test",
+      "firstName": "Wrong",
+      "lastName": "Francais",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "locale": [
+          "fr"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "CPeople-Test-2027!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-cpeople",
+        "employee"
+      ]
+    },
+    {
+      "username": "lockout-fr@smg-demo.test",
+      "email": "lockout-fr@smg-demo.test",
+      "firstName": "Locked",
+      "lastName": "Francais",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "locale": [
+          "fr"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "CPeople-Test-2027!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-cpeople",
+        "employee"
+      ]
     }
   ]
 }

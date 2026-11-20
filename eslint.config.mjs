@@ -13,6 +13,9 @@ export default tseslint.config(
       '**/.next/**',
       '**/.turbo/**',
       '**/generated/**',
+      // Copied in by Keycloakify for its dev server; not our code.
+      '**/keycloakify-dev-resources/**',
+      '**/kc.gen.tsx',
       'playwright-report/**',
       'test-results/**',
       '.playwright-mcp/**',
