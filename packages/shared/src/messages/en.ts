@@ -7,7 +7,7 @@ export const en = {
     french: 'Français',
   },
   landing: {
-    title: 'HR and payroll for Morocco',
+    title: 'See your people. Pay them right.',
     note: 'Platform scaffold. The first screens arrive with the organisation and employee modules.',
     signIn: 'Sign in',
   },

@@ -1,8 +1,15 @@
 # Keycloak realm (M02 / HR-08)
 
-`import/cpeople-realm.json` is the realm, as code. It is imported on first start by
-`infra/docker/docker-compose.yml` (`start-dev --import-realm`), so nothing about sign-in
-lives only in the admin console.
+The realm is code, in two parts:
+
+| Directory | What is in it | Who imports it |
+|---|---|---|
+| `import/` | The realm itself: flows, roles, password and lockout policy, clients, organisations | **Every environment** |
+| `import-local-dev/` | Fake users, their passwords, the test authenticator secret | **A local checkout only** |
+
+`import/` holds no users and no secrets, so the same file is what Dev, Test and Prod import.
+The local Docker stack assembles its import directory from both, which is why the Keycloak
+service in `infra/docker/docker-compose.yml` copies them in before starting.
 
 Edit the file, then reload it:
 
@@ -15,6 +22,20 @@ admin console is lost on the next reload — which is the point. The realm impor
 unknown fields, so the JSON carries no comments; this file is where the reasoning lives.
 
 Admin console: http://localhost:8080 (`admin` / `admin_dev`, local only).
+
+### Organisation membership is not in the import
+
+Realm import reads the organisations before it reads the user file, so a `members` list in
+`import/` would point at users that do not exist yet — the import fails outright. Membership is
+environment data anyway, so for a local checkout it is applied afterwards:
+
+```bash
+pnpm kc:local-dev
+```
+
+It joins each fake user to the organisation whose domain matches their e-mail domain, is
+idempotent, and refuses to run without `CPEOPLE_LOCAL_DEV=true`. The end-to-end suite runs it
+itself, so tests never meet a user whose token carries no tenant.
 
 ## What the realm sets up
 
@@ -47,7 +68,10 @@ you must change the other.
 **Clients.** `cpeople-web` is public and uses the authorization code flow with PKCE (`S256`,
 enforced), because a browser app has nowhere to keep a secret. `cpeople-api` is bearer-only:
 it exists so tokens can carry an audience the API can insist on, and it enables no flow of its
-own.
+own. **No client secret appears in this repository.** Where an environment makes `cpeople-web`
+confidential instead, the secret is provisioned with that environment and reaches the app as
+`KEYCLOAK_CLIENT_SECRET`; the app then authenticates with `client_secret_post` rather than as a
+public client.
 
 **Security.** Brute-force protection locks an account for a doubling wait after 5 failures;
 the lock is applied at the email step, before a password is asked for. The password policy is
@@ -87,14 +111,15 @@ not be one another test needs to sign in with.
 
 ## Deploying this realm
 
-Dev, Test and Prod import the same file, then override what is environment-specific:
+Dev, Test and Prod import `import/` and nothing else — the fake users are not theirs to have —
+then override what is environment-specific:
 
 - `smtpServer` — a real provider, not Mailpit.
 - The `cpeople-web` redirect URIs and web origins — the environment's own host, over https.
-- `cpeople_app`-style credentials: the realm creates no passwords. Each environment
-  provisions its own and passes them to the API as `KEYCLOAK_ISSUER` (https) and to the web
-  app as `AUTH_SECRET`.
-- Remove the test users. They are fake, but they are still accounts.
+- Credentials: the realm creates no passwords and holds no client secret. Each environment
+  provisions its own and passes them in as `KEYCLOAK_ISSUER` (https), `SESSION_SECRET`,
+  `APP_URL` and, where the client is confidential, `KEYCLOAK_CLIENT_SECRET`.
+- Organisation membership for real people, which replaces what `pnpm kc:local-dev` does here.
 
 TODO(M02): confirm the password policy and the lockout thresholds with SMG's IT before
 go-live. The values here are a sensible default, not a client decision.

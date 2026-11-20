@@ -4,6 +4,11 @@ import { defineConfig, devices } from '@playwright/test';
 // Fake data only: never point these tests at Test or Prod with real employee data.
 export default defineConfig({
   testDir: './e2e',
+  globalSetup: './e2e/global-setup.ts',
+  // A sign-in test is several real browser round trips through Keycloak, and the
+  // dev server compiles routes the first time each is asked for. 30s is too tight
+  // once three browser projects run at once.
+  timeout: 60_000,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

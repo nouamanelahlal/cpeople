@@ -18,11 +18,13 @@
     "db:seed": "pnpm --filter @cpeople/db run seed",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
-    "e2e:report": "playwright show-report"
+    "e2e:report": "playwright show-report",
+    "kc:local-dev": "cross-env CPEOPLE_LOCAL_DEV=true node infra/keycloak/local-dev/join-organisations.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.65.1",
+    "cross-env": "^10.1.0",
     "eslint": "^10.15.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "turbo": "^2.11.13",

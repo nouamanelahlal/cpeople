@@ -1,5 +1,5 @@
 /**
- * Sign-in settings, read and checked the first time they are needed.
+ * Sign-in settings.
  *
  * The same build moves Dev → Test → Prod and is never rebuilt in between (CLAUDE.md,
  * Environments), so these are read when the server starts in an environment, never
@@ -12,8 +12,8 @@ const LOCAL_DEV_ISSUER = 'http://localhost:8080/realms/cpeople';
 
 /**
  * Only ever used when CPEOPLE_LOCAL_DEV is set, which the repository's own scripts
- * do and no deployment does. Auth.js encrypts the session cookie with it; locally
- * that cookie protects nothing but fake data.
+ * do and no deployment does. It encrypts the session cookie; locally that cookie
+ * protects nothing but fake data.
  */
 const LOCAL_DEV_SECRET = 'cpeople-local-development-secret-not-for-deployment';
 
@@ -21,10 +21,17 @@ export interface AuthEnv {
   readonly localDev: boolean;
   readonly issuer: string;
   readonly clientId: string;
-  readonly secret: string;
+  /**
+   * Set only where the realm makes this client confidential. It comes from the
+   * environment, never from the realm file in this repository, which holds no
+   * secrets at all.
+   */
+  readonly clientSecret: string | undefined;
+  /** Encrypts the session cookie. */
+  readonly sessionSecret: string;
   /** Where the browser reaches the API. */
   readonly apiBaseUrl: string;
-  /** This app's own origin, for the post-logout return trip. */
+  /** This app's own origin, for redirect and post-logout URLs. */
   readonly appUrl: string;
 }
 
@@ -66,9 +73,10 @@ export function getAuthEnv(): AuthEnv {
     localDev,
     issuer,
     clientId: process.env.KEYCLOAK_CLIENT_ID?.trim() || 'cpeople-web',
-    secret: required('AUTH_SECRET', localDev, LOCAL_DEV_SECRET),
+    clientSecret: process.env.KEYCLOAK_CLIENT_SECRET?.trim() || undefined,
+    sessionSecret: required('SESSION_SECRET', localDev, LOCAL_DEV_SECRET),
     apiBaseUrl: process.env.NEXT_PUBLIC_API_URL?.trim() || 'http://localhost:3100',
-    appUrl: (process.env.AUTH_URL?.trim() || 'http://localhost:3000').replace(/\/$/, ''),
+    appUrl: (process.env.APP_URL?.trim() || 'http://localhost:3000').replace(/\/$/, ''),
   };
 
   return cached;

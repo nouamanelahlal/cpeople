@@ -15,10 +15,23 @@ import {
 // M02 / HR-08 sign-in. Runs against the local Keycloak realm from
 // infra/keycloak/import/cpeople-realm.json, started by the Docker stack.
 
-// Failed attempts are counted server-side and outlive a test run, so the two tests
-// that deliberately get a password wrong each own a user and clear its count either
-// side. Clearing them all in a hook would not do: hooks run per worker, and one
-// worker would reset the count another was busy building up.
+// Sign-in state lives in Keycloak, not in the browser: failed-attempt counts,
+// single-use authenticator codes, and a quick-login guard that blocks the same user
+// signing in several times within a second. Three browser projects running these at
+// once fight over all three, so the flow runs in one browser; what differs between
+// viewports is the rendering, which smoke.spec.ts covers on all of them.
+// Playwright wants a destructuring pattern here even when nothing is needed from it.
+test.beforeEach(({ browserName: _browserName }, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'desktop-chromium',
+    'Sign-in is server behaviour, not a rendering concern.',
+  );
+});
+
+// Failed attempts outlive a test run, so the two tests that deliberately get a
+// password wrong each own a user and clear its count either side. Clearing them all
+// in a hook would not do: hooks run per worker, and one worker would reset the count
+// another was busy building up.
 
 test.describe('M02 sign-in', () => {
   test('signs in with email then password, and shows who is signed in', async ({ page }) => {
@@ -131,5 +144,41 @@ test.describe('M02 sign-in lockout', () => {
     } finally {
       await clearLockout(email);
     }
+  });
+});
+
+test.describe('M02 session handling', () => {
+  test('keeps a session alive by refreshing the access token', async ({ page }) => {
+    await startSignIn(page);
+    await submitEmail(page, USERS.employee.email);
+    await submitPassword(page, TEST_PASSWORD);
+    await expect(page).toHaveURL(/\/home$/);
+
+    // The gate sends people here once their access token runs out. Going straight
+    // there exercises the refresh grant without waiting out the token's lifetime.
+    await page.goto('/api/auth/refresh?callbackUrl=/home');
+
+    await expect(page).toHaveURL(/\/home$/);
+    await expect(page.getByRole('heading')).toContainText(USERS.employee.name);
+  });
+
+  test('signing out ends the Keycloak session, not just this one', async ({ page }) => {
+    await startSignIn(page);
+    await submitEmail(page, USERS.employee.email);
+    await submitPassword(page, TEST_PASSWORD);
+    await expect(page).toHaveURL(/\/home$/);
+
+    await page.getByRole('button', { name: /sign out|se déconnecter/i }).click();
+    await expect(page).toHaveURL(/\/signed-out$/);
+
+    // The protected page is closed again.
+    await page.goto('/home');
+    await expect(page).not.toHaveURL(/\/home$/);
+
+    // And Keycloak asks for the password again rather than waving the next person
+    // through on a session the sign-out left open.
+    await startSignIn(page);
+    await submitEmail(page, USERS.employee.email);
+    await expect(page.locator('#password')).toBeVisible();
   });
 });

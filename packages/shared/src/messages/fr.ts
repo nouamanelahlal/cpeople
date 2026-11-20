@@ -9,7 +9,7 @@ export const fr: Messages = {
     french: 'Français',
   },
   landing: {
-    title: 'RH et paie pour le Maroc',
+    title: 'Voyez vos équipes. Payez-les justement.',
     note: "Socle de la plateforme. Les premiers écrans arrivent avec les modules organisation et employés.",
     signIn: 'Se connecter',
   },

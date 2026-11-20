@@ -76,17 +76,25 @@ The migrations create `cpeople_app` with no password; each environment gives it 
 the database is provisioned. Locally `pnpm db:migrate` does it on the throwaway Docker database.
 
 ## Sign-in (M02 / HR-08)
-Keycloak, with the realm as code in `infra/keycloak/import/cpeople-realm.json`, imported by the
-Docker stack. See `infra/keycloak/README.md`. In short:
+Keycloak. See `infra/keycloak/README.md`; in short:
 - Email, then password, then a 6-digit authenticator code for holders of `mfa-required`, which
   `payroll-manager`, `hr-admin` and `platform-admin` are composed of.
+- **The realm import is in two parts.** `infra/keycloak/import/` is the base realm — flows,
+  roles, policies, clients, organisations — and every environment imports it. It holds no users
+  and no secrets. `infra/keycloak/import-local-dev/` holds the fake users, their passwords and
+  the test authenticator secret, and only the local Docker stack loads it.
 - One Keycloak organisation per tenant, carrying the tenant's Postgres id as a `tenantId`
   attribute. **The API takes the tenant from that claim and from nowhere else.** The ids must
   match `DEMO_TENANT_IDS` in `packages/db/src/seed.ts`.
-- The web app signs in with OpenID Connect (authorization code + PKCE) through Auth.js; every
-  page is protected unless it is listed in `PUBLIC_PATHS` in `apps/web/middleware.ts`.
-- `KEYCLOAK_ISSUER` (and `AUTH_SECRET` for the web app) must be set in every deployed
-  environment; only a local checkout falls back to the Docker realm.
+- Membership of the local fake users is applied by `pnpm kc:local-dev`, because realm import
+  reads the organisations before the user file. The end-to-end suite runs it itself.
+- The web app is a plain OpenID Connect client (`openid-client`): authorization code with PKCE,
+  an encrypted httpOnly session cookie, refresh through `/api/auth/refresh`, and sign-out that
+  ends the Keycloak session too. Every page is protected unless it is listed in `PUBLIC_PATHS`
+  in `apps/web/proxy.ts`.
+- `KEYCLOAK_ISSUER` and `SESSION_SECRET` (plus `APP_URL`, and `KEYCLOAK_CLIENT_SECRET` where the
+  client is confidential) must be set in every deployed environment; only a local checkout falls
+  back to the Docker realm.
 
 ## Settings that must never be set in a deployed environment
 Both default to off, and the API refuses to start if the combination is wrong.

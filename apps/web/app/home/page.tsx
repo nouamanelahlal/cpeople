@@ -1,7 +1,6 @@
 import { getMessages } from '@cpeople/shared';
-import { auth } from '../../auth';
+import { getSession } from '../../lib/auth';
 import { format } from '../../lib/locale';
-import { endSession } from '../actions';
 import { LocaleSync } from './locale-sync';
 
 /**
@@ -12,12 +11,12 @@ import { LocaleSync } from './locale-sync';
 export default async function SignedInHome() {
   // The middleware already turned anonymous visitors away; this is the page's own
   // guard, so it cannot be reached unauthenticated if the matcher ever changes.
-  const session = await auth();
-  if (!session?.user) {
+  const session = await getSession();
+  if (!session) {
     return null;
   }
 
-  const { user } = session;
+  const user = session;
   // Keycloak is where the language was chosen, so it wins from here on.
   const t = getMessages(user.locale);
   const roles = user.roles.filter((role) => !role.startsWith('default-roles') && role !== 'offline_access' && role !== 'uma_authorization');
@@ -55,7 +54,7 @@ export default async function SignedInHome() {
           </div>
         </dl>
 
-        <form action={endSession} className="mt-10">
+        <form action="/api/auth/sign-out" method="post" className="mt-10">
           <button
             type="submit"
             className="rounded-xl border border-card-border px-6 py-3 text-sm font-semibold text-navy transition-[background-color,border-color,box-shadow,transform] duration-200 ease-out hover:border-blue hover:bg-tint motion-safe:hover:-translate-y-px"

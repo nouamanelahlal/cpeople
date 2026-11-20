@@ -42,7 +42,13 @@ export default tseslint.config(
     // Plain Node scripts: no TypeScript to describe the runtime for them.
     files: ['**/*.mjs'],
     languageOptions: {
-      globals: { process: 'readonly', console: 'readonly' },
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        fetch: 'readonly',
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
+      },
     },
     rules: {
       'no-console': 'off',

@@ -11,6 +11,7 @@ pnpm exec playwright install chromium          # once
 docker compose -f infra/docker/docker-compose.yml up -d
 pnpm db:migrate                                # schema + row-level-security policies
 pnpm db:seed                                   # two fake tenants
+pnpm kc:local-dev                              # puts the fake users in their organisations
 pnpm dev                                       # web on :3000, API on :3100
 ```
 
@@ -52,13 +53,18 @@ without row-level security, without `FORCE`, or without a policy.
 
 ## Sign-in
 
-Keycloak runs in the local stack with the `cpeople` realm imported from
-`infra/keycloak/import/cpeople-realm.json` — see `infra/keycloak/README.md` for the flow, the
-roles that need an authenticator code, and the fake test users.
-
 Email, then password, then a code for the roles that handle pay or platform settings. The
 tenant travels in the token as a Keycloak organisation attribute, and the API trusts nothing
 else for it.
+
+The realm is imported in two parts: `infra/keycloak/import/` is the base — flows, roles,
+policies, clients, organisations — which every environment uses and which holds no users and no
+secrets; `infra/keycloak/import-local-dev/` holds the fake users and only the local stack loads
+it. See `infra/keycloak/README.md`.
+
+The web app is a plain OpenID Connect client built on `openid-client`: authorization code with
+PKCE, an encrypted httpOnly session cookie, token refresh, and a sign-out that ends the Keycloak
+session as well as this one.
 
 ## Layout
 

@@ -20,12 +20,24 @@ services:
   #   docker compose -f infra/docker/docker-compose.yml up -d --force-recreate keycloak
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
-    command: start-dev --import-realm
+    # The import directory is assembled from two read-only sources: the base realm
+    # every environment uses, plus the fake users that only a local checkout gets.
+    # A deployed environment imports ../keycloak/import and nothing else.
+    command:
+      - -c
+      - |
+        set -e
+        mkdir -p /opt/keycloak/data/import
+        cp /keycloak-import-base/*.json /opt/keycloak/data/import/
+        cp /keycloak-import-local-dev/*.json /opt/keycloak/data/import/
+        exec /opt/keycloak/bin/kc.sh start-dev --import-realm
+    entrypoint: ["/bin/bash"]
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin_dev
     volumes:
-      - ../keycloak/import:/opt/keycloak/data/import:ro
+      - ../keycloak/import:/keycloak-import-base:ro
+      - ../keycloak/import-local-dev:/keycloak-import-local-dev:ro
       - ../keycloak/themes:/opt/keycloak/themes:ro
     depends_on: [mailpit]
     ports: ["8080:8080"]
