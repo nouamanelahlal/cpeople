@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CPeople sign in on phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F0F0F0}
+a{color:#0E7BB0}a:hover{color:#0F1937}
+button,input{font-family:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #3FB3D7;outline-offset:2px}
+.inp{transition:border-color .2s ease,box-shadow .2s ease}
+.inp:focus{outline:none;border-color:#0E7BB0 !important;box-shadow:0 0 0 4px rgba(63,179,215,0.25)}
+.btn-primary{transition:background-color .2s ease,box-shadow .2s ease,transform .2s ease;cursor:pointer}
+.btn-primary:hover{background:#0B6A98 !important;color:#FFFFFF !important;box-shadow:0 8px 20px rgba(14,123,176,0.28)}
+.btn-light{transition:background-color .2s ease,border-color .2s ease,box-shadow .2s ease;cursor:pointer}
+.btn-light:hover{background:#F7FAFC !important;border-color:#BFDDEB !important;box-shadow:0 4px 12px rgba(15,25,55,0.06)}
+.float{animation:cp-float 6s ease-in-out infinite}
+.pulse{animation:cp-pulse 1.4s ease-in-out infinite}
+@keyframes cp-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes cp-pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@media (prefers-reduced-motion: reduce){.float,.pulse{animation:none}}
+@media (prefers-reduced-motion: no-preference){.btn-primary:hover{transform:translateY(-1px)}}
+@media (max-width: 900px){.showcase{display:none !important}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; overflow: hidden; box-sizing: border-box; font-family: Montserrat, sans-serif; color: #0F1937; background: #F0F0F0; padding: 14px; display: flex; flex-direction: column; gap: 18px">
+<div style="position: relative; overflow: hidden; height: 300px; flex: 0 0 300px; border-radius: 24px; background: linear-gradient(180deg, #F7FBFE 0%, #E3F2FA 30%, #A6DAEE 58%, #3FA3D2 80%, #0E7BB0 100%)">
+<img class="float" src="/_blob/725c4a29b9a2c3d97110a40620d17f68" alt="" aria-hidden="true" style="position: absolute; inset-inline-end: 20px; top: 20px; width: 68px; height: 68px; filter: drop-shadow(0 16px 24px rgba(14,123,176,0.45))">
+<div style="position: relative; padding: 24px 22px 0; display: flex; flex-direction: column; gap: 10px">
+<img src="/_blob/4bf11b0ef6f0c9e571cacd3664a1cd19" alt="CPeople by ConSAP" style="height: 26px; width: auto; display: block; align-self: flex-start">
+<p style="margin: 22px 0 0; font-size: 27px; font-weight: 300; line-height: 1.1; letter-spacing: -0.02em; color: #0F1937">See your people.<br>Pay them right.</p>
+</div>
+<div style="position: absolute; inset-inline: 14px; bottom: 14px; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: rgba(6,40,70,0.30); border: 1px solid rgba(255,255,255,0.25); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: #FFFFFF">
+<span style="flex: 1; min-width: 0; font-size: 13px; line-height: 1.4">{{feedTop}}</span>
+<span style="display: flex; align-items: center; gap: 6px; font-size: 12px">Working<span class="pulse" aria-hidden="true" style="width: 8px; height: 8px; border-radius: 50%; background: #FFC46B"></span></span>
+</div>
+</div>
+<main style="flex: 1; display: flex; flex-direction: column; gap: 16px; padding: 4px 6px 0">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<h1 style="margin: 0; font-size: 26px; font-weight: 400">Welcome back</h1>
+<p style="margin: 0; font-size: 14px; color: #4E566B">Sign in to continue to CPeople.</p>
+</div>
+<label for="m-email" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Work email</label>
+<input id="m-email" type="email" autocomplete="username" placeholder="Work email" class="inp" style="height: 48px; box-sizing: border-box; padding: 0 14px; border: 1px solid #DCE2EA; border-radius: 12px; font-size: 15px; color: #0F1937; background: #FFFFFF; width: 100%">
+<a href="Login.dc.html" class="btn-primary" style="height: 48px; border-radius: 12px; background: #0E7BB0; color: #FFFFFF; font-size: 15px; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center; border: 0; width: 100%">Continue</a>
+<p style="margin: 0; font-size: 12px; line-height: 1.6; color: #4E566B">No account? Your HR administrator sends you an invitation.</p>
+<div style="margin-top: auto; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #4E566B">
+<a href="#" style="font-weight: 600; text-decoration: none">Book a demo</a>
+<button type="button" onClick="{{toggleLang}}" aria-label="Language: {{langLabel}}" style="height: 36px; padding: 0 8px; border: 0; border-radius: 10px; background: transparent; color: #4E566B; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg>{{langShort}}</button>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 390, "height": 844}}'>
+class Component extends DCLogic {
+  componentDidMount() {
+    var self = this;
+    var reduce = false;
+    try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+    if (!reduce) { this._iv = setInterval(function () { var s = self.state || {}; self.setState({ tick: (s.tick || 0) + 1 }); }, 3200); }
+  }
+  componentWillUnmount() { clearInterval(this._iv); }
+  renderVals() {
+    var self = this;
+    var st = this.state || {};
+    var lang = st.lang || 'en';
+    var acts = [
+      'Calculating November payroll for 148 employees',
+      'Leave request approved by N+2',
+      'Attendance imported from the kitchen device',
+      'Payroll journal posted to SAP S/4HANA',
+      'Payslips emailed to 148 employees'
+    ];
+    var t = st.tick || 0, N = acts.length;
+    var feed = [0, 1, 2].map(function (i) {
+      return { text: acts[((t - i) % N + N) % N], working: i === 0, done: i !== 0, op: i === 2 ? '0.5' : (i === 1 ? '0.85' : '1') };
+    });
+    var common = {
+      feed: feed, langLabel: lang === 'en' ? 'English' : 'Français', langShort: lang === 'en' ? 'EN' : 'FR',
+      toggleLang: function () { self.setState({ lang: lang === 'en' ? 'fr' : 'en' }); }
+    };
+    return Object.assign({}, common, { feedTop: feed[0].text });
+  }
+}
+</script>
+</body>
+</html>

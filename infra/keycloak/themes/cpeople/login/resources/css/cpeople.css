@@ -1,0 +1,162 @@
+/* ConSAP brand applied to the Keycloak sign-in pages (M02 / rule 10).
+   Tokens are the ones in packages/ui; they are repeated here because Keycloak
+   serves these pages, not the Next.js app. Keep the two in step. */
+
+:root {
+  --cpeople-navy: #0f1937;
+  --cpeople-cyan: #3fb3d7;
+  --cpeople-blue: #0e7bb0;
+  --cpeople-page: #f0f0f0;
+  --cpeople-tint: #e6f3fa;
+  --cpeople-body: #4e566b;
+  --cpeople-card-border: #e3e7ee;
+}
+
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 300 600;
+  font-display: swap;
+  src: local('Montserrat');
+}
+
+body,
+.login-pf body {
+  background: var(--cpeople-page);
+  font-family: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+  color: var(--cpeople-body);
+}
+
+/* The brand lockup replaces Keycloak's wordmark. */
+#kc-header,
+#kc-header-wrapper {
+  padding: 0;
+  font-size: 0;
+  line-height: 0;
+  color: transparent;
+  letter-spacing: normal;
+}
+
+/* The master icon, which is transparent, so it sits on the page rather than on a
+   white block of its own. */
+#kc-header-wrapper::before {
+  content: '';
+  display: block;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 12px;
+  background: url('../img/cpeople-icon.png') no-repeat center/contain;
+}
+
+#kc-header-wrapper::after {
+  content: 'CPeople';
+  display: block;
+  margin-bottom: 4px;
+  color: var(--cpeople-navy);
+  font-family: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 300;
+  line-height: 1.2;
+  letter-spacing: 0;
+  /* The stock theme uppercases the header; the wordmark is "CPeople". */
+  text-transform: none;
+}
+
+.card-pf {
+  border: 1px solid var(--cpeople-card-border);
+  border-radius: 16px;
+  box-shadow: 0 10px 26px rgba(15, 25, 55, 0.06);
+  padding: 32px;
+}
+
+#kc-page-title,
+#kc-form-login h1 {
+  color: var(--cpeople-navy);
+  font-weight: 300;
+}
+
+label,
+.pf-c-form__label,
+.control-label {
+  color: var(--cpeople-navy);
+  font-weight: 600;
+}
+
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='number'],
+.pf-c-form-control {
+  border: 1px solid var(--cpeople-card-border);
+  border-radius: 12px;
+  min-height: 48px;
+  color: var(--cpeople-navy);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus,
+.pf-c-form-control:focus {
+  border-color: var(--cpeople-blue);
+  box-shadow: 0 0 0 3px rgba(63, 179, 215, 0.35);
+  outline: none;
+}
+
+/* Keyboard focus must stay obvious everywhere, not only on fields. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid var(--cpeople-cyan);
+  outline-offset: 2px;
+}
+
+.btn-primary,
+.pf-c-button.pf-m-primary {
+  background: var(--cpeople-blue);
+  border-color: var(--cpeople-blue);
+  border-radius: 12px;
+  min-height: 48px;
+  font-weight: 600;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.btn-primary:hover,
+.pf-c-button.pf-m-primary:hover {
+  background: var(--cpeople-navy);
+  border-color: var(--cpeople-navy);
+  box-shadow: 0 6px 18px rgba(15, 25, 55, 0.18);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .btn-primary:hover,
+  .pf-c-button.pf-m-primary:hover {
+    transform: translateY(-1px);
+  }
+}
+
+a {
+  color: var(--cpeople-blue);
+}
+
+a:hover {
+  color: var(--cpeople-navy);
+}
+
+/* Errors have to read clearly: this is where someone is already stuck. */
+.pf-c-alert.pf-m-danger,
+.alert-error {
+  border-radius: 12px;
+}
+
+#kc-locale-dropdown a,
+#kc-current-locale-link {
+  color: var(--cpeople-blue);
+  font-weight: 600;
+}
+
+#kc-info,
+#kc-info-wrapper {
+  background: var(--cpeople-tint);
+  border-radius: 12px;
+  color: var(--cpeople-body);
+}

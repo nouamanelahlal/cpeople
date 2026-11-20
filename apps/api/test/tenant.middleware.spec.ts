@@ -1,31 +1,56 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { NextFunction, Request, Response } from 'express';
 import { AppConfigService, loadAppConfig } from '../src/common/config/app-config.js';
+import type { TokenVerifierService } from '../src/common/auth/token-verifier.service.js';
 import { TenantContextService } from '../src/common/tenant/tenant-context.service.js';
 import { TENANT_HEADER, TenantMiddleware } from '../src/common/tenant/tenant.middleware.js';
 
 const TENANT_ID = '01a1f5a7-be9e-7368-b654-0a965c1d4412';
 
-function requestWith(header?: string): Request {
-  return { header: () => header } as unknown as Request;
+function requestWith(tenantHeader?: string): Request {
+  return {
+    header: (name: string) => (name.toLowerCase() === 'authorization' ? undefined : tenantHeader),
+  } as unknown as Request;
 }
 
 const response = {} as Response;
 
+const KEYCLOAK = {
+  keycloakIssuer: 'https://id.cpeople.ma/realms/cpeople',
+  keycloakAudience: 'cpeople-api',
+};
+
 /** A local checkout with the header switched on, which is the only case that allows it. */
 function localDevConfig(): AppConfigService {
-  return new AppConfigService({ localDev: true, tenantHeaderAllowed: true, port: 3100 });
+  return new AppConfigService({
+    localDev: true,
+    tenantHeaderAllowed: true,
+    port: 3100,
+    ...KEYCLOAK,
+  });
 }
 
 /** Any deployed environment: Dev, Test and Prod all look like this. */
 function deployedConfig(): AppConfigService {
-  return new AppConfigService({ localDev: false, tenantHeaderAllowed: false, port: 3100 });
+  return new AppConfigService({
+    localDev: false,
+    tenantHeaderAllowed: false,
+    port: 3100,
+    ...KEYCLOAK,
+  });
 }
+
+/** Stands in for the verifier; these cases never present a token. */
+const noTokens = {
+  verify: () => {
+    throw new Error('not expected to be called');
+  },
+} as unknown as TokenVerifierService;
 
 describe('M21 tenant context of a request', () => {
   it('makes the tenant available to the handlers downstream', () => {
     const context = new TenantContextService();
-    const middleware = new TenantMiddleware(context, localDevConfig());
+    const middleware = new TenantMiddleware(context, localDevConfig(), noTokens);
     const seen: string[] = [];
     const next: NextFunction = () => {
       seen.push(context.requireTenantId());
@@ -39,7 +64,7 @@ describe('M21 tenant context of a request', () => {
   });
 
   it('refuses a request without a tenant', () => {
-    const middleware = new TenantMiddleware(new TenantContextService(), localDevConfig());
+    const middleware = new TenantMiddleware(new TenantContextService(), localDevConfig(), noTokens);
     const next = vi.fn();
 
     expect(() => middleware.use(requestWith(undefined), response, next)).toThrow(
@@ -49,7 +74,7 @@ describe('M21 tenant context of a request', () => {
   });
 
   it('refuses a tenant that is not a UUID', () => {
-    const middleware = new TenantMiddleware(new TenantContextService(), localDevConfig());
+    const middleware = new TenantMiddleware(new TenantContextService(), localDevConfig(), noTokens);
     const next = vi.fn();
 
     expect(() => middleware.use(requestWith('smg; DROP TABLE tenant'), response, next)).toThrow();
@@ -58,7 +83,7 @@ describe('M21 tenant context of a request', () => {
 
   it('ignores the header in a deployed environment, however valid it looks', () => {
     const context = new TenantContextService();
-    const middleware = new TenantMiddleware(context, deployedConfig());
+    const middleware = new TenantMiddleware(context, deployedConfig(), noTokens);
     const next = vi.fn();
 
     expect(() => middleware.use(requestWith(TENANT_ID), response, next)).toThrow(
@@ -76,7 +101,10 @@ describe('M21 tenant context of a request', () => {
 });
 
 describe('M21 configuration fails closed', () => {
-  const deployed = { DATABASE_URL: 'postgresql://user:pw@db.internal:5432/cpeople' };
+  const deployed = {
+    DATABASE_URL: 'postgresql://user:pw@db.internal:5432/cpeople',
+    KEYCLOAK_ISSUER: 'https://id.cpeople.ma/realms/cpeople',
+  };
 
   it('does not allow the tenant header in a deployed environment', () => {
     // Dev, Test and Prod all reach here: none of them sets CPEOPLE_LOCAL_DEV.

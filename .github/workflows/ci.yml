@@ -64,7 +64,22 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
+      # Sign-in is tested against the real Keycloak realm, and the password-reset
+      # test reads the message out of Mailpit, so the whole local stack comes up.
+      - name: Start the local stack
+        run: docker compose -f infra/docker/docker-compose.yml up -d
+      - name: Wait for Keycloak to import the realm
+        run: |
+          for _ in $(seq 1 60); do
+            if curl -sfo /dev/null http://localhost:8080/realms/cpeople/.well-known/openid-configuration; then
+              echo "realm ready"; exit 0
+            fi
+            sleep 5
+          done
+          echo "Keycloak did not come up"; docker compose -f infra/docker/docker-compose.yml logs keycloak; exit 1
       - run: pnpm e2e
+        env:
+          CPEOPLE_LOCAL_DEV: 'true'
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

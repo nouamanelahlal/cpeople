@@ -8,9 +8,21 @@ import { createMigrationPrismaClient } from './client.js';
 
 const prisma = createMigrationPrismaClient();
 
+/**
+ * The demo tenants have fixed ids because the Keycloak realm carries them: each
+ * organisation in infra/keycloak/import/cpeople-realm.json has a `tenantId`
+ * attribute, and that is what the API reads out of the token (M02 / M21). Change
+ * one and you must change the other.
+ */
+const DEMO_TENANT_IDS = {
+  'smg-demo': '0193c0de-0000-7000-8000-000000000001',
+  'atlas-demo': '0193c0de-0000-7000-8000-000000000002',
+} as const;
+
 async function main(): Promise<void> {
   const tenants = [
     {
+      id: DEMO_TENANT_IDS['smg-demo'],
       slug: 'smg-demo',
       name: 'SMG Demo',
       countryCode: 'MA',
@@ -18,6 +30,7 @@ async function main(): Promise<void> {
     },
     {
       // A second tenant, so tenant isolation is visible while developing.
+      id: DEMO_TENANT_IDS['atlas-demo'],
       slug: 'atlas-demo',
       name: 'Atlas Demo',
       countryCode: 'MA',
@@ -28,7 +41,7 @@ async function main(): Promise<void> {
   for (const { company, ...tenant } of tenants) {
     const row = await prisma.tenant.upsert({
       where: { slug: tenant.slug },
-      update: { name: tenant.name, countryCode: tenant.countryCode },
+      update: { id: tenant.id, name: tenant.name, countryCode: tenant.countryCode },
       create: tenant,
     });
 

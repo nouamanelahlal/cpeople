@@ -1,34 +1,43 @@
-import { BadRequestException, Injectable, NestMiddleware } from '@nestjs/common';
+import { BadRequestException, Injectable, NestMiddleware, UnauthorizedException } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
+import { TokenVerifierService } from '../auth/token-verifier.service.js';
 import { AppConfigService } from '../config/app-config.js';
 import { TenantContextService } from './tenant-context.service.js';
 
 export const TENANT_HEADER = 'x-tenant-id';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const BEARER = /^Bearer (.+)$/i;
 
 /**
- * Puts the tenant of the request into the tenant context.
+ * Establishes who is calling and which tenant they are in, for the rest of the
+ * request (M02 / HR-08).
  *
- * TODO(M02 / HR-08): read the tenant from the verified Keycloak token. Until then a
- * request header carries it, and that is accepted only when TENANT_HEADER_ALLOWED
- * is explicitly on in a local checkout — a client choosing its own tenant is exactly
- * the hole the policies exist to close. Deployed environments (Dev, Test and Prod
- * alike) never set it, and the API refuses to start if they do.
+ * The tenant comes from the organisation claim of a verified Keycloak token and
+ * from nowhere else. The `x-tenant-id` header is a leftover from before sign-in
+ * existed: it names a tenant with no user behind it, so it is honoured only in a
+ * local checkout that explicitly asks for it, and the API refuses to start if a
+ * deployed environment tries to switch it on.
  */
 @Injectable()
 export class TenantMiddleware implements NestMiddleware {
   constructor(
     private readonly tenantContext: TenantContextService,
     private readonly config: AppConfigService,
+    private readonly tokens: TokenVerifierService,
   ) {}
 
   use(request: Request, _response: Response, next: NextFunction): void {
+    const bearer = BEARER.exec(request.header('authorization') ?? '');
+
+    if (bearer?.[1]) {
+      void this.#withVerifiedToken(bearer[1], next);
+      return;
+    }
+
     if (!this.config.tenantHeaderAllowed) {
-      // 400, not 501: from the caller's side the request simply carries no usable
-      // tenant. The reason it cannot is a server-side configuration decision.
-      throw new BadRequestException(
-        'No tenant for this request. Sign-in carries the tenant (M02); the ' +
+      throw new UnauthorizedException(
+        'This request carries no access token. Sign in to CPeople; the ' +
           `${TENANT_HEADER} header is accepted in local development only.`,
       );
     }
@@ -39,6 +48,21 @@ export class TenantMiddleware implements NestMiddleware {
     }
 
     this.tenantContext.run({ tenantId: header }, () => {
+      next();
+    });
+  }
+
+  async #withVerifiedToken(token: string, next: NextFunction): Promise<void> {
+    let principal;
+    try {
+      principal = await this.tokens.verify(token);
+    } catch (error) {
+      // Express needs the failure handed to next(), since this ran after use() returned.
+      next(error);
+      return;
+    }
+
+    this.tenantContext.run({ tenantId: principal.organization.tenantId, principal }, () => {
       next();
     });
   }

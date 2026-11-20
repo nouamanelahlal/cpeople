@@ -1,9 +1,15 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import type { Principal } from '../auth/token-verifier.service.js';
 
 export interface TenantContext {
   /** Tenant of the signed-in user, taken from the verified session. */
   readonly tenantId: string;
+  /**
+   * Who is signed in, when a real token said so. Absent for the local-development
+   * header path, which identifies a tenant but nobody in particular.
+   */
+  readonly principal?: Principal;
 }
 
 /**
@@ -30,5 +36,14 @@ export class TenantContextService {
       throw new InternalServerErrorException('No tenant context for this request');
     }
     return context.tenantId;
+  }
+
+  /** The signed-in user, or a failure if this request was not authenticated. */
+  requirePrincipal(): Principal {
+    const principal = this.storage.getStore()?.principal;
+    if (!principal) {
+      throw new InternalServerErrorException('This request has no signed-in user');
+    }
+    return principal;
   }
 }

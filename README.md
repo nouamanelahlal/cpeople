@@ -50,12 +50,24 @@ Two independent things keep a request inside its own tenant:
 `packages/db/test/rls.spec.ts` proves all of it, and fails if a new tenant table ever ships
 without row-level security, without `FORCE`, or without a policy.
 
+## Sign-in
+
+Keycloak runs in the local stack with the `cpeople` realm imported from
+`infra/keycloak/import/cpeople-realm.json` — see `infra/keycloak/README.md` for the flow, the
+roles that need an authenticator code, and the fake test users.
+
+Email, then password, then a code for the roles that handle pay or platform settings. The
+tenant travels in the token as a Keycloak organisation attribute, and the API trusts nothing
+else for it.
+
 ## Layout
 
 - `apps/web` — Next.js (App Router), Tailwind, ConSAP tokens from `packages/ui`
 - `apps/api` — NestJS, one folder per module under `src/modules`
 - `packages/db` — Prisma schema, migrations, RLS policies, seed (fake data only)
 - `packages/ui` — ConSAP design tokens
+- `packages/shared` — shared types and the EN/FR messages the UI renders from
+- `infra/keycloak` — the sign-in realm, as code
 - `e2e/` — Playwright tests, one per MVP feature, titled with its ID
 
 Docs:

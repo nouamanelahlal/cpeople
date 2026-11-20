@@ -14,12 +14,20 @@ services:
     image: redis:7
     ports: ["6379:6379"]
 
+  # Sign-in (M02 / HR-08). The realm is code: infra/keycloak/import/cpeople-realm.json
+  # is imported on first start, so nothing lives only in the admin console. After
+  # editing it, reload with:
+  #   docker compose -f infra/docker/docker-compose.yml up -d --force-recreate keycloak
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
-    command: start-dev
+    command: start-dev --import-realm
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin_dev
+    volumes:
+      - ../keycloak/import:/opt/keycloak/data/import:ro
+      - ../keycloak/themes:/opt/keycloak/themes:ro
+    depends_on: [mailpit]
     ports: ["8080:8080"]
 
   # S3-compatible file storage. MinIO no longer publishes Docker images (removed from

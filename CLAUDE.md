@@ -75,6 +75,19 @@ Day to day:
 The migrations create `cpeople_app` with no password; each environment gives it credentials when
 the database is provisioned. Locally `pnpm db:migrate` does it on the throwaway Docker database.
 
+## Sign-in (M02 / HR-08)
+Keycloak, with the realm as code in `infra/keycloak/import/cpeople-realm.json`, imported by the
+Docker stack. See `infra/keycloak/README.md`. In short:
+- Email, then password, then a 6-digit authenticator code for holders of `mfa-required`, which
+  `payroll-manager`, `hr-admin` and `platform-admin` are composed of.
+- One Keycloak organisation per tenant, carrying the tenant's Postgres id as a `tenantId`
+  attribute. **The API takes the tenant from that claim and from nowhere else.** The ids must
+  match `DEMO_TENANT_IDS` in `packages/db/src/seed.ts`.
+- The web app signs in with OpenID Connect (authorization code + PKCE) through Auth.js; every
+  page is protected unless it is listed in `PUBLIC_PATHS` in `apps/web/middleware.ts`.
+- `KEYCLOAK_ISSUER` (and `AUTH_SECRET` for the web app) must be set in every deployed
+  environment; only a local checkout falls back to the Docker realm.
+
 ## Settings that must never be set in a deployed environment
 Both default to off, and the API refuses to start if the combination is wrong.
 - `CPEOPLE_LOCAL_DEV=true` — marks a developer's checkout (and the CI database, which is the
@@ -82,10 +95,11 @@ Both default to off, and the API refuses to start if the combination is wrong.
   allows the local Docker credentials to stand in for the two URLs above, and what lets
   `local-dev-role` give `cpeople_app` a development password. Without it, a missing
   `DATABASE_URL` is a startup failure.
-- `TENANT_HEADER_ALLOWED=true` — lets an `x-tenant-id` request header choose the tenant, standing
-  in for the Keycloak token until M02. A client choosing its own tenant would reach every other
-  tenant's payroll, so it is honoured only together with `CPEOPLE_LOCAL_DEV`; set in Dev, Test or
-  Prod, it stops the API at boot.
+- `TENANT_HEADER_ALLOWED=true` — lets an `x-tenant-id` request header choose the tenant for a
+  request with no token, which is useful for poking at the API locally. A client choosing its own
+  tenant would reach every other tenant's payroll, so it is honoured only together with
+  `CPEOPLE_LOCAL_DEV`; set in Dev, Test or Prod, it stops the API at boot. Signed-in requests do
+  not use it: they carry the tenant in the token.
 
 Dev, Test and Prod set `DATABASE_URL` (and `MIGRATION_DATABASE_URL` for the migration job) and
 neither flag.
