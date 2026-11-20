@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import {
+  chooseLanguage,
   clearLockout,
   clearMailbox,
   errorMessage,
@@ -20,6 +21,11 @@ import {
 // signing in several times within a second. Three browser projects running these at
 // once fight over all three, so the flow runs in one browser; what differs between
 // viewports is the rendering, which smoke.spec.ts covers on all of them.
+//
+// TODO(M02 theme): when the Keycloakify theme lands, the sign-in pages become ours
+// and worth checking at phone size. Give each browser project its own fake user —
+// one per project in import-local-dev, each with its own authenticator secret — so
+// they stop sharing Keycloak's per-user state, and drop this skip.
 // Playwright wants a destructuring pattern here even when nothing is needed from it.
 test.beforeEach(({ browserName: _browserName }, testInfo) => {
   test.skip(
@@ -180,5 +186,31 @@ test.describe('M02 session handling', () => {
     await startSignIn(page);
     await submitEmail(page, USERS.employee.email);
     await expect(page.locator('#password')).toBeVisible();
+  });
+});
+
+test.describe('M02 sign-in in French', () => {
+  test('runs the whole flow in French and comes back in French', async ({ page }) => {
+    // The e-mail step is the proof that the app passed ui_locales: at that point
+    // Keycloak has no idea who is signing in, so the only thing it can go on is
+    // what the app told it (M23).
+    await chooseLanguage(page, 'Français');
+    await page.getByRole('button', { name: /se connecter/i }).click();
+    await page.locator('#username').waitFor({ state: 'visible' });
+
+    await expect(page.locator('label[for="username"]')).toHaveText(/courriel/i);
+    await submitEmail(page, USERS.frenchHr.email);
+
+    await expect(page.locator('label[for="password"]')).toHaveText(/mot de passe/i);
+    await expect(page.locator('a[href*="reset-credentials"]')).toHaveText(/mot de passe oublié/i);
+    await submitPassword(page, TEST_PASSWORD);
+
+    // This user handles pay, so the code step applies in French too.
+    await expect(page.locator('#otp')).toBeVisible();
+    await submitCode(page, USERS.frenchHr.otpSecret);
+
+    await expect(page).toHaveURL(/\/home$/);
+    await expect(page.getByRole('heading')).toContainText(`Bon retour, ${USERS.frenchHr.name}`);
+    await expect(page.getByRole('button', { name: /se déconnecter/i })).toBeVisible();
   });
 });

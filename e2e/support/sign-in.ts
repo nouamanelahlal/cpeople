@@ -19,6 +19,12 @@ export const USERS = {
   },
   /** No code step: employee is not an mfa-required role. */
   employee: { email: 'employee@smg-demo.test', name: 'Salma Salarie' },
+  /** Prefers French in Keycloak, and holds an mfa-required role. */
+  frenchHr: {
+    email: 'hr@smg-demo.test',
+    name: 'Hind Ressources',
+    otpSecret: 'cpeople-test-hr-secret',
+  },
   manager: { email: 'manager@smg-demo.test', name: 'Mounir Manager' },
   /** A second tenant, for anything that needs to prove the two stay apart. */
   otherTenant: { email: 'employee@atlas-demo.test', name: 'Anas Atlas' },
@@ -102,6 +108,13 @@ export async function startSignIn(page: Page): Promise<void> {
   await page.goto('/');
   await page.getByRole('button', { name: /sign in|se connecter/i }).click();
   await page.locator('#username').waitFor({ state: 'visible' });
+}
+
+/** Switches the app to a language before signing in, which is what sets ui_locales. */
+export async function chooseLanguage(page: Page, label: 'English' | 'Français'): Promise<void> {
+  await page.goto('/');
+  await page.getByRole('button', { name: label, exact: true }).click();
+  await page.waitForLoadState('domcontentloaded');
 }
 
 /** Admin access to the local realm, for test set-up only. */
