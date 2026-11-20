@@ -132,7 +132,7 @@ const { useI18n, ofTypeI18n: _ofTypeI18n } = i18nBuilder
       cpActivity5: 'Bulletins de paie envoyés à 148 salariés',
 
       // Email step
-      cpWelcomeTitle: 'Bon retour',
+      cpWelcomeTitle: 'Bienvenue',
       cpWelcomeSubtitle: 'Connectez-vous pour accéder à CPeople.',
       cpWorkEmail: 'Adresse e-mail professionnelle',
       cpContinue: 'Continuer',
@@ -150,11 +150,11 @@ const { useI18n, ofTypeI18n: _ofTypeI18n } = i18nBuilder
       // Code step
       cpCodeTitle: 'Saisissez votre code',
       cpCodeSubtitle:
-        "L'accès à la paie demande une deuxième étape. Ouvrez votre application d'authentification et saisissez le code à 6 chiffres pour CPeople.",
+        "L'accès à la paie demande une double authentification. Ouvrez votre application d'authentification et saisissez le code à 6 chiffres pour CPeople.",
       cpCodePlaceholder: 'Code à 6 chiffres',
       cpCodeSubmit: 'Vérifier et continuer',
       cpCodeHelp:
-        "Vous n'avez plus accès à votre application d'authentification ? Demandez à votre administrateur CPeople de réinitialiser votre deuxième étape.",
+        "Vous n'avez plus accès à votre application d'authentification ? Demandez à votre administrateur CPeople de réinitialiser votre double authentification.",
       cpBack: 'Retour',
 
       // Reset password

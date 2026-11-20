@@ -14,7 +14,7 @@ export const fr: Messages = {
     signIn: 'Se connecter',
   },
   home: {
-    greeting: 'Bon retour, {name}',
+    greeting: 'Bienvenue, {name}',
     signedInAs: 'Connecté en tant que {email}',
     tenant: 'Client',
     roles: 'Rôles',

@@ -33,9 +33,22 @@ pnpm kc:theme
 docker compose -f infra/docker/docker-compose.yml up -d --force-recreate keycloak
 ```
 
-The jar lands in `infra/keycloak/providers/`, which is mounted into the container and is
-**not** committed — it is a build artifact. Without it Keycloak falls back to its own pages
-and sign-in still works, which is why a fresh clone is never broken, only unbranded.
+The jar lands in `infra/keycloak/providers/`, which is mounted into the local container and is
+**not** committed — it is a build artifact. Locally, a clone without it falls back to Keycloak's
+own pages: unbranded, never broken.
+
+**A deployed environment must not do that.** Keycloak falls back silently when a theme is
+missing, so Dev, Test and Prod run `infra/keycloak/Dockerfile`, which bakes the jar in and
+fails the image build if it is not there:
+
+```bash
+pnpm kc:image          # builds the theme, then the image
+pnpm kc:verify-theme   # asks a running Keycloak whether it is really serving our pages
+```
+
+`verify-theme.mjs` is the deploy gate: point it at an environment's issuer and it exits
+non-zero if that Keycloak has fallen back. CI runs the stack from this image and runs the gate
+before the tests, so what the tests sign in against is what deploys.
 
 Keycloakify packages the theme with Apache Maven. Nothing here needs a JDK installed:
 `infra/keycloak/theme-builder/bin/mvn` runs the real Maven in a container, and the `.cmd`

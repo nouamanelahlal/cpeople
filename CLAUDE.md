@@ -90,7 +90,9 @@ Keycloak. See `infra/keycloak/README.md`; in short:
   reads the organisations before the user file. The end-to-end suite runs it itself.
 - The sign-in pages are ours: a Keycloakify (React) theme in `packages/keycloak-theme`,
   following `docs/design/login*.dc.html`. Build it with `pnpm kc:theme`; the jar is a build
-  artifact and is not committed.
+  artifact and is not committed. Locally a missing theme falls back to Keycloak's own pages;
+  **in a deployed environment it must not** — `pnpm kc:image` bakes it in and fails the build
+  without it, and `pnpm kc:verify-theme` fails the deploy if a running Keycloak has fallen back.
 - The web app is a plain OpenID Connect client (`openid-client`): authorization code with PKCE,
   an encrypted httpOnly session cookie, refresh through `/api/auth/refresh`, and sign-out that
   ends the Keycloak session too. Every page is protected unless it is listed in `PUBLIC_PATHS`

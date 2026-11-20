@@ -64,14 +64,16 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
-      # The sign-in pages are ours (packages/keycloak-theme), so the tests need the
-      # theme in place. Node runs here, Maven in a container; see the build script.
-      - name: Build the sign-in theme
-        run: pnpm kc:theme
-      # Sign-in is tested against the real Keycloak realm, and the password-reset
-      # test reads the message out of Mailpit, so the whole local stack comes up.
-      - name: Start the local stack
-        run: docker compose -f infra/docker/docker-compose.yml up -d
+      # The sign-in pages are ours (packages/keycloak-theme). Building the image
+      # fails outright if the theme jar is missing, which is the point: a deployed
+      # environment must never fall back to Keycloak's own pages.
+      - name: Build the sign-in theme into the Keycloak image
+        run: pnpm kc:image
+      # The stack runs that image, so the tests sign in against what deploys. The
+      # password-reset test reads its message out of Mailpit, so everything comes up.
+      - name: Start the stack
+        run: |
+          docker compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.deployed-keycloak.yml up -d
       - name: Wait for Keycloak to import the realm
         run: |
           for _ in $(seq 1 60); do
@@ -80,7 +82,13 @@ jobs:
             fi
             sleep 5
           done
-          echo "Keycloak did not come up"; docker compose -f infra/docker/docker-compose.yml logs keycloak; exit 1
+          echo "Keycloak did not come up"
+          docker compose -f infra/docker/docker-compose.yml logs keycloak
+          exit 1
+      # The deploy gate: Keycloak falls back silently, so this asks the running
+      # server whether it is actually serving our pages.
+      - name: Verify the sign-in theme is being served
+        run: pnpm kc:verify-theme
       - run: pnpm e2e
         env:
           CPEOPLE_LOCAL_DEV: 'true'

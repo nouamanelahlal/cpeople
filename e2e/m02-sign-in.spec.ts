@@ -197,7 +197,7 @@ test.describe('M02 sign-in in French', () => {
     await submitCode(page, users.payroll.otpSecret);
 
     await expect(page).toHaveURL(/\/home$/);
-    await expect(page.getByRole('heading')).toContainText(`Bon retour, ${users.payroll.name}`);
+    await expect(page.getByRole('heading')).toContainText(`Bienvenue, ${users.payroll.name}`);
     await expect(page.getByRole('button', { name: /se déconnecter/i })).toBeVisible();
   });
 });

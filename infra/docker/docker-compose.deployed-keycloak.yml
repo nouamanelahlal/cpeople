@@ -1,0 +1,26 @@
+# Runs Keycloak the way a deployed environment does: the sign-in theme baked into
+# the image rather than mounted, so a missing theme fails the image build instead of
+# quietly falling back to Keycloak's own pages.
+#
+# Use it alongside the main file:
+#   pnpm kc:image
+#   docker compose -f infra/docker/docker-compose.yml \
+#                  -f infra/docker/docker-compose.deployed-keycloak.yml up -d keycloak
+#   pnpm kc:verify-theme
+#
+# CI runs exactly this, so what the tests sign in against is what deploys.
+services:
+  keycloak:
+    image: cpeople-keycloak:local
+    build:
+      context: ../keycloak
+    # The base realm is already in the image; only the fake local users are mounted,
+    # and a deployed environment mounts nothing at all.
+    volumes:
+      - ../keycloak/import-local-dev:/keycloak-import-local-dev:ro
+    command:
+      - -c
+      - |
+        set -e
+        cp /keycloak-import-local-dev/*.json /opt/keycloak/data/import/
+        exec /opt/keycloak/bin/kc.sh start-dev --import-realm
