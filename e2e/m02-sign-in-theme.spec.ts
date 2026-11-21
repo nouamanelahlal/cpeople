@@ -1,6 +1,4 @@
-import { existsSync } from 'node:fs';
-import * as path from 'node:path';
-import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import {
   clearLockout,
   startSignIn,
@@ -8,6 +6,7 @@ import {
   submitPassword,
   usersFor,
 } from './support/sign-in';
+import { skipWithoutBaseline } from './support/snapshots';
 
 // The CPeople sign-in theme (packages/keycloak-theme): the things manual testing
 // caught, kept caught. These run in one browser project because they are about how
@@ -241,24 +240,6 @@ test.describe('M02 sign-in theme', () => {
     await expect(page).toHaveScreenshot('password-1566x707.png', { maxDiffPixelRatio: 0.02, timeout: 20_000 });
   });
 });
-
-/**
- * Pixel baselines belong to the platform that made them — Windows and Linux do not
- * draw text identically — so a machine without one says so rather than failing or,
- * worse, passing quietly. To add the missing platform's baselines, run this file
- * with `--update-snapshots` on that platform.
- *
- * What holds on every platform is checked by the other tests here: the font, the
- * single message, and the panel geometry at 42 window sizes.
- */
-function skipWithoutBaseline(testInfo: TestInfo, snapshot: string): void {
-  const expected = testInfo.snapshotPath(snapshot);
-  test.skip(
-    !existsSync(expected),
-    `No baseline for ${process.platform} at ${path.basename(expected)}. ` +
-      'Run `pnpm exec playwright test e2e/m02-sign-in-theme.spec.ts --update-snapshots` here.',
-  );
-}
 
 /**
  * Holds the page still for a screenshot.

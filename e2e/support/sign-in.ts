@@ -1,5 +1,5 @@
 import { createHmac } from 'node:crypto';
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 
 /** The local realm, started by infra/docker/docker-compose.yml. */
 export const KEYCLOAK_URL = process.env.E2E_KEYCLOAK_URL ?? 'http://localhost:8080';
@@ -137,6 +137,37 @@ export async function submitPassword(page: Page, password: string): Promise<void
 export async function submitCode(page: Page, secret: string): Promise<void> {
   await page.locator('#otp').fill(authenticatorCode(secret));
   await submitStep(page);
+}
+
+/**
+ * The signed-in person's name, wherever the home screen shows it.
+ *
+ * The greeting says their first name; the account button carries the whole of it,
+ * which is what a test can match without knowing the time of day.
+ */
+export function accountButton(page: Page, name: string) {
+  return page.getByRole('button', { name: new RegExp(`(Account|Compte).*${name}`, 'i') });
+}
+
+/**
+ * Signs out from the account menu in the top bar.
+ *
+ * The menu is the browser's own state, so the click is retried until the page is
+ * hydrated and has something to open. A click that lands too early does nothing,
+ * which is why retrying cannot leave the menu closed again.
+ */
+export async function signOutFromMenu(page: Page, name: string): Promise<void> {
+  await openAccountMenu(page, name);
+  await page.getByRole('button', { name: /sign out|se déconnecter/i }).click();
+}
+
+export async function openAccountMenu(page: Page, name: string): Promise<void> {
+  const signOut = page.getByRole('button', { name: /sign out|se déconnecter/i });
+
+  await expect(async () => {
+    await accountButton(page, name).click();
+    await expect(signOut).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: 20_000 });
 }
 
 /** Any message Keycloak shows when a step fails, in whichever language it used. */

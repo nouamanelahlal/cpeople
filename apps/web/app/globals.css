@@ -29,3 +29,43 @@
     outline-offset: 2px;
   }
 }
+
+@layer components {
+  /* The quiet white button the whole shell is made of: the search box's
+     neighbours, the menu's pin, the account chip (docs/design/home-dashboard.dc.html).
+     It lifts a pixel under the pointer, and holds still for anyone who asked for
+     less movement. */
+  .quiet-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    border: 1px solid var(--color-card-border);
+    background: #ffffff;
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .quiet-button:hover {
+    background: var(--color-hover);
+    border-color: #bfddeb;
+    box-shadow: 0 6px 18px rgb(15 25 55 / 0.1);
+  }
+
+  .quiet-button:active {
+    box-shadow: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .quiet-button:hover {
+      transform: translateY(-1px);
+    }
+
+    .quiet-button:active {
+      transform: translateY(0);
+    }
+  }
+}

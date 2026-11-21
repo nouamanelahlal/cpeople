@@ -1,12 +1,15 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
+  accountButton,
   chooseLanguage,
   clearLockout,
   errorMessage,
   KEYCLOAK_URL,
+  openAccountMenu,
   startSignIn,
   submitCode,
   submitEmail,
+  signOutFromMenu,
   submitPassword,
   TEST_PASSWORD,
   usersFor,
@@ -43,7 +46,7 @@ test.describe('M02 sign-in', () => {
     await submitPassword(page, TEST_PASSWORD);
 
     await expect(page).toHaveURL(/\/home$/);
-    await expect(page.getByRole('heading')).toContainText(users.employee.name);
+    await expect(accountButton(page, users.employee.name)).toBeVisible();
   });
 
   test('refuses a wrong password and does not sign anyone in', async ({ page }) => {
@@ -84,8 +87,10 @@ test.describe('M02 sign-in', () => {
     await submitCode(page, users.payroll.otpSecret);
 
     await expect(page).toHaveURL(/\/home$/);
-    await expect(page.getByRole('heading')).toContainText(users.payroll.name);
-    await expect(page.getByText('payroll-manager')).toBeVisible();
+    // Their name, and their job named in words rather than in realm roles.
+    await expect(accountButton(page, users.payroll.name)).toContainText(
+      /Payroll manager|Responsable paie/,
+    );
   });
 
   test('does not ask an employee for a code', async ({ page }) => {
@@ -268,13 +273,13 @@ test.describe('M02 session handling', () => {
     await page.goto('/api/auth/refresh?callbackUrl=/home');
 
     await expect(page).toHaveURL(/\/home$/);
-    await expect(page.getByRole('heading')).toContainText(users.employee.name);
+    await expect(accountButton(page, users.employee.name)).toBeVisible();
   });
 
   test('signing out ends the Keycloak session, not just this one', async ({ page }) => {
     await signIn(page, users);
 
-    await page.getByRole('button', { name: /sign out|se déconnecter/i }).click();
+    await signOutFromMenu(page, users.employee.name);
     await expect(page).toHaveURL(/\/signed-out$/);
 
     // The protected page is closed again.
@@ -314,8 +319,14 @@ test.describe('M02 sign-in in French', () => {
     await submitCode(page, users.payroll.otpSecret);
 
     await expect(page).toHaveURL(/\/home$/);
-    await expect(page.getByRole('heading')).toContainText(`Bienvenue, ${users.payroll.name}`);
-    await expect(page.getByRole('button', { name: /se déconnecter/i })).toBeVisible();
+    // The home screen greets in French, by the time of day: "Bienvenue" belongs to
+    // the sign-in page and stays there.
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      new RegExp(`^(Bonjour|Bonsoir), ${users.payroll.name.split(' ')[0]}$`),
+    );
+    // Including the way out, which lives in the account menu.
+    await openAccountMenu(page, users.payroll.name);
+    await expect(page.getByRole('button', { name: 'Se déconnecter' })).toBeVisible();
   });
 });
 
