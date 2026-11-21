@@ -33,15 +33,14 @@ export function KpiCards({ kpis, f }: { kpis: readonly Kpi[]; f: Formatter }): J
             href="#"
             className={`group relative flex flex-col gap-3 overflow-hidden rounded-[18px] border border-navy/[0.06] p-5 text-navy transition-[box-shadow,transform] duration-[250ms] ease-out hover:shadow-[0_10px_26px_rgba(15,25,55,0.08)] motion-safe:hover:-translate-y-0.5 ${tint.card}`}
           >
-            {/* The CPeople mark, far bigger than the card and anchored off its
-                corner, so what shows is the sweep of the C and never the edges of
-                the mark itself — texture, not a logo parked in the corner. It
-                shifts a little when the card is hovered, as the design has it. */}
+            {/* The CPeople mark in the bottom corner, its own edges faded into
+                the card by .cp-card-mark. It shifts a little when the card is
+                hovered, as the design has it, and holds still when asked to. */}
             <Image
               src={mark}
               alt=""
               aria-hidden="true"
-              className="pointer-events-none absolute -bottom-[250px] -end-[210px] w-[640px] max-w-none opacity-[0.09] transition-transform duration-[350ms] ease-out motion-safe:group-hover:-translate-x-1 motion-safe:group-hover:-translate-y-1 motion-safe:group-hover:-rotate-3 motion-reduce:transition-none"
+              className="cp-card-mark pointer-events-none absolute -bottom-3 -end-2.5 w-[150px] max-w-none opacity-20 transition-transform duration-[350ms] ease-out motion-safe:group-hover:-translate-x-1 motion-safe:group-hover:-translate-y-1 motion-safe:group-hover:-rotate-3 motion-reduce:transition-none"
             />
 
             <span className="relative flex items-center justify-between">

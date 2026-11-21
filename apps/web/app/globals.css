@@ -31,6 +31,16 @@
 }
 
 @layer components {
+  /* The CPeople mark as a watermark in the corner of a card.
+
+     Its own edges are faded out towards the middle of the card, so what shows is
+     the mark itself and never the rounded square it is drawn on — a small copy
+     without this reads as a logo parked in the corner. */
+  .cp-card-mark {
+    -webkit-mask-image: linear-gradient(to top left, #000 35%, transparent 88%);
+    mask-image: linear-gradient(to top left, #000 35%, transparent 88%);
+  }
+
   /* The quiet white button the whole shell is made of: the search box's
      neighbours, the menu's pin, the account chip (docs/design/home-dashboard.dc.html).
      It lifts a pixel under the pointer, and holds still for anyone who asked for
