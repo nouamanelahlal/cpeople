@@ -2,7 +2,6 @@ import { expect, test, type Page } from '@playwright/test';
 import {
   chooseLanguage,
   clearLockout,
-  clearMailbox,
   errorMessage,
   KEYCLOAK_URL,
   startSignIn,
@@ -57,6 +56,13 @@ test.describe('M02 sign-in', () => {
     await expect(errorMessage(page)).toContainText(/match|correspond/i);
     await expect(page).not.toHaveURL(/\/home$/);
 
+    // The message cannot say what went wrong without saying whether the account
+    // exists, so under it is the line that helps whatever the case was.
+    const help = page.locator('.cp-help');
+    await expect(help).toBeVisible();
+    await expect(help).toContainText(/HR administrator|responsable RH/i);
+    await expect(help.locator('a')).toHaveAttribute('href', /reset-credentials/);
+
     // And the protected page is still out of reach.
     await page.goto('/home');
     await expect(page).not.toHaveURL(/\/home$/);
@@ -93,7 +99,10 @@ test.describe('M02 sign-in', () => {
   });
 
   test('sends a password-reset e-mail and says so', async ({ page }) => {
-    await clearMailbox();
+    // No mailbox clearing anywhere here: every project has its own users, so the
+    // recipient and the time are enough to find the right message — and emptying a
+    // shared mailbox would delete what another project is waiting for.
+    const asked = Date.now();
 
     await startSignIn(page);
     await submitEmail(page, users.employee.email);
@@ -111,7 +120,7 @@ test.describe('M02 sign-in', () => {
     // nothing about whether the address is one we know.
     await expect(errorMessage(page)).toContainText(/on its way|en route/i);
 
-    const email = await waitForEmail(users.employee.email);
+    const email = await waitForEmail(users.employee.email, asked);
     expect(email.subject).toMatch(/CPeople/);
     expect(email.body).toMatch(/login-actions\/action-token|reset-credentials/);
   });
@@ -207,6 +216,7 @@ test.describe('M02 sign-in lockout', () => {
     test.slow();
 
     const { email } = users.lockout;
+    const started = Date.now();
     await clearLockout(email);
 
     try {
@@ -234,6 +244,15 @@ test.describe('M02 sign-in lockout', () => {
       // would now be on /home.
       await page.goto('/home');
       await expect(page).not.toHaveURL(/\/home$/);
+
+      // The owner is told, because the person who meets the lock on screen may not
+      // be the person whose account it is. In their language, in our words.
+      const notice = await waitForEmail(email, started);
+      expect(notice.subject).toMatch(/account is locked|compte CPeople est bloqué/i);
+      expect(notice.body).toMatch(
+        /locked after several failed sign-in attempts|bloqué après plusieurs tentatives/i,
+      );
+      expect(notice.body).toMatch(/unlocks automatically|se débloque automatiquement/i);
     } finally {
       await clearLockout(email);
     }

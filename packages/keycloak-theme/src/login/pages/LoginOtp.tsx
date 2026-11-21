@@ -23,7 +23,7 @@ export default function LoginOtp(
       back={{ href: url.loginRestartFlowUrl, label: msgStr('cpBack') }}
       footnote={msgStr('cpCodeHelp')}
     >
-      <PageMessage kcContext={kcContext} i18n={i18n} field="totp" />
+      <PageMessage kcContext={kcContext} field="totp" />
 
       <form className="cp-fields" action={url.loginAction} method="post">
         <label className="cp-visually-hidden" htmlFor="otp">

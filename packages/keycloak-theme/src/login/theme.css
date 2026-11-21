@@ -324,6 +324,19 @@ input:focus-visible {
   flex: none;
 }
 
+/* The way out under a sign-in error: quiet, because it is there for the people the
+   error did not help, and it must not compete with the error itself. */
+.cp-help {
+  margin: -4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--cp-body);
+}
+
+.cp-help a {
+  font-weight: 600;
+}
+
 .cp-forgot {
   align-self: flex-end;
   font-size: 13px;

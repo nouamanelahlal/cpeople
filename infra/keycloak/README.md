@@ -62,7 +62,22 @@ beside it does the same on Windows, where Node looks for `mvn.cmd`.
 points; each environment sets its own.
 
 The e-mails are a plain folder theme in `themes/cpeople/email`, with the same wording in
-English and French as the pages.
+English and French as the pages. `html/template.ftl` holds the CPeople card every HTML e-mail
+is built from, so a stock Keycloak e-mail we have not reworded still arrives looking like ours.
+
+**A locked account e-mails its owner.** The realm adds Keycloak's `email` event listener, which
+sends the account's owner our `event-user_disabled_by_temporary_lockout` message in their own
+language — the person who meets the lock on screen is not always the person whose account it is.
+That listener e-mails on every failed sign-in unless it is told otherwise, which would be a
+mailbox full of mistyped passwords, so it is held to that one event by
+`KC_SPI_EVENTS_LISTENER_EMAIL_INCLUDE_EVENTS` (set in `infra/keycloak/Dockerfile` for deployments
+and in `infra/docker/docker-compose.yml` for the local stack). The realm locks temporarily and
+never permanently; turning `permanentLockout` on would need its own wording, since Keycloak has
+a separate event and template for it and only the stock English text would be there.
+
+**Every sign-in error carries a way out.** Under the message the page shows one line — *Still
+can't sign in? Reset your password or contact your HR administrator* — because the message
+itself cannot say what went wrong without saying whether the account exists.
 
 ### Two steps, one submission: the pages never say who has an account
 

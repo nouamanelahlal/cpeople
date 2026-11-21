@@ -77,8 +77,10 @@ const { useI18n, ofTypeI18n: _ofTypeI18n } = i18nBuilder
 
       // Errors, in plain words
       cpErrorCredentials: "That email and password don't match. Check them and try again.",
-      cpErrorLocked: 'Too many attempts, so your account is locked for now. Try again later, or {0}.',
-      cpErrorLockedLink: 'reset your password',
+      // Under every sign-in error: whatever went wrong, these are the two things
+      // that help. {0} is the link.
+      cpSignInHelp: "Still can't sign in? {0} or contact your HR administrator.",
+      cpSignInHelpLink: 'Reset your password',
       cpErrorCode: "That code didn't work. Codes change every 30 seconds, so use the latest one.",
       cpErrorExpiredTitle: 'That link has expired',
       cpErrorExpiredBody: 'Password links last a short time for safety. Ask for a new one and it will arrive in a moment.',
@@ -207,8 +209,9 @@ const { useI18n, ofTypeI18n: _ofTypeI18n } = i18nBuilder
 
       // Errors, in plain words
       cpErrorCredentials: "L'adresse e-mail et le mot de passe ne correspondent pas. Vérifiez-les et réessayez.",
-      cpErrorLocked: 'Trop de tentatives : votre compte est bloqué pour le moment. Réessayez plus tard, ou {0}.',
-      cpErrorLockedLink: 'réinitialisez votre mot de passe',
+      cpSignInHelp:
+        'Vous n’arrivez toujours pas à vous connecter ? {0} ou contactez votre responsable RH.',
+      cpSignInHelpLink: 'Réinitialisez votre mot de passe',
       cpErrorCode: 'Ce code ne fonctionne pas. Les codes changent toutes les 30 secondes : utilisez le plus récent.',
       cpErrorExpiredTitle: 'Ce lien a expiré',
       cpErrorExpiredBody:

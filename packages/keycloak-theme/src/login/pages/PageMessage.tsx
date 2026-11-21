@@ -1,6 +1,5 @@
 import type { JSX } from 'react';
 import type { KcContext } from '../KcContext';
-import type { I18n } from '../i18n';
 import { Alert } from '../components/SignInLayout';
 
 /**
@@ -12,16 +11,16 @@ import { Alert } from '../components/SignInLayout';
  * exactly one appears.
  *
  * The wording is ours: every key these messages come from is overridden in
- * i18n.ts, so none of Keycloak's own text reaches a person.
+ * i18n.ts, so none of Keycloak's own text reaches a person. What to do about it is
+ * not here: the sign-in page puts one help line under whatever this shows.
  */
 export function PageMessage(props: {
   kcContext: KcContext;
-  i18n: I18n;
   /** Field whose error stands in when there is no page message, e.g. "username". */
   field?: string;
 }): JSX.Element | null {
-  const { kcContext, i18n, field } = props;
-  const { message, url } = kcContext;
+  const { kcContext, field } = props;
+  const { message } = kcContext;
 
   const fieldError =
     field !== undefined &&
@@ -37,32 +36,9 @@ export function PageMessage(props: {
     return null;
   }
 
-  const resetUrl = 'loginResetCredentialsUrl' in url ? url.loginResetCredentialsUrl : undefined;
-
-  if (kind === 'error' && isLockout(summary) && resetUrl !== undefined) {
-    // A locked account gets the reset link inside the message, because asking for a
-    // new password is the only thing that helps while the lock lasts.
-    const [before = '', after = ''] = i18n.msgStr('cpErrorLocked', ' ').split(' ');
-    return (
-      <Alert kind="error">
-        {before}
-        <a href={resetUrl}>{i18n.msgStr('cpErrorLockedLink')}</a>
-        {after}
-      </Alert>
-    );
-  }
-
   return (
     <Alert kind={kind === 'error' ? 'error' : kind === 'success' ? 'success' : 'info'}>
       {summary}
     </Alert>
   );
-}
-
-/**
- * Keycloak gives a locked account the same code as a wrong password, so the wording
- * is what sets them apart.
- */
-function isLockout(summary: string): boolean {
-  return /locked|bloqu/i.test(summary);
 }

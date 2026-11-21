@@ -38,6 +38,11 @@ services:
       # Read by the sign-in theme: where "Book a demo" in the header points.
       # Each environment sets its own.
       CPEOPLE_BOOK_A_DEMO_URL: https://consap.ma/cpeople
+      # The realm turns on Keycloak's e-mail event listener so a locked-out person
+      # hears about it. Left to itself that listener also e-mails on every failed
+      # sign-in, which would be a mailbox full of mistyped passwords, so it is held
+      # to the one event. Same value in infra/keycloak/Dockerfile, for deployments.
+      KC_SPI_EVENTS_LISTENER_EMAIL_INCLUDE_EVENTS: USER_DISABLED_BY_TEMPORARY_LOCKOUT
     volumes:
       - ../keycloak/import:/keycloak-import-base:ro
       - ../keycloak/import-local-dev:/keycloak-import-local-dev:ro

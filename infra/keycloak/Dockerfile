@@ -21,6 +21,12 @@ COPY --chown=1000:0 import/ /opt/keycloak/data/import/
 # E-mail templates, still a folder theme (see the issue about folding them in).
 COPY --chown=1000:0 themes/ /opt/keycloak/themes/
 
+# The realm turns on Keycloak's e-mail event listener, so that a person whose account
+# is locked by failed sign-ins hears about it. That listener e-mails on every failed
+# attempt unless it is told otherwise, which would be a mailbox full of mistyped
+# passwords, so it is held to the one event. Mirrors docker-compose.yml.
+ENV KC_SPI_EVENTS_LISTENER_EMAIL_INCLUDE_EVENTS=USER_DISABLED_BY_TEMPORARY_LOCKOUT
+
 # Fail the image build if the theme did not make it in, rather than at sign-in.
 RUN test -s /opt/keycloak/providers/cpeople-login-theme.jar
 

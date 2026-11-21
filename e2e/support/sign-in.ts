@@ -100,6 +100,20 @@ async function submitStep(page: Page): Promise<void> {
     page.locator(SUBMIT).first().click(),
   ]);
   await page.waitForLoadState('domcontentloaded');
+  await pageIsDrawn(page);
+}
+
+/**
+ * Waits until there is something on the page to look at.
+ *
+ * The sign-in pages are a React theme, so between the document arriving and the
+ * script running there is a moment when the page is empty. A test that asks what is
+ * on screen during that moment gets a truthful "nothing" and fails for no reason,
+ * which is what happened under load. Every page this suite lands on — ours and the
+ * app's — leads with a heading.
+ */
+async function pageIsDrawn(page: Page): Promise<void> {
+  await page.locator('h1').first().waitFor({ state: 'visible', timeout: 20_000 });
 }
 
 /**
@@ -187,26 +201,32 @@ export async function clearLockout(email: string): Promise<void> {
 interface MailpitMessage {
   ID: string;
   Subject: string;
+  Created: string;
   To: { Address: string }[];
-}
-
-/** Deletes every message, so a test only ever sees the one it caused. */
-export async function clearMailbox(): Promise<void> {
-  await fetch(`${MAILPIT_URL}/api/v1/messages`, { method: 'DELETE' });
 }
 
 /** Waits for a message to `address` and returns it with its body. */
 export async function waitForEmail(
   address: string,
+  /**
+   * Only count mail that arrived after this moment, so a message left by an earlier
+   * run cannot answer for one this test is waiting for. Take it before the action
+   * that sends the mail.
+   */
+  sentAfter = 0,
   timeoutMs = 15_000,
 ): Promise<{ subject: string; body: string }> {
   const deadline = Date.now() + timeoutMs;
+  // Mailpit timestamps to the second, and the clocks here are not the same clock.
+  const floor = sentAfter === 0 ? 0 : sentAfter - 2_000;
 
   while (Date.now() < deadline) {
     const response = await fetch(`${MAILPIT_URL}/api/v1/messages?limit=50`);
     const { messages } = (await response.json()) as { messages: MailpitMessage[] };
-    const match = messages.find((message) =>
-      message.To.some((to) => to.Address.toLowerCase() === address.toLowerCase()),
+    const match = messages.find(
+      (message) =>
+        message.To.some((to) => to.Address.toLowerCase() === address.toLowerCase()) &&
+        new Date(message.Created).getTime() >= floor,
     );
 
     if (match) {

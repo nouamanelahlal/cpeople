@@ -47,6 +47,7 @@
   "ssoSessionMaxLifespan": 36000,
   "accessTokenLifespan": 300,
   "actionTokenGeneratedByUserLifespan": 900,
+  "eventsListeners": ["jboss-logging", "email"],
   "smtpServer": {
     "host": "mailpit",
     "port": "1025",
