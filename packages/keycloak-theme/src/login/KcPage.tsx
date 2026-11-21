@@ -9,8 +9,7 @@ const UserProfileFormFields = lazy(
   () => import('keycloakify/login/UserProfileFormFields'),
 );
 
-const LoginUsername = lazy(() => import('./pages/LoginUsername'));
-const LoginPassword = lazy(() => import('./pages/LoginPassword'));
+const Login = lazy(() => import('./pages/Login'));
 const LoginOtp = lazy(() => import('./pages/LoginOtp'));
 const LoginResetPassword = lazy(() => import('./pages/LoginResetPassword'));
 const LoginUpdatePassword = lazy(() => import('./pages/LoginUpdatePassword'));
@@ -35,10 +34,8 @@ export default function KcPage(props: { kcContext: KcContext }): JSX.Element {
     <Suspense>
       {(() => {
         switch (kcContext.pageId) {
-          case 'login-username.ftl':
-            return <LoginUsername kcContext={kcContext} i18n={i18n} />;
-          case 'login-password.ftl':
-            return <LoginPassword kcContext={kcContext} i18n={i18n} />;
+          case 'login.ftl':
+            return <Login kcContext={kcContext} i18n={i18n} />;
           case 'login-otp.ftl':
             return <LoginOtp kcContext={kcContext} i18n={i18n} />;
           case 'login-reset-password.ftl':

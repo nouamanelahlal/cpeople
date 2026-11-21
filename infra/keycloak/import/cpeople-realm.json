@@ -261,22 +261,15 @@
     },
     {
       "alias": "cpeople-browser-forms",
-      "description": "The three steps the person actually sees.",
+      "description": "Email and password on one page, submitted together, then a code for the roles that need one. The page shows two steps; Keycloak sees one submission, so an unknown address reveals nothing.",
       "providerId": "basic-flow",
       "topLevel": false,
       "builtIn": false,
       "authenticationExecutions": [
         {
-          "authenticator": "auth-username-form",
+          "authenticator": "auth-username-password-form",
           "requirement": "REQUIRED",
           "priority": 10,
-          "autheticatorFlow": false,
-          "userSetupAllowed": false
-        },
-        {
-          "authenticator": "auth-password-form",
-          "requirement": "REQUIRED",
-          "priority": 20,
           "autheticatorFlow": false,
           "userSetupAllowed": false
         },

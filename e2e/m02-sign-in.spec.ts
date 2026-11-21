@@ -4,6 +4,7 @@ import {
   clearLockout,
   clearMailbox,
   errorMessage,
+  KEYCLOAK_URL,
   startSignIn,
   submitCode,
   submitEmail,
@@ -34,9 +35,11 @@ test.describe('M02 sign-in', () => {
   test('signs in with email then password, and shows who is signed in', async ({ page }) => {
     await startSignIn(page);
 
-    // Email first: this page asks for an address and nothing else.
+    // Email first: the page asks for an address and shows nothing else. The
+    // password field is in the form all along, because both travel together, but it
+    // is out of sight and out of the way until the address is in.
     await expect(page.locator('#username')).toBeVisible();
-    await expect(page.locator('#password')).toHaveCount(0);
+    await expect(page.locator('#password')).not.toBeVisible();
     await submitEmail(page, users.employee.email);
     await submitPassword(page, TEST_PASSWORD);
 
@@ -95,19 +98,105 @@ test.describe('M02 sign-in', () => {
     await startSignIn(page);
     await submitEmail(page, users.employee.email);
 
+    // The reset page asks for the address itself, as the design has it: the sign-in
+    // page never submitted it, so Keycloak has nothing to go on and no chance to
+    // skip this screen.
     await page.locator('a[href*="reset-credentials"]').click();
     await page.locator('#username').waitFor({ state: 'visible' });
+    await page.locator('#username').fill(users.employee.email);
     await page.locator('button[type="submit"], input[type="submit"]').first().click();
 
-    // The screen says what happened, in the CPeople theme rather than Keycloak's.
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(
-      /check your inbox|boîte mail/i,
-    );
+    // Keycloak puts the confirmation back on the sign-in page, which is where the
+    // person can now use the link or try again. The wording is ours and it says
+    // nothing about whether the address is one we know.
+    await expect(errorMessage(page)).toContainText(/on its way|en route/i);
 
     const email = await waitForEmail(users.employee.email);
     expect(email.subject).toMatch(/CPeople/);
     expect(email.body).toMatch(/login-actions\/action-token|reset-credentials/);
   });
+});
+
+test.describe('M02 sign-in tells nobody which addresses exist', () => {
+  // The sign-in page shows two steps and makes one submission. That is what keeps
+  // it from answering "does this address have an account?": the email step has
+  // nothing to ask, and by the time Keycloak hears the address it is hearing the
+  // password too, so a wrong password and an address nobody owns come back as the
+  // same sentence (infra/keycloak/README.md).
+
+  test('the email step makes no request to Keycloak', async ({ page }) => {
+    await startSignIn(page);
+    // Let the page finish loading its own assets before watching the wire.
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+    });
+
+    const toKeycloak: string[] = [];
+    page.on('request', (request) => {
+      if (request.url().startsWith(KEYCLOAK_URL) && !request.url().includes('/resources/')) {
+        toKeycloak.push(`${request.method()} ${request.url()}`);
+      }
+    });
+    const before = page.url();
+
+    await page.locator('#username').fill('someone-nobody-has-ever-heard-of@smg-demo.test');
+    await page.locator('button[type="submit"]').first().click();
+    await expect(page.locator('#password')).toBeVisible();
+
+    // Nothing left the browser, so there was no answer to read and nothing to
+    // time: the address is still the visitor's own business.
+    expect(toKeycloak).toEqual([]);
+    expect(page.url()).toBe(before);
+  });
+
+  test('an unknown email and a real one behave identically up to the password error', async ({
+    page,
+  }) => {
+    const real = users.wrongPassword.email;
+    const unknown = `nobody-${users.wrongPassword.email}`;
+    await clearLockout(real);
+
+    try {
+      const forReal = await attempt(page, real);
+      const forUnknown = await attempt(page, unknown);
+
+      // Same screen at the email step, same screen after the password: whichever
+      // address was typed, there is nothing in front of the visitor to tell them
+      // apart — no different message, no different page, no different field.
+      expect(forUnknown).toEqual(forReal);
+      expect(forReal.afterPassword.messages.join(' ')).toMatch(/match|correspond/i);
+    } finally {
+      await clearLockout(real);
+    }
+  });
+
+  /** Walks one address through both steps and writes down everything on screen. */
+  async function attempt(page: Page, email: string) {
+    await startSignIn(page);
+
+    await page.locator('#username').fill(email);
+    await page.locator('button[type="submit"]').first().click();
+    await expect(page.locator('#password')).toBeVisible();
+    const afterEmail = await screen(page);
+
+    await submitPassword(page, 'not-the-right-password');
+    const afterPassword = await screen(page);
+
+    return { afterEmail, afterPassword };
+  }
+
+  /** What a person can see and act on, with the volatile parts left out. */
+  async function screen(page: Page) {
+    return {
+      // The path only: the query carries a session code that differs every time.
+      path: new URL(page.url()).pathname,
+      heading: (await page.getByRole('heading', { level: 1 }).textContent())?.trim() ?? '',
+      messages: (await page.locator('.cp-alert').allTextContents()).map((text) => text.trim()),
+      passwordAsked: await page.locator('#password').isVisible(),
+      codeAsked: await page.locator('#otp').isVisible(),
+      signedIn: /\/home$/.test(page.url()),
+    };
+  }
 });
 
 test.describe('M02 sign-in lockout', () => {
@@ -128,13 +217,22 @@ test.describe('M02 sign-in lockout', () => {
         await submitPassword(page, `wrong-password-${attempt}`);
       }
 
-      // Now the account is locked, and the right password gets no further: the
-      // lockout is applied at the email step, before a password is even asked for.
+      // Now the account is locked: the right password gets no further.
+      //
+      // It is refused in the same words as a wrong one, which is Keycloak's own
+      // doing and the right answer anyway — "your account is locked" would tell an
+      // attacker the address is real, which is exactly what this flow is built not
+      // to say. The lock is in the refusal, not in the wording.
       await startSignIn(page);
       await submitEmail(page, email);
+      await submitPassword(page, TEST_PASSWORD);
 
-      await expect(errorMessage(page)).toContainText(/locked|bloqué|match|correspond/i);
-      await expect(page.locator('#password')).toHaveCount(0);
+      await expect(errorMessage(page)).toContainText(/match|correspond/i);
+      await expect(page).not.toHaveURL(/\/home$/);
+
+      // Still locked out even with the right password, where an unlocked account
+      // would now be on /home.
+      await page.goto('/home');
       await expect(page).not.toHaveURL(/\/home$/);
     } finally {
       await clearLockout(email);

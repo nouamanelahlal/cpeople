@@ -102,10 +102,15 @@ async function submitStep(page: Page): Promise<void> {
   await page.waitForLoadState('domcontentloaded');
 }
 
-/** The email step of the sign-in flow. */
+/**
+ * The email step, which belongs to the page and not to Keycloak: it reveals the
+ * password field and sends nothing, so there is no response to wait for — only the
+ * field that was asked for.
+ */
 export async function submitEmail(page: Page, email: string): Promise<void> {
   await page.locator('#username').fill(email);
-  await submitStep(page);
+  await page.locator(SUBMIT).first().click();
+  await page.locator('#password').waitFor({ state: 'visible' });
 }
 
 /** The password step. */

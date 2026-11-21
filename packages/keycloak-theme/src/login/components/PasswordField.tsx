@@ -1,4 +1,4 @@
-import { useState, type JSX } from 'react';
+import { useState, type JSX, type Ref } from 'react';
 import type { I18n } from '../i18n';
 import { EyeIcon, EyeOffIcon } from './Icons';
 
@@ -11,8 +11,9 @@ export function PasswordField(props: {
   autoComplete: 'current-password' | 'new-password';
   invalid?: boolean;
   autoFocus?: boolean;
+  ref?: Ref<HTMLInputElement>;
 }): JSX.Element {
-  const { i18n, id, name, placeholder, autoComplete, invalid = false, autoFocus = false } = props;
+  const { i18n, id, name, placeholder, autoComplete, invalid = false, autoFocus = false, ref } = props;
   const [shown, setShown] = useState(false);
 
   return (
@@ -21,6 +22,7 @@ export function PasswordField(props: {
         {placeholder}
       </label>
       <input
+        ref={ref}
         className="cp-input"
         id={id}
         name={name}

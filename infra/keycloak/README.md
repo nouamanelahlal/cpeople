@@ -60,6 +60,44 @@ points; each environment sets its own.
 The e-mails are a plain folder theme in `themes/cpeople/email`, with the same wording in
 English and French as the pages.
 
+### Two steps, one submission: the pages never say who has an account
+
+The sign-in page asks for an e-mail address, then for a password. Those two steps are the
+page's own: the e-mail step sends nothing, and when the password is submitted both fields go up
+together in one POST to `auth-username-password-form`.
+
+It is built that way because the obvious alternative tells an attacker too much. An
+identifier-first flow has to answer the first step somehow — a password prompt for one address
+and an error for another, or just a slower reply — and whatever it answers is a yes/no on
+whether that address has an account. With one submission there is nothing to answer: an unknown
+address and a real one travel the same path and meet the same sentence, because Keycloak sees
+the address at the moment it sees the password.
+
+What this keeps:
+
+- **Brute-force lockout.** Keycloak counts the failed submission as it always did. A locked
+  account is refused even with the right password — in the same words as a wrong one, which is
+  Keycloak's own behaviour for `auth-username-password-form` and the right answer here: "your
+  account is locked" would confirm the address is real. The lock is in the refusal, not the
+  wording.
+- **The code step.** `conditional-user-role` still follows the password for the roles that need
+  an authenticator code.
+
+One thing moved with it: "Forgot password" now lands on the reset page with an empty field,
+because the sign-in page never told Keycloak the address, and Keycloak forks back to the sign-in
+page with the confirmation rather than showing its own "check your inbox" page. Both screens are
+the theme's and both say the same non-revealing sentence; the `info.ftl` version still shows
+when the reset page is opened without a sign-in already under way.
+
+`e2e/m02-sign-in.spec.ts` holds both halves of the promise to the tests: the e-mail step makes
+no request to Keycloak, and an unknown address and a real one are indistinguishable on screen
+until the password error, which is the same error for both.
+
+**Domain-based SSO routing is out of scope with this design.** Sending `@client.com` straight to
+that client's identity provider needs the first step to be answered by the server, which this
+flow deliberately does not do. If a client needs it later, revisit it with Organizations
+identity-first: that reveals only whether a *domain* uses SSO, not whether an account exists.
+
 ### Organisation membership is not in the import
 
 Realm import reads the organisations before it reads the user file, so a `members` list in
@@ -77,12 +115,13 @@ itself, so tests never meet a user whose token carries no tenant.
 ## What the realm sets up
 
 **Email-first sign-in.** `registrationEmailAsUsername` makes the address the username. The
-browser flow `cpeople-browser` runs three steps the person actually sees:
+browser flow `cpeople-browser` has two authenticators; the person sees three steps, because the
+page splits the first one (above):
 
 | Step | Authenticator | Notes |
 |---|---|---|
-| Email | `auth-username-form` | No password field on this page |
-| Password | `auth-password-form` | Shows the address and a "forgot password" link |
+| Email | — | The page's own step. Reveals the password field, sends nothing |
+| Password | `auth-username-password-form` | Both fields in one submission, with the address shown and a "forgot password" link |
 | Code | `auth-otp-form` | Conditional — see below |
 
 **The code step is conditional on a role.** `conditional-user-role` matches one role, not a
