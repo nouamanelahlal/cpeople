@@ -6,8 +6,8 @@
   "description": "CPeople sign-in theme for Keycloak, built with Keycloakify (M02 / HR-08)",
   "scripts": {
     "dev": "vite",
-    "typecheck": "tsc -b --noEmit",
-    "build:theme": "tsc -b && vite build && keycloakify build"
+    "typecheck": "keycloakify update-kc-gen && tsc -b --noEmit",
+    "build:theme": "keycloakify update-kc-gen && tsc -b && vite build && keycloakify build"
   },
   "dependencies": {
     "@cpeople/ui": "workspace:*",

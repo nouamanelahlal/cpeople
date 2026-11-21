@@ -50,6 +50,10 @@ pnpm kc:verify-theme   # asks a running Keycloak whether it is really serving ou
 non-zero if that Keycloak has fallen back. CI runs the stack from this image and runs the gate
 before the tests, so what the tests sign in against is what deploys.
 
+`src/kc.gen.tsx` is generated, not committed: Keycloakify's Vite plugin writes it when the
+theme is built, which a lint-and-types CI job never does. So `typecheck` runs
+`keycloakify update-kc-gen` first — a clone that has never built the theme still typechecks.
+
 Keycloakify packages the theme with Apache Maven. Nothing here needs a JDK installed:
 `infra/keycloak/theme-builder/bin/mvn` runs the real Maven in a container, and the `.cmd`
 beside it does the same on Windows, where Node looks for `mvn.cmd`.
