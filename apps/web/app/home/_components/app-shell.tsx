@@ -272,7 +272,7 @@ export function AppShell({
                       ) : (
                         <span
                           aria-hidden="true"
-                          className="absolute top-[7px] start-7 size-[9px] rounded-full border-2 border-white bg-blue"
+                          className="absolute top-[5px] start-[26px] size-3 rounded-full border-2 border-white bg-blue"
                         />
                       ))}
                   </a>
