@@ -15,7 +15,11 @@ import { test, type TestInfo } from '@playwright/test';
  */
 export function skipWithoutBaseline(testInfo: TestInfo, snapshot: string): void {
   const expected = testInfo.snapshotPath(snapshot);
-  const updating = testInfo.config.updateSnapshots !== 'none';
+  // Only an explicit `--update-snapshots` writes baselines. The default is
+  // "missing", which would write one and fail the run — exactly what this guard
+  // exists to prevent on a platform that has none.
+  const asked = testInfo.config.updateSnapshots;
+  const updating = asked === 'all' || asked === 'changed';
 
   test.skip(
     !existsSync(expected) && !updating,

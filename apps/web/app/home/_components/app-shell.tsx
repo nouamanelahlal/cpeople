@@ -173,8 +173,13 @@ export function AppShell({
           <MenuIcon />
         </button>
         <a href="/home" aria-label={labels.home} className="flex items-center gap-2.5">
-          <Image src={icon} alt="" width={34} height={34} className="size-[34px]" />
-          <Image src={wordmark} alt="" height={30} className="h-[30px] w-auto" />
+          <Image src={icon} alt="" width={34} height={34} />
+          <Image
+            src={wordmark}
+            alt=""
+            height={30}
+            style={{ height: '30px', width: 'auto' }}
+          />
         </a>
         <span className="w-11" aria-hidden="true" />
       </div>
@@ -204,8 +209,10 @@ export function AppShell({
         >
           <div className="flex min-h-11 items-center gap-3">
             <a href="/home" aria-label={labels.home} className="flex min-w-0 flex-1 items-center gap-3">
-              <Image src={icon} alt="" width={44} height={44} className="size-11 shrink-0" />
-              {expanded && <Image src={wordmark} alt="" height={32} className="h-8 w-auto" />}
+              <Image src={icon} alt="" width={44} height={44} className="shrink-0" />
+              {expanded && (
+                <Image src={wordmark} alt="" height={32} style={{ height: '32px', width: 'auto' }} />
+              )}
             </a>
             {expanded && (
               <>
