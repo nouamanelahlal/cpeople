@@ -1,16 +1,17 @@
-import Image from 'next/image';
 import type { JSX } from 'react';
 import type { Formatter } from '../../../lib/format';
 import type { Kpi } from '../../../lib/home-data';
-import mark from '../../../public/brand/cpeople-symbol.png';
 import { Icon } from './icons';
 
-/** A tint per card, so the four are told apart at a glance and not by reading. */
-const TINTS: Record<Kpi['key'], { card: string; ink: string }> = {
-  headcount: { card: 'bg-sky-bg', ink: 'text-sky-ink' },
-  present: { card: 'bg-leaf-bg', ink: 'text-leaf-ink' },
-  leave: { card: 'bg-violet-bg', ink: 'text-violet-ink' },
-  documents: { card: 'bg-amber-bg', ink: 'text-amber-ink' },
+/**
+ * A tint per card, so the four are told apart at a glance and not by reading: the
+ * card's own ground, the ink of its icon, and the wash its watermark is painted in.
+ */
+const TINTS: Record<Kpi['key'], { card: string; ink: string; wash: string }> = {
+  headcount: { card: 'bg-sky-bg', ink: 'text-sky-ink', wash: 'bg-sky-wash' },
+  present: { card: 'bg-leaf-bg', ink: 'text-leaf-ink', wash: 'bg-leaf-wash' },
+  leave: { card: 'bg-violet-bg', ink: 'text-violet-ink', wash: 'bg-violet-wash' },
+  documents: { card: 'bg-amber-bg', ink: 'text-amber-ink', wash: 'bg-amber-wash' },
 };
 
 /** The four figures the day turns on (docs/design/home-dashboard.dc.html). */
@@ -33,15 +34,13 @@ export function KpiCards({ kpis, f }: { kpis: readonly Kpi[]; f: Formatter }): J
             href="#"
             className={`group relative flex flex-col gap-3 overflow-hidden rounded-[18px] border border-navy/[0.06] p-5 text-navy transition-[box-shadow,transform] duration-[250ms] ease-out hover:shadow-[0_10px_26px_rgba(15,25,55,0.08)] motion-safe:hover:-translate-y-0.5 ${tint.card}`}
           >
-            {/* The CPeople symbol in the bottom corner — the mark on its own, with
-                no tile behind it, which is what makes a watermark of it. It shifts
+            {/* The CPeople symbol in the bottom corner, painted in this card's own
+                wash: the file gives the shape, the card gives the colour. It shifts
                 a little when the card is hovered, as the design has it, and holds
                 still when asked to. */}
-            <Image
-              src={mark}
-              alt=""
+            <span
               aria-hidden="true"
-              className="pointer-events-none absolute -bottom-3 -end-2.5 w-[170px] max-w-none transition-transform duration-[350ms] ease-out motion-safe:group-hover:-translate-x-1 motion-safe:group-hover:-translate-y-1 motion-safe:group-hover:-rotate-3 motion-reduce:transition-none"
+              className={`cp-symbol-mark pointer-events-none absolute -bottom-3 -end-2.5 size-[170px] transition-transform duration-[350ms] ease-out motion-safe:group-hover:-translate-x-1 motion-safe:group-hover:-translate-y-1 motion-safe:group-hover:-rotate-3 motion-reduce:transition-none ${tint.wash}`}
             />
 
             <span className="relative flex items-center justify-between">

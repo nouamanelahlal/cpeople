@@ -31,6 +31,14 @@
 }
 
 @layer components {
+  /* The CPeople symbol as a watermark that takes its card's own colour: the file
+     supplies the shape, the background supplies the paint (which is how the
+     design draws it, docs/design/home-dashboard.dc.html). */
+  .cp-symbol-mark {
+    -webkit-mask: url('/brand/cpeople-symbol.png') no-repeat center / contain;
+    mask: url('/brand/cpeople-symbol.png') no-repeat center / contain;
+  }
+
   /* The quiet white button the whole shell is made of: the search box's
      neighbours, the menu's pin, the account chip (docs/design/home-dashboard.dc.html).
      It lifts a pixel under the pointer, and holds still for anyone who asked for
