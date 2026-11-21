@@ -567,22 +567,81 @@ input:focus-visible {
 }
 
 /* The tiles are rotated, so their drawing spills well outside the grid's own box.
-   This is the second clip: it keeps that spill off the words, whatever the width. */
+   What keeps that spill off the words and off the cards is a mask rather than a
+   clip: a cut leaves half a tile with a straight edge down the middle of it, which
+   no amount of positioning hides. The mask fades the drawing out on all four sides
+   instead, reaching fully transparent at every edge of this box — so nothing is
+   ever cut, because nothing is still there to cut.
+
+   `mask-repeat: no-repeat` is what makes the box a boundary at all: outside it the
+   mask is empty, so the spill beyond simply does not paint.
+
+   The four fades are named here and read by the panel test, which checks that the
+   part people actually see — this box less its fades — keeps clear of the headline
+   and the activity cards. One source of truth for where the drawing really is. */
 .cp-tiles-area {
+  --cp-fade-inline-start: 28%;
+  --cp-fade-inline-end: 20%;
+  --cp-fade-block-start: 14%;
+  --cp-fade-block-end: 16%;
+  --cp-fade-x: to right;
+
   position: absolute;
-  inset-inline-start: 55%;
+  inset-inline-start: 40%;
   inset-inline-end: 0;
   top: 0;
   bottom: 0;
-  overflow: hidden;
+
+  -webkit-mask-image:
+    linear-gradient(
+      var(--cp-fade-x),
+      transparent 0,
+      #000 var(--cp-fade-inline-start),
+      #000 calc(100% - var(--cp-fade-inline-end)),
+      transparent 100%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 var(--cp-fade-block-start),
+      #000 calc(100% - var(--cp-fade-block-end)),
+      transparent 100%
+    );
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(
+      var(--cp-fade-x),
+      transparent 0,
+      #000 var(--cp-fade-inline-start),
+      #000 calc(100% - var(--cp-fade-inline-end)),
+      transparent 100%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 var(--cp-fade-block-start),
+      #000 calc(100% - var(--cp-fade-block-end)),
+      transparent 100%
+    );
+  mask-repeat: no-repeat;
+  mask-composite: intersect;
+}
+
+/* Right to left one day: the drawing fades towards the words, whichever side the
+   words are on. */
+[dir='rtl'] .cp-tiles-area {
+  --cp-fade-x: to left;
 }
 
 .cp-tiles {
+  /* Inside the mask box, not hanging over its edge: the fade is what ends the
+     drawing now, and it can only fade what it is given. */
   position: absolute;
   inset-inline-start: 0;
-  inset-inline-end: -40px;
+  inset-inline-end: 0;
   top: clamp(24px, 14%, 120px);
-  max-width: 520px;
+  max-width: 560px;
   aspect-ratio: 1;
   transform: rotateX(55deg) rotateZ(-45deg);
   display: grid;
@@ -599,9 +658,15 @@ input:focus-visible {
 }
 
 .cp-float {
+  /* Kept a clear 32px off the panel's edges — more than its 28px corner radius, so
+     the rounded corner cannot bite it either — with the drift it is about to do
+     added on top, because the icon is at its highest in the middle of that drift. */
+  --cp-float-clearance: 32px;
+  --cp-float-drift: 12px;
+
   position: absolute;
-  inset-inline-end: clamp(32px, 9%, 96px);
-  top: clamp(24px, 12%, 96px);
+  inset-inline-end: max(var(--cp-float-clearance), clamp(32px, 9%, 96px));
+  top: max(calc(var(--cp-float-clearance) + var(--cp-float-drift)), clamp(24px, 12%, 96px));
   width: clamp(84px, 13%, 136px);
   height: auto;
   aspect-ratio: 1;
@@ -698,7 +763,7 @@ input:focus-visible {
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-12px);
+    transform: translateY(calc(-1 * var(--cp-float-drift)));
   }
 }
 

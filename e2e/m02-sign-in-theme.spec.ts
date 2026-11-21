@@ -68,6 +68,35 @@ test.describe('M02 sign-in theme', () => {
     await clearLockout(email);
   });
 
+  test('fades the glass tiles out instead of cutting them', async ({ page }) => {
+    await page.setViewportSize(DESKTOP);
+    await startSignIn(page);
+
+    // A clip leaves half a tile with a straight edge down the middle of it, which is
+    // what manual testing saw. The mask has to reach fully transparent at every edge
+    // of its box, and the box must not be clipping anything itself — then there is
+    // nothing left at any edge to show a straight line.
+    const mask = await page.locator('.cp-tiles-area').evaluate((area) => {
+      const style = getComputedStyle(area);
+      return {
+        overflow: style.overflow,
+        repeat: style.maskRepeat,
+        image: style.maskImage,
+      };
+    });
+
+    expect(mask.overflow).toBe('visible');
+    // Without no-repeat the mask would tile across the spill instead of ending it.
+    expect(mask.repeat).toMatch(/^no-repeat(, no-repeat)?$/);
+
+    // One gradient across, one down, and each starting and ending at nothing: four
+    // edges, four fades.
+    const count = (pattern: RegExp) => (mask.image.match(pattern) ?? []).length;
+    expect(count(/linear-gradient\(/g)).toBe(2);
+    expect(count(/rgba\(0, 0, 0, 0\) 0(px)?,/g)).toBe(2);
+    expect(count(/rgba\(0, 0, 0, 0\) 100%\)/g)).toBe(2);
+  });
+
   test('keeps the glass tiles clear of the cards and the headline, at any size', async ({
     page,
   }) => {
@@ -90,26 +119,29 @@ test.describe('M02 sign-in theme', () => {
             return element ? element.getBoundingClientRect() : null;
           };
 
-          const clip = rect('.cp-showcase-top');
-          const area = rect('.cp-tiles-area');
-          const tiles = rect('.cp-tiles');
+          const area = document.querySelector('.cp-tiles-area');
           const cards = rect('.cp-activity');
           const headline = rect('.cp-showcase-copy h2');
-          if (!clip || !area || !tiles || !cards || !headline) return null;
+          if (area === null || cards === null || headline === null) return null;
 
-          // The tiles are rotated and clipped, so their layout box says more than
-          // the eye sees. What matters is the part still on screen.
-          const visible = {
-            top: Math.max(tiles.top, clip.top, area.top),
-            bottom: Math.min(tiles.bottom, clip.bottom, area.bottom),
-            left: Math.max(tiles.left, clip.left, area.left),
-            right: Math.min(tiles.right, clip.right, area.right),
+          // What people see is this box less its fades: at the fade stops the
+          // drawing is already on its way out, and past them there is nothing. The
+          // stops are declared in the stylesheet, so this reads them rather than
+          // repeating them.
+          const box = area.getBoundingClientRect();
+          const style = getComputedStyle(area);
+          const share = (name: string) => Number.parseFloat(style.getPropertyValue(name)) / 100;
+          const solid = {
+            left: box.left + box.width * share('--cp-fade-inline-start'),
+            right: box.right - box.width * share('--cp-fade-inline-end'),
+            top: box.top + box.height * share('--cp-fade-block-start'),
+            bottom: box.bottom - box.height * share('--cp-fade-block-end'),
           };
           const hits = (other: DOMRect) =>
-            visible.left < other.right &&
-            visible.right > other.left &&
-            visible.top < other.bottom &&
-            visible.bottom > other.top;
+            solid.left < other.right &&
+            solid.right > other.left &&
+            solid.top < other.bottom &&
+            solid.bottom > other.top;
 
           return {
             overCards: hits(cards),
@@ -128,6 +160,54 @@ test.describe('M02 sign-in theme', () => {
     }
 
     expect(problems).toEqual([]);
+  });
+
+  test('keeps the floating icon inside the panel, clear of its edges', async ({ page }) => {
+    await page.setViewportSize(DESKTOP);
+    await startSignIn(page);
+
+    // The sizes it was reported cropped at, plus the smallest the panel is shown at
+    // and the largest we check. No reduced motion here on purpose: the icon drifts,
+    // and the top of that drift is where it meets the panel's edge.
+    const sizes = [
+      { width: 1280, height: 720 },
+      { width: 1366, height: 768 },
+      { width: 1440, height: 900 },
+      { width: 1920, height: 1080 },
+      { width: 901, height: 650 },
+      { width: 2560, height: 1440 },
+    ];
+    const tooClose: string[] = [];
+
+    for (const size of sizes) {
+      await page.setViewportSize(size);
+      await page.evaluate(() => new Promise(requestAnimationFrame));
+
+      // Sampled across a whole drift cycle, which takes six seconds.
+      for (let sample = 0; sample < 8; sample += 1) {
+        const clearance = await page.evaluate(() => {
+          const panel = document.querySelector('.cp-showcase-panel')!.getBoundingClientRect();
+          const icon = document.querySelector('.cp-float')!.getBoundingClientRect();
+          return {
+            top: icon.top - panel.top,
+            right: panel.right - icon.right,
+            bottom: panel.bottom - icon.bottom,
+            left: icon.left - panel.left,
+          };
+        });
+
+        const nearest = Math.min(...Object.values(clearance));
+        if (nearest < 32) {
+          tooClose.push(`${size.width}x${size.height}: ${Math.round(nearest)}px`);
+          break;
+        }
+        await page.waitForTimeout(400);
+      }
+    }
+
+    // Inside the panel with room to spare, so neither an edge nor the 28px corner
+    // radius can take a bite out of it.
+    expect(tooClose).toEqual([]);
   });
 
   test('matches the approved sign-in page', async ({ page }, testInfo) => {
