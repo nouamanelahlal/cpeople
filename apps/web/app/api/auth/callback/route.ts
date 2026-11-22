@@ -5,6 +5,7 @@ import { clearFlowCookie, FLOW_COOKIE, readFlowCookie } from '../../../../lib/fl
 import { LOCALE_COOKIE } from '../../../../lib/locale';
 import { oidcConfig, redirectUri, sessionFromTokens } from '../../../../lib/oidc';
 import { sealSession, writeSessionCookies } from '../../../../lib/session';
+import { WELCOME_COOKIE, WELCOME_MAX_AGE_SECONDS } from '../../../../lib/welcome';
 
 /** Where Keycloak sends the browser back with an authorization code. */
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -40,6 +41,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   response.cookies.set(LOCALE_COOKIE, session.locale, {
     path: '/',
     maxAge: 60 * 60 * 24 * 365,
+    sameSite: 'lax',
+  });
+  // "This person has just signed in", for the welcome animation. The page that
+  // plays it deletes this on sight, so a refresh does not play it again.
+  response.cookies.set(WELCOME_COOKIE, '1', {
+    path: '/',
+    maxAge: WELCOME_MAX_AGE_SECONDS,
     sameSite: 'lax',
   });
   return response;

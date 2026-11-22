@@ -56,6 +56,11 @@ export const en = {
     },
     tenantNote: '{city}, {country} pack',
   },
+  welcome: {
+    /** Read aloud while the animation plays; nobody has to wait for it. */
+    announce: 'Signing you in to CPeople',
+    skip: 'Skip the welcome animation',
+  },
   home: {
     greeting: {
       morning: 'Good morning, {name}',

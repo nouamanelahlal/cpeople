@@ -14,6 +14,7 @@ import { greetingKey, isoDateIn, viewerClock } from '../../lib/clock';
 import { fill, formatter } from '../../lib/format';
 import { homeData, type IconName } from '../../lib/home-data';
 import { LOCALE_COOKIE } from '../../lib/locale';
+import { WELCOME_COOKIE } from '../../lib/welcome';
 import type { Session } from '../../lib/session';
 import { AppShell, type NavGroup, type ShellLabels } from './_components/app-shell';
 import { Away } from './_components/away';
@@ -24,6 +25,7 @@ import { KpiCards } from './_components/kpi-cards';
 import { PayrollPanel } from './_components/payroll-panel';
 import { Tasks } from './_components/tasks';
 import { TimeZoneSync } from './_components/time-zone-sync';
+import { WelcomeOverlay } from './_components/welcome-overlay';
 
 /**
  * The home screen: the payroll month, the day's figures, and what is waiting
@@ -46,6 +48,11 @@ export default async function HomePage(): Promise<JSX.Element | null> {
   // (the sign-in callback writes that into the same cookie).
   const locale = toLocale(store.get(LOCALE_COOKIE)?.value ?? session.locale);
   const t = getMessages(locale);
+
+  // Set by the sign-in callback and by nothing else, so the animation plays on the
+  // way in from Keycloak and never on a refresh, a token refresh or a return to
+  // this page later on.
+  const justSignedIn = store.get(WELCOME_COOKIE)?.value === '1';
 
   const data = homeData();
   const clock = await viewerClock(data.tenant.timeZone);
@@ -81,7 +88,17 @@ export default async function HomePage(): Promise<JSX.Element | null> {
   const charges = data.cost.map((month) => month.chargesMinor);
 
   return (
-    <AppShell
+    <>
+      <WelcomeOverlay play={justSignedIn} label={t.welcome.announce} skip={t.welcome.skip} />
+      {/* Without scripting there is nothing to take the overlay away, so it never
+          appears in the first place. */}
+      {justSignedIn && (
+        <noscript>
+          <style>{`.cp-welcome{display:none}`}</style>
+        </noscript>
+      )}
+
+      <AppShell
       nav={navigation(t, data.badges)}
       labels={shellLabels(t, locale, session, data.notifications)}
       user={{ name, initials: initials(name), role: roleLabel(t, session.roles) }}
@@ -138,7 +155,8 @@ export default async function HomePage(): Promise<JSX.Element | null> {
       </div>
 
       <Connections connections={data.connections} f={f} />
-    </AppShell>
+      </AppShell>
+    </>
   );
 }
 

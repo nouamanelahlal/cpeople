@@ -61,6 +61,11 @@ export const fr: Messages = {
     },
     tenantNote: '{city}, pack {country}',
   },
+  welcome: {
+    /** Read aloud while the animation plays; nobody has to wait for it. */
+    announce: 'Connexion à CPeople',
+    skip: 'Passer l’animation d’accueil',
+  },
   home: {
     greeting: {
       // Bonjour covers the morning and the afternoon; "Bienvenue" belongs to the

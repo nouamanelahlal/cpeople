@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CPeople welcome animation after sign-in</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F0F0F0}
+@property --sweep{syntax:'<angle>';inherits:false;initial-value:0deg}
+.lay{position:absolute;inset:0;width:100%;height:100%;display:block}
+.cdraw{-webkit-mask:conic-gradient(from 245deg at 60.5% 89.06%,#000 0deg,#000 var(--sweep),transparent calc(var(--sweep) + 8deg));mask:conic-gradient(from 245deg at 60.5% 89.06%,#000 0deg,#000 var(--sweep),transparent calc(var(--sweep) + 8deg))}
+.anim .t-tile{transition:opacity calc(var(--s) * .45s) ease-out,transform calc(var(--s) * .45s) cubic-bezier(.2,.8,.2,1)}
+.anim .t-sweep{transition:--sweep calc(var(--s) * .8s) cubic-bezier(.65,0,.35,1)}
+.anim .t-pop{transition:opacity calc(var(--s) * .3s) ease-out,transform calc(var(--s) * .45s) cubic-bezier(.34,1.56,.64,1)}
+.anim .t-fade{transition:opacity calc(var(--s) * .25s) ease}
+.anim .t-word{transition:clip-path calc(var(--s) * .55s) cubic-bezier(.65,0,.35,1),opacity calc(var(--s) * .4s) ease,transform calc(var(--s) * .55s) ease-out}
+.anim .t-out{transition:opacity calc(var(--s) * .6s) ease}
+.anim .t-dash{transition:transform calc(var(--s) * .9s) cubic-bezier(.2,.8,.2,1)}
+</style>
+</helmet>
+<div class="{{animCls}}" style="position: relative; overflow: hidden; min-height: 100vh; font-family: Montserrat, sans-serif; color: #0F1937; background: #F0F0F0; --s: {{speed}}">
+<img class="t-dash" src="/_blob/977ae002d5e32520002040e2ca3458b4" alt="CPeople home dashboard" style="display: block; width: 100%; height: auto; transform: scale({{dashScale}}); transform-origin: 50% 0">
+<div role="status" aria-live="polite" class="t-out" style="position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; background: radial-gradient(circle at 50% 44%, #FFFFFF 0%, #F0F0F0 62%); opacity: {{overlayOp}}; pointer-events: {{overlayPe}}">
+<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Signing you in to CPeople</span>
+<div class="t-tile" aria-hidden="true" style="position: relative; width: 176px; height: 176px; opacity: {{tileOp}}; transform: scale({{tileScale}}); filter: drop-shadow(0 22px 36px rgba(14,123,176,0.30))">
+<img class="lay" src="/_blob/5f3e19d04077990931858f5bd8e6af64" alt="">
+<div class="lay" style="opacity: 0.16">
+<img class="lay" src="/_blob/68edffe9300c5eced7308e9885ef1017" alt="">
+<img class="lay" src="/_blob/5669806d2deb0293b898fd8323547807" alt="">
+<img class="lay" src="/_blob/610eac453b8cb5095bf227a8cb2e2f09" alt="">
+<img class="lay" src="/_blob/684820f1ad6134d74858f26dacc31306" alt="">
+</div>
+<img class="lay cdraw t-sweep" src="/_blob/68edffe9300c5eced7308e9885ef1017" alt="" style="--sweep: {{sweep}}">
+<img class="lay t-pop" src="/_blob/5669806d2deb0293b898fd8323547807" alt="" style="opacity: {{popOp}}; transform: scale({{popScale}}); transform-origin: 18.4% 59.2%; transition-delay: 0s">
+<img class="lay t-pop" src="/_blob/610eac453b8cb5095bf227a8cb2e2f09" alt="" style="opacity: {{popOp}}; transform: scale({{popScale}}); transform-origin: 41.2% 44.7%; transition-delay: calc(var(--s) * .14s)">
+<img class="lay t-pop" src="/_blob/684820f1ad6134d74858f26dacc31306" alt="" style="opacity: {{popOp}}; transform: scale({{popScale}}); transform-origin: 68.8% 40%; transition-delay: calc(var(--s) * .28s)">
+<img class="lay t-fade" src="/_blob/0800be7a6d4ba1c8d35052be061a727f" alt="" style="opacity: {{finalOp}}">
+</div>
+<img class="t-word" src="/_blob/4bf11b0ef6f0c9e571cacd3664a1cd19" alt="CPeople by ConSAP" style="height: 52px; width: auto; display: block; clip-path: {{wordClip}}; opacity: {{wordOp}}; transform: translateY({{wordY}}px)">
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"speed":{"editor":"range","min":0.5,"max":2,"step":0.1,"default":1,"section":"Animation"},"loop":{"editor":"boolean","default":true,"section":"Animation"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  componentDidMount() { this.start(); }
+  componentWillUnmount() { this.clear(); }
+  clear() { (this._t || []).forEach(function (t) { clearTimeout(t); }); this._t = []; }
+  at(ms, fn) { this._t.push(setTimeout(fn, ms)); }
+  start() {
+    var self = this;
+    this.clear();
+    var s = this.props.speed || 1;
+    var reduce = false;
+    try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+    this.setState({ phase: 0, anim: false });
+    if (reduce) {
+      this.at(30, function () { self.setState({ phase: 4, anim: true }); });
+      this.at(900, function () { self.setState({ phase: 6 }); });
+      return;
+    }
+    this.at(40, function () { self.setState({ phase: 1, anim: true }); });
+    this.at(500 * s, function () { self.setState({ phase: 2 }); });
+    this.at(1250 * s, function () { self.setState({ phase: 3 }); });
+    this.at(1950 * s, function () { self.setState({ phase: 4 }); });
+    this.at(2800 * s, function () { self.setState({ phase: 6 }); });
+    if (this.props.loop !== false) { this.at(2800 * s + 2600, function () { self.start(); }); }
+  }
+  renderVals() {
+    var st = this.state || {};
+    var p = st.phase || 0;
+    return {
+      speed: String(this.props.speed || 1),
+      animCls: st.anim ? 'anim' : '',
+      tileOp: p >= 1 ? 1 : 0, tileScale: p >= 1 ? 1 : 0.9,
+      sweep: p >= 2 ? '200deg' : '0deg',
+      popOp: p >= 3 ? 1 : 0, popScale: p >= 3 ? 1 : 0.2,
+      finalOp: p >= 4 ? 1 : 0,
+      wordOp: p >= 4 ? 1 : 0, wordY: p >= 4 ? 0 : 8, wordClip: p >= 4 ? 'inset(0 0 0 0)' : 'inset(0 100% 0 0)',
+      overlayOp: p >= 6 ? 0 : 1, overlayPe: p >= 6 ? 'none' : 'auto',
+      dashScale: p >= 6 ? 1 : 1.02
+    };
+  }
+}
+</script>
+</body>
+</html>

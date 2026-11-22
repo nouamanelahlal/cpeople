@@ -4,6 +4,7 @@ import { toLocale } from '@cpeople/shared';
 import { safeCallbackUrl, writeFlowCookie } from '../../../../lib/flow-cookie';
 import { LOCALE_COOKIE } from '../../../../lib/locale';
 import { oidcConfig, redirectUri, SCOPE } from '../../../../lib/oidc';
+import { preloadLayersHeader } from '../../../../lib/welcome';
 
 /**
  * Starts sign-in: authorization code flow with PKCE (M02 / HR-08).
@@ -34,5 +35,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const response = NextResponse.redirect(authorizationUrl);
   writeFlowCookie(response.cookies, { verifier, state, callbackUrl });
+  // The welcome animation's layers, fetched while the person is away at Keycloak.
+  response.headers.set('Link', preloadLayersHeader());
   return response;
 }

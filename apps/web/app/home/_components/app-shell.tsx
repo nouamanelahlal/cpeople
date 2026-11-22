@@ -153,7 +153,7 @@ export function AppShell({
 
   return (
     <div
-      className="flex min-h-dvh flex-wrap items-stretch bg-page"
+      className="cp-app flex min-h-dvh flex-wrap items-stretch bg-page"
       style={
         {
           '--rail-slot': `${pinned ? OPEN : RAIL}px`,
@@ -302,7 +302,13 @@ export function AppShell({
         </nav>
       </div>
 
-      <main className="flex min-w-0 shrink grow-[999] basis-[560px] flex-col gap-6 px-[clamp(16px,3vw,40px)] pb-12 pt-6">
+      {/* Where the keyboard lands when the welcome animation finishes, and where a
+          "skip to content" link will point when there is one. */}
+      <main
+        id="main"
+        tabIndex={-1}
+        className="flex min-w-0 shrink grow-[999] basis-[560px] flex-col gap-6 px-[clamp(16px,3vw,40px)] pb-12 pt-6 focus:outline-none"
+      >
         <header className="flex flex-wrap items-center gap-x-6 gap-y-4">
           <div className="flex min-w-0 shrink grow basis-[280px] flex-col gap-1">
             <h1 className="text-[26px] font-normal tracking-[-0.01em] text-navy">{title}</h1>

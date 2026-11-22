@@ -280,7 +280,8 @@ test.describe('M02 session handling', () => {
     await signIn(page, users);
 
     await signOutFromMenu(page, users.employee.name);
-    await expect(page).toHaveURL(/\/signed-out$/);
+    // Through Keycloak's logout endpoint and back, which is a round trip.
+    await expect(page).toHaveURL(/\/signed-out$/, { timeout: 15_000 });
 
     // The protected page is closed again.
     await page.goto('/home');
