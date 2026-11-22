@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import type { Principal } from '../auth/token-verifier.service.js';
 
 export interface TenantContext {
@@ -39,10 +39,21 @@ export class TenantContextService {
   }
 
   /** The signed-in user, or a failure if this request was not authenticated. */
+  /**
+   * The signed-in person, or a refusal.
+   *
+   * Reaching this without one is a request that carried a tenant header and no
+   * token — a local-development shortcut that identifies a tenant but nobody in
+   * particular. That is the caller's problem, not a fault here, so it answers
+   * 401 and says what is missing.
+   */
   requirePrincipal(): Principal {
     const principal = this.storage.getStore()?.principal;
     if (!principal) {
-      throw new InternalServerErrorException('This request has no signed-in user');
+      throw new UnauthorizedException(
+        'This request has no signed-in user. Sign in to CPeople: the x-tenant-id header ' +
+          'names a tenant, not a person, and anything that depends on a role needs both.',
+      );
     }
     return principal;
   }

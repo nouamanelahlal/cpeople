@@ -19,4 +19,26 @@ export class MeDto {
 
   @ApiProperty({ required: false, example: 'fr', description: 'Language chosen in Keycloak' })
   locale?: string;
+
+  @ApiProperty({
+    description: 'The CPeople role this person acts in, from their realm roles',
+    example: 'hr',
+    enum: ['admin', 'hr', 'manager', 'employee'],
+  })
+  role!: string;
+
+  @ApiProperty({
+    description: 'What that role may do. The API enforces it; this is so the UI can draw it',
+    isArray: true,
+    type: String,
+    example: ['employee.list.all', 'employee.sensitive.read'],
+  })
+  capabilities!: string[];
+
+  @ApiProperty({
+    required: false,
+    format: 'uuid',
+    description: 'Their own employee file, when the e-mail in the token matches one',
+  })
+  employeeId?: string;
 }

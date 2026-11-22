@@ -34,8 +34,8 @@
     {
       "username": "hr@smg-demo.test",
       "email": "hr@smg-demo.test",
-      "firstName": "Hind",
-      "lastName": "Ressources",
+      "firstName": "Salma",
+      "lastName": "Benali",
       "enabled": true,
       "emailVerified": true,
       "attributes": {
@@ -94,8 +94,8 @@
     {
       "username": "manager@smg-demo.test",
       "email": "manager@smg-demo.test",
-      "firstName": "Mounir",
-      "lastName": "Manager",
+      "firstName": "Rachid",
+      "lastName": "Kettani",
       "enabled": true,
       "emailVerified": true,
       "attributes": {
@@ -118,8 +118,8 @@
     {
       "username": "employee@smg-demo.test",
       "email": "employee@smg-demo.test",
-      "firstName": "Salma",
-      "lastName": "Salarie",
+      "firstName": "Karim",
+      "lastName": "Alaoui",
       "enabled": true,
       "emailVerified": true,
       "attributes": {

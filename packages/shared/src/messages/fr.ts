@@ -1,4 +1,4 @@
-import type { Messages } from './index';
+import type { Messages } from './index.js';
 
 /**
  * French, written for HR staff in Morocco: the words they use at work, not a
