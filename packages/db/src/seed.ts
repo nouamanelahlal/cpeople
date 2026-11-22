@@ -5,6 +5,7 @@
 // can provision tenants. Application code cannot do this.
 
 import { createMigrationPrismaClient } from './client.js';
+import { DEMO_TODAY, seedHr01Demo } from './demo/hr01.js';
 
 const prisma = createMigrationPrismaClient();
 
@@ -52,6 +53,17 @@ async function main(): Promise<void> {
     });
 
     console.log(`seeded tenant ${row.slug} (${row.id})`);
+
+    // The HR-01 demo lives in the SMG tenant only: the second tenant exists to
+    // prove isolation, and an empty one proves it better.
+    if (row.slug === 'smg-demo') {
+      const company = await prisma.company.findFirstOrThrow({ where: { tenantId: row.id } });
+      const counts = await seedHr01Demo(prisma, row.id, company.id);
+      console.log(
+        `  HR-01 demo (as at ${DEMO_TODAY}): ${counts.employees} employees, ` +
+          `${counts.contracts} contracts, ${counts.documents} documents, ${counts.tasks} onboarding tasks`,
+      );
+    }
   }
 }
 

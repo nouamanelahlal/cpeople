@@ -10,3 +10,4 @@ export {
 export { APP_DB_ROLE, TENANT_SETTING, withTenant } from './tenant.js';
 export type { TenantClient } from './tenant.js';
 export type { Company, Tenant } from './generated/prisma/client.js';
+export { DEMO_TODAY, seedHr01Demo } from './demo/hr01.js';

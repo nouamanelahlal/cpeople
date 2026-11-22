@@ -34,7 +34,24 @@ model Tenant {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  companies Company[]
+  companies          Company[]
+  sites              Site[]
+  costCentres        CostCentre[]
+  departments        Department[]
+  positions          Position[]
+  employees          Employee[]
+  dependents         Dependent[]
+  contractTypes      ContractType[]
+  contractTemplates  ContractTemplate[]
+  contractClauses    ContractClause[]
+  contracts          Contract[]
+  documentTypes      DocumentType[]
+  documents          EmployeeDocument[]
+  checklistTemplates ChecklistTemplate[]
+  checklistItems     ChecklistItemTemplate[]
+  onboardingTasks    OnboardingTask[]
+  auditEvents        AuditEvent[]
+  publicHolidays     PublicHoliday[]
 
   @@map("tenant")
 }
@@ -51,9 +68,521 @@ model Company {
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  sites       Site[]
+  costCentres CostCentre[]
+  departments Department[]
+  employees   Employee[]
 
   @@unique([tenantId, name])
   @@index([tenantId])
   @@map("company")
+}
+
+// ---------------------------------------------------------------------------
+// The employee file: people, where they sit, what they signed, what they owe us
+// (M03-M07 / HR-01).
+//
+// Country-neutral on purpose (rule 2). Morocco calls the national identifier a
+// CIN, the social-security number a CNSS number and the complementary pension
+// CIMR; those are names, and they belong to the MA country pack together with
+// their formats and their validation. What the core stores is the neutral field.
+//
+// TODO(M21): salary, national id and bank account are the fields rule 6 wants
+// encrypted at field level. That encryption is not built yet, so the HR-01 demo
+// does not claim it, and until it is this data is invented only.
+// ---------------------------------------------------------------------------
+
+enum EmployeeStatus {
+  onboarding
+  active
+  left
+
+  @@map("employee_status")
+}
+
+enum Gender {
+  female
+  male
+  unspecified
+
+  @@map("gender")
+}
+
+enum MaritalStatus {
+  single
+  married
+  divorced
+  widowed
+
+  @@map("marital_status")
+}
+
+enum ContractStatus {
+  draft
+  generated
+  signed
+  renewed
+  ended
+
+  @@map("contract_status")
+}
+
+enum OnboardingTaskStatus {
+  todo
+  done
+
+  @@map("onboarding_task_status")
+}
+
+/// A place of work (M01 / IMP-01): the outlet, the kitchen, the head office.
+model Site {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  companyId String   @map("company_id") @db.Uuid
+  code      String
+  name      String
+  city      String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  departments Department[]
+  employees   Employee[]
+  contracts   Contract[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("site")
+}
+
+/// Where a cost lands in the ledger (M01 / HR-07). `sapCostCentre` is the code in
+/// S/4HANA, left empty until Finance maps it (workshop HR-03).
+model CostCentre {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  companyId     String   @map("company_id") @db.Uuid
+  code          String
+  name          String
+  sapCostCentre String?  @map("sap_cost_centre")
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  departments Department[]
+  employees   Employee[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("cost_centre")
+}
+
+/// A department (M01). Its cost centre is the default for everyone in it; an
+/// employee may override that, and the override is kept as such.
+model Department {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  companyId      String   @map("company_id") @db.Uuid
+  code           String
+  name           String
+  siteId         String?  @map("site_id") @db.Uuid
+  costCentreId   String?  @map("cost_centre_id") @db.Uuid
+  headEmployeeId String?  @map("head_employee_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  company    Company     @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  site       Site?       @relation(fields: [siteId], references: [id], onDelete: Restrict)
+  costCentre CostCentre? @relation(fields: [costCentreId], references: [id], onDelete: Restrict)
+  head       Employee?   @relation("DepartmentHead", fields: [headEmployeeId], references: [id], onDelete: SetNull)
+  positions  Position[]
+  employees  Employee[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("department")
+}
+
+/// A job, not a person (M01 / M06). The line between positions is what the
+/// organisation chart falls back on when a post is vacant.
+model Position {
+  id                  String   @id @default(uuid(7)) @db.Uuid
+  tenantId            String   @map("tenant_id") @db.Uuid
+  code                String
+  title               String
+  departmentId        String   @map("department_id") @db.Uuid
+  reportsToPositionId String?  @map("reports_to_position_id") @db.Uuid
+  plannedHeadcount    Int?     @map("planned_headcount")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  reportsTo  Position?  @relation("PositionLine", fields: [reportsToPositionId], references: [id], onDelete: SetNull)
+  reports    Position[] @relation("PositionLine")
+  employees  Employee[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("position")
+}
+
+/// A person on the payroll (M03 / HR-01).
+model Employee {
+  id             String         @id @default(uuid(7)) @db.Uuid
+  tenantId       String         @map("tenant_id") @db.Uuid
+  companyId      String         @map("company_id") @db.Uuid
+  /// The employer's own number for this person, e.g. SMG-0001.
+  employeeNumber String         @map("employee_number")
+  status         EmployeeStatus @default(onboarding)
+
+  firstName     String        @map("first_name")
+  lastName      String        @map("last_name")
+  gender        Gender        @default(unspecified)
+  birthDate     DateTime      @map("birth_date") @db.Date
+  nationality   String        @db.Char(2)
+  /// National identity document. Morocco: the CIN; the MA pack owns the format.
+  nationalId    String        @map("national_id")
+  maritalStatus MaritalStatus @default(single) @map("marital_status")
+  address       String?
+  phone         String?
+  email         String?
+
+  positionId         String    @map("position_id") @db.Uuid
+  departmentId       String    @map("department_id") @db.Uuid
+  siteId             String?   @map("site_id") @db.Uuid
+  costCentreId       String?   @map("cost_centre_id") @db.Uuid
+  /// True when this person's cost centre is not their department's.
+  costCentreOverride Boolean   @default(false) @map("cost_centre_override")
+  managerId          String?   @map("manager_id") @db.Uuid
+  hireDate           DateTime  @map("hire_date") @db.Date
+  seniorityDate      DateTime  @map("seniority_date") @db.Date
+  leftOn             DateTime? @map("left_on") @db.Date
+
+  /// Integer minor units with its currency (rule 4): 650000 is 6 500,00 MAD.
+  baseSalaryMinor      Int     @map("base_salary_minor")
+  salaryCurrency       String  @default("MAD") @map("salary_currency") @db.Char(3)
+  /// Social-security number. Morocco: the CNSS number.
+  socialSecurityNumber String? @map("social_security_number")
+  /// Member of the complementary pension scheme. Morocco: CIMR.
+  pensionMember        Boolean @default(false) @map("pension_member")
+  bankName             String? @map("bank_name")
+  /// Bank account. Morocco: the RIB, 24 digits.
+  bankAccount          String? @map("bank_account")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  company    Company     @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  position   Position    @relation(fields: [positionId], references: [id], onDelete: Restrict)
+  department Department  @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  site       Site?       @relation(fields: [siteId], references: [id], onDelete: Restrict)
+  costCentre CostCentre? @relation(fields: [costCentreId], references: [id], onDelete: Restrict)
+  manager    Employee?   @relation("ReportsTo", fields: [managerId], references: [id], onDelete: SetNull)
+
+  reports    Employee[]         @relation("ReportsTo")
+  heads      Department[]       @relation("DepartmentHead")
+  dependents Dependent[]
+  contracts  Contract[]
+  documents  EmployeeDocument[]
+  tasks      OnboardingTask[]
+
+  @@unique([tenantId, employeeNumber])
+  @@unique([tenantId, nationalId])
+  @@index([tenantId])
+  @@index([tenantId, lastName])
+  @@index([tenantId, departmentId])
+  @@index([tenantId, managerId])
+  @@map("employee")
+}
+
+/// A spouse or a child, which Moroccan income tax takes account of.
+model Dependent {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  employeeId String   @map("employee_id") @db.Uuid
+  relation   String
+  firstName  String   @map("first_name")
+  birthDate  DateTime @map("birth_date") @db.Date
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, employeeId])
+  @@map("dependent")
+}
+
+/// A kind of contract (M07 / HR-02). Morocco uses CDI, CDD and ANAPEC.
+model ContractType {
+  id               String   @id @default(uuid(7)) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  code             String
+  name             String
+  requiresEndDate  Boolean  @default(false) @map("requires_end_date")
+  defaultTrialDays Int?     @map("default_trial_days")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  templates ContractTemplate[]
+  contracts Contract[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("contract_type")
+}
+
+/// The wording a contract is generated from. Sample text until SMG approves it.
+model ContractTemplate {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  contractTypeId String   @map("contract_type_id") @db.Uuid
+  language       String   @db.Char(2)
+  version        Int      @default(1)
+  title          String
+  /// The body, with the {{merge.fields}} the generator fills in.
+  body           String
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  contractType ContractType     @relation(fields: [contractTypeId], references: [id], onDelete: Restrict)
+  clauses      ContractClause[]
+  contracts    Contract[]
+
+  @@unique([tenantId, contractTypeId, language, version])
+  @@index([tenantId])
+  @@map("contract_template")
+}
+
+/// One article of a contract. Optional clauses can be left out when generating.
+model ContractClause {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  templateId String   @map("template_id") @db.Uuid
+  key        String
+  title      String
+  text       String
+  mandatory  Boolean  @default(true)
+  sortOrder  Int      @map("sort_order")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  template ContractTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, templateId, key])
+  @@index([tenantId])
+  @@map("contract_clause")
+}
+
+/// What this person actually signed (M07 / HR-02). A renewal points back at the
+/// contract it follows, so the history of a fixed term reads end to end.
+model Contract {
+  id                 String         @id @default(uuid(7)) @db.Uuid
+  tenantId           String         @map("tenant_id") @db.Uuid
+  employeeId         String         @map("employee_id") @db.Uuid
+  contractTypeId     String         @map("contract_type_id") @db.Uuid
+  templateId         String?        @map("template_id") @db.Uuid
+  status             ContractStatus @default(draft)
+  startDate          DateTime       @map("start_date") @db.Date
+  endDate            DateTime?      @map("end_date") @db.Date
+  trialEndDate       DateTime?      @map("trial_end_date") @db.Date
+  positionId         String?        @map("position_id") @db.Uuid
+  workplaceSiteId    String?        @map("workplace_site_id") @db.Uuid
+  salaryMinor        Int            @map("salary_minor")
+  salaryCurrency     String         @default("MAD") @map("salary_currency") @db.Char(3)
+  previousContractId String?        @unique @map("previous_contract_id") @db.Uuid
+  endReason          String?        @map("end_reason")
+  generatedAt        DateTime?      @map("generated_at") @db.Timestamptz(3)
+  signedAt           DateTime?      @map("signed_at") @db.Timestamptz(3)
+  createdAt          DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  employee     Employee           @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  contractType ContractType       @relation(fields: [contractTypeId], references: [id], onDelete: Restrict)
+  template     ContractTemplate?  @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  site         Site?              @relation(fields: [workplaceSiteId], references: [id], onDelete: SetNull)
+  previous     Contract?          @relation("ContractRenewal", fields: [previousContractId], references: [id], onDelete: SetNull)
+  renewal      Contract?          @relation("ContractRenewal")
+  documents    EmployeeDocument[]
+
+  @@index([tenantId])
+  @@index([tenantId, employeeId])
+  @@index([tenantId, endDate])
+  @@map("contract")
+}
+
+/// A kind of document the employer keeps, and how long before it expires anyone
+/// needs to know (M04 / HR-01).
+model DocumentType {
+  id              String   @id @default(uuid(7)) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  code            String
+  name            String
+  requiresExpiry  Boolean  @default(false) @map("requires_expiry")
+  alertDaysBefore Int      @default(30) @map("alert_days_before")
+  sensitive       Boolean  @default(false)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  documents EmployeeDocument[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("document_type")
+}
+
+/// A file in someone's employee file. The bytes live in object storage; this row
+/// is what the application reads, so a listing never touches the file itself.
+model EmployeeDocument {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  employeeId     String    @map("employee_id") @db.Uuid
+  documentTypeId String    @map("document_type_id") @db.Uuid
+  contractId     String?   @map("contract_id") @db.Uuid
+  fileName       String    @map("file_name")
+  mimeType       String    @map("mime_type")
+  byteSize       Int       @map("byte_size")
+  /// Key in object storage. Empty on seeded rows: nothing was ever uploaded.
+  storageKey     String?   @map("storage_key")
+  issueDate      DateTime? @map("issue_date") @db.Date
+  expiryDate     DateTime? @map("expiry_date") @db.Date
+  uploadedBy     String?   @map("uploaded_by")
+  note           String?
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  documentType DocumentType @relation(fields: [documentTypeId], references: [id], onDelete: Restrict)
+  contract     Contract?    @relation(fields: [contractId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, employeeId])
+  @@index([tenantId, expiryDate])
+  @@map("employee_document")
+}
+
+/// The checklist a new hire goes through (M05 / HR-01).
+model ChecklistTemplate {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  code      String
+  name      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  items  ChecklistItemTemplate[]
+  tasks  OnboardingTask[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("checklist_template")
+}
+
+model ChecklistItemTemplate {
+  id                     String   @id @default(uuid(7)) @db.Uuid
+  tenantId               String   @map("tenant_id") @db.Uuid
+  templateId             String   @map("template_id") @db.Uuid
+  title                  String
+  /// Who does it: one of the CPeople roles (admin, hr, manager, employee).
+  ownerRole              String   @map("owner_role")
+  /// Days from the hire date; negative means before the person starts.
+  dueOffsetDays          Int      @map("due_offset_days")
+  requiresDocumentTypeId String?  @map("requires_document_type_id") @db.Uuid
+  /// Department codes this item applies to; empty means all of them.
+  departmentCodes        String[] @map("department_codes")
+  mandatory              Boolean  @default(true)
+  sortOrder              Int      @map("sort_order")
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant   Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  template ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  tasks    OnboardingTask[]
+
+  @@index([tenantId])
+  @@map("checklist_item_template")
+}
+
+model OnboardingTask {
+  id             String               @id @default(uuid(7)) @db.Uuid
+  tenantId       String               @map("tenant_id") @db.Uuid
+  employeeId     String               @map("employee_id") @db.Uuid
+  templateId     String?              @map("template_id") @db.Uuid
+  itemTemplateId String?              @map("item_template_id") @db.Uuid
+  title          String
+  ownerRole      String               @map("owner_role")
+  dueDate        DateTime             @map("due_date") @db.Date
+  status         OnboardingTaskStatus @default(todo)
+  mandatory      Boolean              @default(true)
+  doneAt         DateTime?            @map("done_at") @db.Timestamptz(3)
+  doneBy         String?              @map("done_by")
+  documentId     String?              @map("document_id") @db.Uuid
+  sortOrder      Int                  @map("sort_order")
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant       Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  employee     Employee               @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  template     ChecklistTemplate?     @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  itemTemplate ChecklistItemTemplate? @relation(fields: [itemTemplateId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, employeeId])
+  @@map("onboarding_task")
+}
+
+/// Who did what, and what changed (M21 / HR-08). Written for every change, and
+/// read on the employee file's History tab and on the audit screen.
+model AuditEvent {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  at        DateTime @default(now()) @db.Timestamptz(3)
+  /// The signed-in person, by their Keycloak subject, with the role they acted in.
+  actorId   String?  @map("actor_id")
+  actorName String?  @map("actor_name")
+  actorRole String?  @map("actor_role")
+  action    String
+  entity    String
+  entityId  String?  @map("entity_id") @db.Uuid
+  summary   String
+  /// Field-level before and after, as a list of { field, from, to }.
+  diff      Json?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tenantId, at])
+  @@index([tenantId, entity, entityId])
+  @@map("audit_event")
+}
+
+/// A public holiday, from the country pack (M08 / M24). Kept per tenant because
+/// a company adds its own closure days to the national list.
+model PublicHoliday {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  countryCode String   @map("country_code") @db.Char(2)
+  date        DateTime @db.Date
+  name        String
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, date])
+  @@index([tenantId])
+  @@map("public_holiday")
 }

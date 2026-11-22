@@ -22,7 +22,8 @@
     "kc:local-dev": "cross-env CPEOPLE_LOCAL_DEV=true node infra/keycloak/local-dev/join-organisations.mjs",
     "kc:theme": "bash infra/keycloak/theme-builder/build.sh",
     "kc:image": "pnpm kc:theme && docker build -t cpeople-keycloak:local infra/keycloak",
-    "kc:verify-theme": "node infra/keycloak/verify-theme.mjs"
+    "kc:verify-theme": "node infra/keycloak/verify-theme.mjs",
+    "db:demo:reset": "pnpm --filter @cpeople/db run seed"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
