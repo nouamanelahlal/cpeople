@@ -92,6 +92,8 @@ export function WelcomeOverlay({
     };
 
     if (still) {
+      // Locked, like the moving version, but never scaled.
+      document.documentElement.dataset.welcome = 'still';
       after(STILL.show, 'logo');
       after(STILL.hold, 'leave');
       after(STILL.gone, 'gone');

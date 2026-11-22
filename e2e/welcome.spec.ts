@@ -17,6 +17,7 @@ import { skipWithoutBaseline } from './support/snapshots';
 // of the way — the rest is decoration.
 
 const DESKTOP = { width: 1440, height: 900 };
+const LAPTOP = { width: 1280, height: 720 };
 const PHONE = { width: 390, height: 844 };
 
 const OVERLAY = '.cp-welcome';
@@ -113,10 +114,12 @@ test.describe('NEW welcome animation', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.setViewportSize(DESKTOP);
 
-    const started = Date.now();
     await signIn(page);
 
     const overlay = page.locator(OVERLAY);
+    // Timed from here, not from the sign-in: what is short is the animation, and a
+    // trip through Keycloak is not part of it.
+    const landed = Date.now();
     if (await overlay.count()) {
       // Nothing draws: the C is whole from the first frame, and the class that
       // carries every transition is not there.
@@ -125,47 +128,123 @@ test.describe('NEW welcome animation', () => {
     }
 
     await overlay.waitFor({ state: 'detached', timeout: 5_000 });
-    // It is a held frame, not a performance: far shorter than the full sequence.
-    expect(Date.now() - started).toBeLessThan(10_000);
+    // A held frame, not a performance: over before the moving version would have
+    // finished drawing the C.
+    expect(Date.now() - landed).toBeLessThan(2_500);
+  });
+
+  test('never puts a scrollbar on the page while it plays', async ({ page }) => {
+    test.slow();
+    await page.setViewportSize(DESKTOP);
+    await signIn(page);
+
+    for (const size of [DESKTOP, LAPTOP, PHONE]) {
+      await page.setViewportSize(size);
+      // Played again through the cookie that plays it, rather than through a fresh
+      // trip to Keycloak for each size: what is under test here is the drawing, and
+      // whether that cookie is the only way in is m02's and this file's business
+      // elsewhere.
+      await replay(page);
+
+      const overlay = page.locator(OVERLAY);
+      await expect(overlay).toBeVisible();
+
+      // Watched all the way through: the dashboard behind the overlay is scaled up
+      // by 2%, and without the lock and the clip that is a page wider and taller
+      // than the window, with scrollbars on a screen nobody can reach.
+      const overflowed: string[] = [];
+      const deadline = Date.now() + 6_000;
+
+      while (Date.now() < deadline && (await overlay.count())) {
+        const spill = await page.evaluate(() => {
+          const root = document.documentElement;
+          return {
+            across: root.scrollWidth - root.clientWidth,
+            down: root.scrollHeight - root.clientHeight,
+          };
+        });
+
+        if (spill.across > 0 || spill.down > 0) {
+          overflowed.push(`${size.width}x${size.height}: across ${spill.across}, down ${spill.down}`);
+        }
+
+        await page.waitForTimeout(120);
+      }
+
+      expect(overflowed).toEqual([]);
+
+      // And when it is over, the page scrolls again like any other.
+      await overlay.waitFor({ state: 'detached', timeout: 10_000 });
+      const after = await page.evaluate(() => {
+        const root = document.documentElement;
+        window.scrollTo(0, 300);
+        return {
+          locked: root.hasAttribute('data-welcome'),
+          overflow: getComputedStyle(document.body).overflow,
+          scrolled: window.scrollY,
+          taller: root.scrollHeight > root.clientHeight,
+        };
+      });
+
+      expect(after.locked).toBe(false);
+      expect(after.overflow).not.toBe('hidden');
+      // The dashboard is a long page again, and it scrolls.
+      expect(after.taller).toBe(true);
+      expect(after.scrolled).toBeGreaterThan(0);
+    }
   });
 
   test('matches the approved frames, on a desktop and on a phone', async ({ page }, testInfo) => {
     skipWithoutBaseline(testInfo, 'welcome-c-1440x900.png');
-    // Two sign-ins, and a sequence that is over in 2.7 seconds.
     test.slow();
+
+    await page.setViewportSize(DESKTOP);
+    await signIn(page);
+
+    // A moment each, from its own play: the sequence is over in 2.7 seconds, and
+    // photographing one moment takes long enough to miss the next.
+    const moments = [
+      {
+        name: 'c',
+        what: 'the C half drawn',
+        reached: () => {
+          const drawn = document.querySelector('.cp-welcome-c');
+          if (!drawn) return false;
+          const sweep = Number.parseFloat(getComputedStyle(drawn).getPropertyValue('--sweep'));
+          return sweep > 60 && sweep < 170;
+        },
+      },
+      {
+        name: 'people',
+        what: 'the three people in',
+        reached: () => {
+          const popped = [...document.querySelectorAll('.cp-welcome-person')];
+          return popped.length === 3 && popped.every((p) => Number(getComputedStyle(p).opacity) > 0.9);
+        },
+      },
+      {
+        name: 'word',
+        what: 'the wordmark in',
+        reached: () => {
+          const mark = document.querySelector('.cp-welcome-word');
+          if (!mark) return false;
+          const style = getComputedStyle(mark);
+          return Number(style.opacity) > 0.95 && !style.clipPath.includes('100%');
+        },
+      },
+    ];
 
     for (const size of [DESKTOP, PHONE]) {
       await page.setViewportSize(size);
-      await signIn(page);
 
-      // Caught while it runs, then compared afterwards: comparing a picture takes
-      // longer than the moment it is a picture of.
-      const half = await frameAt(page, 'the C half drawn', () => {
-        const drawn = document.querySelector('.cp-welcome-c');
-        if (!drawn) return false;
-        const sweep = Number.parseFloat(getComputedStyle(drawn).getPropertyValue('--sweep'));
-        return sweep > 60 && sweep < 170;
-      });
-
-      const people = await frameAt(page, 'the three people in', () => {
-        const popped = [...document.querySelectorAll('.cp-welcome-person')];
-        return popped.length === 3 && popped.every((p) => Number(getComputedStyle(p).opacity) > 0.9);
-      });
-
-      const word = await frameAt(page, 'the wordmark in', () => {
-        const mark = document.querySelector('.cp-welcome-word');
-        if (!mark) return false;
-        const style = getComputedStyle(mark);
-        return Number(style.opacity) > 0.95 && !style.clipPath.includes('100%');
-      });
-
-      const at = `${size.width}x${size.height}`;
-      expect(half).toMatchSnapshot(`welcome-c-${at}.png`, { maxDiffPixelRatio: 0.05 });
-      expect(people).toMatchSnapshot(`welcome-people-${at}.png`, { maxDiffPixelRatio: 0.05 });
-      expect(word).toMatchSnapshot(`welcome-word-${at}.png`, { maxDiffPixelRatio: 0.05 });
-
-      await page.locator(OVERLAY).waitFor({ state: 'detached', timeout: 10_000 });
-      await signOut(page);
+      for (const moment of moments) {
+        await replay(page);
+        const frame = await frameAt(page, moment.what, moment.reached);
+        expect(frame).toMatchSnapshot(`welcome-${moment.name}-${size.width}x${size.height}.png`, {
+          maxDiffPixelRatio: 0.05,
+        });
+        await page.locator(OVERLAY).waitFor({ state: 'detached', timeout: 10_000 });
+      }
     }
   });
 
@@ -193,7 +272,16 @@ async function signIn(page: Page): Promise<void> {
   await startSignIn(page);
   await submitEmail(page, usersFor('desktop-chromium').employee.email);
   await submitPassword(page, TEST_PASSWORD);
-  await expect(page).toHaveURL(/\/home$/);
+  // Keycloak and three redirects, on a machine running the whole suite at once.
+  await expect(page).toHaveURL(/\/home$/, { timeout: 15_000 });
+}
+
+/** Plays the animation again on a page that is already signed in. */
+async function replay(page: Page): Promise<void> {
+  await page.context().addCookies([
+    { name: 'cpeople_welcome', value: '1', url: 'http://localhost:3000' },
+  ]);
+  await page.goto('/home');
 }
 
 /**

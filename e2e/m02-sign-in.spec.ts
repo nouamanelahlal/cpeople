@@ -3,6 +3,7 @@ import {
   accountButton,
   chooseLanguage,
   clearLockout,
+  dismissWelcome,
   errorMessage,
   KEYCLOAK_URL,
   openAccountMenu,
@@ -335,5 +336,7 @@ async function signIn(page: Page, projectUsers: ProjectUsers): Promise<void> {
   await startSignIn(page);
   await submitEmail(page, projectUsers.employee.email);
   await submitPassword(page, TEST_PASSWORD);
-  await expect(page).toHaveURL(/\/home$/);
+  // Keycloak and three redirects, on a machine running the whole suite at once.
+  await expect(page).toHaveURL(/\/home$/, { timeout: 15_000 });
+  await dismissWelcome(page);
 }

@@ -5,6 +5,13 @@
    Anything brand-wide belongs in @cpeople/ui, not here. */
 
 @layer base {
+  /* The gutter is always reserved, so nothing on the page moves sideways when a
+     scrollbar comes or goes — which it does when the welcome animation locks and
+     releases scrolling. */
+  html {
+    scrollbar-gutter: stable;
+  }
+
   body {
     background-color: var(--color-page);
     color: var(--color-body);
@@ -202,9 +209,68 @@
     transition: opacity 0.45s ease;
   }
 
-  /* The dashboard settles into place as the overlay goes. The class is taken off
-     the moment it finishes, so nothing is left transformed: a transformed ancestor
-     would change what `position: fixed` means for the menu inside it. */
+  /* Nothing scrolls while the animation is on screen: there is nothing to scroll
+     to, and the scaled dashboard behind it would otherwise put scrollbars on a
+     page nobody can reach.
+
+     Locked only while the overlay is actually on the page. The attribute comes
+     from the server, so the lock is there from the first paint rather than from
+     whenever the script arrives; `:has()` makes sure it is a lock on this page and
+     not on any other page the cookie happens to outlive. It lifts when the overlay
+     goes — by finishing, by being skipped, or by the component being taken away —
+     and failing all of that, on its own after six seconds, which is the same
+     deadline the overlay itself has. */
+  html[data-welcome]:has(.cp-welcome),
+  html[data-welcome]:has(.cp-welcome) body {
+    overflow: hidden;
+    animation: cp-welcome-unlock 0s linear 6s forwards;
+  }
+
+  @keyframes cp-welcome-unlock {
+    to {
+      overflow: auto;
+    }
+  }
+
+  /* The wrapper the dashboard settles inside: it clips what the 1.02 scale pushes
+     past the window, and is held to the window's height as well.
+
+     `overflow: hidden` stops the page scrolling but the document still reports its
+     full height, and a page that says it is a thousand pixels taller than the
+     window is a page with a scrollbar as far as anything measuring it is
+     concerned. Nothing below the fold is visible behind the overlay anyway.
+     `clip` and not `hidden` on purpose: it clips without making a scroll container
+     of it. */
+  html[data-welcome]:has(.cp-welcome) .cp-settle {
+    overflow: clip;
+    max-block-size: 100dvh;
+    animation: cp-welcome-unclip 0s linear 6s forwards;
+  }
+
+  @keyframes cp-welcome-unclip {
+    to {
+      overflow: visible;
+      max-block-size: none;
+    }
+  }
+
+  /* The dashboard settles into place as the overlay goes. The wrapper clips what
+     the 1.02 scale pushes past the window, so the scale is a visual effect and
+     never a bigger page. `overflow: clip` and not `hidden` on purpose: it clips
+     without making a scroll container of it. */
+  html[data-welcome] .cp-settle {
+    overflow: clip;
+    /* Held to the window as well as clipped: `overflow: hidden` stops the page
+       scrolling but the document still reports its full height, and a page that
+       says it is 1,000px taller than the window is a page with a scrollbar as far
+       as anything measuring it is concerned. Nothing below the fold is visible
+       behind the overlay anyway. */
+    max-block-size: 100dvh;
+  }
+
+  /* The class is taken off the moment it finishes, so nothing is left transformed:
+     a transformed ancestor would change what `position: fixed` means for the menu
+     inside it. */
   .cp-app {
     transform-origin: 50% 0;
   }

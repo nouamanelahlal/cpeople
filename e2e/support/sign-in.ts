@@ -140,6 +140,28 @@ export async function submitCode(page: Page, secret: string): Promise<void> {
 }
 
 /**
+ * Gets the welcome animation out of the way.
+ *
+ * It plays over the home screen for 2.7 seconds after every sign-in and swallows
+ * clicks while it does, so a test that signs in and then reaches for something is
+ * reaching through it. A person in a hurry presses a key; so does this.
+ *
+ * e2e/welcome.spec.ts is where the animation itself is examined, and it does not
+ * use this.
+ */
+export async function dismissWelcome(page: Page): Promise<void> {
+  const overlay = page.locator('.cp-welcome');
+  if ((await overlay.count()) === 0) {
+    return;
+  }
+
+  await expect(async () => {
+    await page.keyboard.press('Escape');
+    await overlay.waitFor({ state: 'detached', timeout: 1_000 });
+  }).toPass({ timeout: 20_000 });
+}
+
+/**
  * The signed-in person's name, wherever the home screen shows it.
  *
  * The greeting says their first name; the account button carries the whole of it,
@@ -162,6 +184,10 @@ export async function signOutFromMenu(page: Page, name: string): Promise<void> {
 }
 
 export async function openAccountMenu(page: Page, name: string): Promise<void> {
+  // Nothing on the home screen can be clicked while the welcome animation is on
+  // top of it, and nothing is steady while the dashboard settles behind it.
+  await dismissWelcome(page);
+
   const signOut = page.getByRole('button', { name: /sign out|se déconnecter/i });
 
   await expect(async () => {

@@ -90,15 +90,18 @@ export default async function HomePage(): Promise<JSX.Element | null> {
   return (
     <>
       <WelcomeOverlay play={justSignedIn} label={t.welcome.announce} skip={t.welcome.skip} />
-      {/* Without scripting there is nothing to take the overlay away, so it never
-          appears in the first place. */}
+      {/* Without scripting there is nothing to take the overlay away or to unlock
+          the page, so neither happens in the first place. */}
       {justSignedIn && (
         <noscript>
-          <style>{`.cp-welcome{display:none}`}</style>
+          <style>{`.cp-welcome{display:none}html[data-welcome],html[data-welcome] body{overflow:auto}html[data-welcome] .cp-settle{overflow:visible;max-block-size:none}html[data-welcome] .cp-app{transform:none}`}</style>
         </noscript>
       )}
 
-      <AppShell
+      {/* The frame the dashboard settles inside while the animation plays: it clips
+          what the scale pushes past the window. */}
+      <div className="cp-settle">
+        <AppShell
       nav={navigation(t, data.badges)}
       labels={shellLabels(t, locale, session, data.notifications)}
       user={{ name, initials: initials(name), role: roleLabel(t, session.roles) }}
@@ -155,7 +158,8 @@ export default async function HomePage(): Promise<JSX.Element | null> {
       </div>
 
       <Connections connections={data.connections} f={f} />
-      </AppShell>
+        </AppShell>
+      </div>
     </>
   );
 }

@@ -1,5 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
-import { startSignIn, submitEmail, submitPassword, TEST_PASSWORD, usersFor } from './support/sign-in';
+import {
+  dismissWelcome,
+  startSignIn,
+  submitEmail,
+  submitPassword,
+  TEST_PASSWORD,
+  usersFor,
+} from './support/sign-in';
 import { skipWithoutBaseline } from './support/snapshots';
 
 // The home screen (NEW / M23), built from docs/design/home-dashboard.dc.html.
@@ -236,7 +243,10 @@ async function signIn(page: Page, when: string): Promise<void> {
   await startSignIn(page);
   await submitEmail(page, usersFor('desktop-chromium').employee.email);
   await submitPassword(page, TEST_PASSWORD);
-  await expect(page).toHaveURL(/\/home$/);
+  // Keycloak and three redirects, on a machine running the whole suite at once.
+  await expect(page).toHaveURL(/\/home$/, { timeout: 15_000 });
+  // The welcome animation belongs to e2e/welcome.spec.ts; here it is in the way.
+  await dismissWelcome(page);
   await page.evaluate(async () => {
     await document.fonts.ready;
   });
