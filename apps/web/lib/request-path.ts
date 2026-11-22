@@ -1,12 +1,12 @@
 import { headers } from 'next/headers';
 
 /**
- * The path the current request is for.
+ * Where the current request is for: the path and its query string.
  *
  * Next gives a server component no way to ask, so the gate in proxy.ts puts it on
- * the request. It is needed in one place: when the API refuses the access token
- * the gate let through, the page sends the reader off to have it renewed and back
- * to where they were.
+ * the request. Two things need it, and both are "send the reader away and bring
+ * them back here": renewing an access token the API has refused, and changing
+ * language, which re-renders the page they were actually reading.
  */
 export const PATH_HEADER = 'x-cpeople-path';
 

@@ -6,6 +6,7 @@ import { TenantMiddleware } from './common/tenant/tenant.middleware.js';
 import { TenantModule } from './common/tenant/tenant.module.js';
 import { AdministrationModule } from './modules/administration/administration.module.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { EmployeesModule } from './modules/employees/employees.module.js';
 import { HomeModule } from './modules/home/home.module.js';
 import { OrganisationModule } from './modules/organisation/organisation.module.js';
 
@@ -20,6 +21,7 @@ import { OrganisationModule } from './modules/organisation/organisation.module.j
     PrismaModule,
     HealthModule,
     AdministrationModule,
+    EmployeesModule,
     HomeModule,
     OrganisationModule,
   ],

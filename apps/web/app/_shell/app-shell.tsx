@@ -106,6 +106,7 @@ export function AppShell({
   user,
   tenant,
   locale,
+  returnTo,
   title,
   subtitle,
   children,
@@ -115,6 +116,8 @@ export function AppShell({
   user: { name: string; initials: string; role: string };
   tenant: { name: string; note: string; initials: string };
   locale: Locale;
+  /** The page being read, so changing language comes back to it. */
+  returnTo: string;
   title: string;
   subtitle: string;
   children: ReactNode;
@@ -331,7 +334,7 @@ export function AppShell({
             </label>
 
             <form action={chooseLocale}>
-              <input type="hidden" name="returnTo" value="/home" />
+              <input type="hidden" name="returnTo" value={returnTo} />
               <button
                 type="submit"
                 name="locale"

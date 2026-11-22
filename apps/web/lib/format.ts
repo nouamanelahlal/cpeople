@@ -31,6 +31,8 @@ export interface Formatter {
   percent(value: number): string;
   dateLong(iso: string): string;
   dateShort(iso: string): string;
+  /** "23 Nov 2026": short enough for a table cell, unambiguous in both languages. */
+  dateMedium(iso: string): string;
   monthName(iso: string): string;
   dayMonth(iso: string): string;
   monthYear(iso: string): string;
@@ -107,6 +109,8 @@ export function formatter(locale: Locale, t: Messages, timeZone: string): Format
         at(iso),
       ),
     dateShort: (iso) => dateTimeFormat({ day: 'numeric', month: 'short' }).format(at(iso)),
+    dateMedium: (iso) =>
+      dateTimeFormat({ day: 'numeric', month: 'short', year: 'numeric' }).format(at(iso)),
     monthName: (iso) => dateTimeFormat({ month: 'long' }).format(at(iso)),
     dayMonth: (iso) => dateTimeFormat({ day: 'numeric', month: 'long' }).format(at(iso)),
     monthYear: (iso) => dateTimeFormat({ month: 'long', year: 'numeric' }).format(at(iso)),

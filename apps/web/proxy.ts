@@ -32,12 +32,12 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
     return NextResponse.redirect(refreshUrl(request.nextUrl.origin, pathname));
   }
 
-  // The page the request is for, for a server component that needs to send the
-  // reader somewhere and come back (lib/api.ts does, when the API refuses a token
-  // this gate thought was still good). Nothing else should read it: a page knows
-  // what it is.
+  // Where the request is for, query string included, for a server component that
+  // has to send the reader away and bring them back to it: the token refresh when
+  // the API refuses one (lib/api.ts), and the language toggle, which has to come
+  // back to the page you were reading and not to the home screen.
   const headers = new Headers(request.headers);
-  headers.set(PATH_HEADER, pathname);
+  headers.set(PATH_HEADER, `${pathname}${request.nextUrl.search}`);
   return NextResponse.next({ request: { headers } });
 }
 

@@ -108,3 +108,28 @@ export async function saveSession(browser: Browser, role: DemoRole): Promise<voi
   await context.storageState({ path: sessionPath(role) });
   await context.close();
 }
+
+/**
+ * A page of the app, read as one of the demo's people.
+ *
+ * The session comes from `saveSession`, so a file signs each person in once and
+ * then opens as many pages as it likes as them. Each page gets its own context,
+ * which is what keeps one test's filters, language and menu out of the next.
+ */
+export async function openAs(
+  browser: Browser,
+  role: DemoRole,
+  options: { path?: string; viewport?: { width: number; height: number } } = {},
+): Promise<Page> {
+  const context = await browser.newContext({
+    timezoneId: 'Africa/Casablanca',
+    storageState: sessionPath(role),
+    ...(options.viewport ? { viewport: options.viewport } : {}),
+  });
+  const page = await context.newPage();
+
+  await page.goto(options.path ?? '/home');
+  await expect(page.locator('h1')).toBeVisible();
+
+  return page;
+}

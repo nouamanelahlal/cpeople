@@ -7,6 +7,7 @@ import { fill } from '../../lib/format';
 import type { IconName } from '../../lib/home-data';
 import { LOCALE_COOKIE } from '../../lib/locale';
 import type { Session } from '../../lib/session';
+import { requestPath } from '../../lib/request-path';
 import { WELCOME_COOKIE } from '../../lib/welcome';
 import { AppShell, type NavGroup, type ShellLabels } from './app-shell';
 import { TimeZoneSync } from './time-zone-sync';
@@ -110,6 +111,7 @@ export async function AppPage({
             initials: 'DC',
           }}
           locale={locale}
+          returnTo={await requestPath()}
           title={title}
           subtitle={subtitle}
         >
