@@ -27,7 +27,9 @@ export default defineConfig({
   webServer: process.env.E2E_BASE_URL
     ? undefined
     : {
-        command: 'pnpm --filter web dev',
+        // Through turbo, so the workspace packages the app imports are built
+        // before it starts: @cpeople/shared and @cpeople/db ship compiled output.
+        command: 'pnpm exec turbo run dev --filter=web',
         url: 'http://localhost:3000',
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
