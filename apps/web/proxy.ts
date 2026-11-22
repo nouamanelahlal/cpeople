@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { accessTokenExpired, openSession, readSealedSession } from './lib/session';
+import { PATH_HEADER } from './lib/request-path';
 
 /**
  * Everything is signed-in by default; the exceptions are listed here (M02 / HR-08).
@@ -28,12 +29,23 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
   }
 
   if (accessTokenExpired(session)) {
-    const refresh = new URL('/api/auth/refresh', request.nextUrl.origin);
-    refresh.searchParams.set('callbackUrl', pathname);
-    return NextResponse.redirect(refresh);
+    return NextResponse.redirect(refreshUrl(request.nextUrl.origin, pathname));
   }
 
-  return NextResponse.next();
+  // The page the request is for, for a server component that needs to send the
+  // reader somewhere and come back (lib/api.ts does, when the API refuses a token
+  // this gate thought was still good). Nothing else should read it: a page knows
+  // what it is.
+  const headers = new Headers(request.headers);
+  headers.set(PATH_HEADER, pathname);
+  return NextResponse.next({ request: { headers } });
+}
+
+/** Where a request goes to have its access token renewed, and then come back. */
+export function refreshUrl(origin: string, pathname: string): URL {
+  const refresh = new URL('/api/auth/refresh', origin);
+  refresh.searchParams.set('callbackUrl', pathname);
+  return refresh;
 }
 
 export const config = {

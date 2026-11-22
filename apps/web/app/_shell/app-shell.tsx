@@ -316,8 +316,11 @@ export function AppShell({
             <p className="text-sm text-body">{subtitle}</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
-            <label className="flex h-11 w-[380px] max-w-full items-center gap-2.5 rounded-xl border border-card-border bg-white px-3.5 text-body">
+          {/* `min-w-0` so this half of the bar may shrink: without it a flex item is
+              never narrower than its content, and the search field's 380px pushed
+              the page six pixels wider than a phone. */}
+          <div className="flex min-w-0 flex-wrap items-center gap-2.5">
+            <label className="flex h-11 w-[380px] min-w-0 max-w-full items-center gap-2.5 rounded-xl border border-card-border bg-white px-3.5 text-body">
               <SearchIcon />
               <span className="sr-only">{labels.search}</span>
               <input

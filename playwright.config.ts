@@ -23,15 +23,29 @@ export default defineConfig({
     { name: 'mobile-chromium', use: { ...devices['Pixel 7'] } },
     { name: 'desktop-fr', use: { ...devices['Desktop Chrome'], locale: 'fr-MA' } },
   ],
-  // Starts the web app automatically once apps/web is scaffolded.
+  // Starts both halves of the app. The home screen's figures come from the API,
+  // so a run without it would be testing a page that says its data is missing.
+  // Through turbo, so the workspace packages they import are built first:
+  // @cpeople/shared and @cpeople/db ship compiled output.
   webServer: process.env.E2E_BASE_URL
     ? undefined
-    : {
-        // Through turbo, so the workspace packages the app imports are built
-        // before it starts: @cpeople/shared and @cpeople/db ship compiled output.
-        command: 'pnpm exec turbo run dev --filter=web',
-        url: 'http://localhost:3000',
-        reuseExistingServer: !process.env.CI,
-        timeout: 120_000,
-      },
+    : [
+        {
+          command: 'pnpm exec turbo run dev --filter=web',
+          url: 'http://localhost:3000',
+          reuseExistingServer: !process.env.CI,
+          timeout: 180_000,
+          // Errors only. A page that could not reach the API says so on the
+          // server and draws its empty state in the browser, and a test that
+          // fails on a missing figure should not leave us guessing why.
+          stderr: 'pipe',
+        },
+        {
+          command: 'pnpm exec turbo run dev --filter=api',
+          url: 'http://localhost:3100/api/health',
+          reuseExistingServer: !process.env.CI,
+          timeout: 180_000,
+          stderr: 'pipe',
+        },
+      ],
 });

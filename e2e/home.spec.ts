@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import {
   dismissWelcome,
   startSignIn,
+  submitCode,
   submitEmail,
   submitPassword,
   TEST_PASSWORD,
@@ -20,20 +21,56 @@ const DESKTOP = { width: 1440, height: 900 };
 const PHONE = { width: 390, height: 844 };
 
 /**
- * The morning the design was drawn on.
+ * The morning of the workshop, which is the day the demo data is written around:
+ * the contracts that end "this week" and the documents expiring "in 30 days" are
+ * all measured from it, and the API is pinned to the same day in a developer's
+ * checkout.
  *
  * The greeting depends on the clock and the screen would otherwise look different
  * three times a day, so the local-dev clock cookie pins it (see lib/clock.ts). The
  * timezone is pinned with it, because "good morning" is about where the reader is.
  */
-const MORNING = '2026-11-18T09:40:00+01:00';
-const AFTERNOON = '2026-11-18T14:10:00+01:00';
-const EVENING = '2026-11-18T19:40:00+01:00';
+const MORNING = '2026-11-23T09:40:00+01:00';
+const AFTERNOON = '2026-11-23T14:10:00+01:00';
+const EVENING = '2026-11-23T19:40:00+01:00';
 
-test.use({ timezoneId: 'Africa/Casablanca' });
+/**
+ * Signed in once, for the whole file.
+ *
+ * The home screen counts over the files the reader may see, so these tests need
+ * someone who sees the company: the payroll manager, whose role also takes the
+ * authenticator step. Doing that seven times would not work even if it were not
+ * slow — a six-digit code lasts thirty seconds and cannot be used twice — so the
+ * session is made once and reused, and the sign-in itself is m02's subject.
+ */
+const SESSION = '.auth/home-payroll.json';
+
+test.use({ timezoneId: 'Africa/Casablanca', storageState: SESSION });
 
 test.beforeEach(({ browserName: _browserName }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-chromium', 'One browser is enough for drawing.');
+});
+
+test.beforeAll(async ({ browser }, testInfo) => {
+  if (testInfo.project.name !== 'desktop-chromium') return;
+
+  const user = usersFor('desktop-chromium').payroll;
+  // Signed out, explicitly: the file's own storageState does not exist yet, and
+  // every context from this fixture would otherwise try to load it.
+  const context = await browser.newContext({
+    timezoneId: 'Africa/Casablanca',
+    storageState: undefined,
+  });
+  const page = await context.newPage();
+
+  await startSignIn(page);
+  await submitEmail(page, user.email);
+  await submitPassword(page, TEST_PASSWORD);
+  await submitCode(page, user.otpSecret);
+  await expect(page).toHaveURL(/\/home$/, { timeout: 20_000 });
+
+  await context.storageState({ path: SESSION });
+  await context.close();
 });
 
 test.describe('NEW home dashboard', () => {
@@ -44,22 +81,36 @@ test.describe('NEW home dashboard', () => {
   test('shows the signed-in person, the payroll month and the day around it', async ({ page }) => {
     await signIn(page, MORNING);
 
-    const user = usersFor('desktop-chromium').employee;
+    const user = usersFor('desktop-chromium').payroll;
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       `Good morning, ${user.name.split(' ')[0]}`,
     );
-    await expect(page.getByText('Wednesday, 18 November 2026. November payroll is in review.')).toBeVisible();
+    await expect(
+      page.getByText('Monday, 23 November 2026. November payroll is in review.'),
+    ).toBeVisible();
 
     // Their own name and role, from the token rather than from the sample data.
     await expect(page.getByRole('button', { name: `Account: ${user.name}` })).toContainText(
-      'Employee',
+      'Payroll manager',
     );
+
+    // The figures are counted in the database, over the files this person may
+    // see: a payroll manager sees the company.
+    const glance = page.getByRole('region', { name: 'Today at a glance' });
+    await expect(glance.getByRole('link')).toHaveCount(4);
+    await expect(glance.getByRole('link').first()).toContainText('148');
+    await expect(glance.getByRole('link').nth(3)).toContainText('5');
+
+    // And what is waiting is real: each row opens the file it belongs to.
+    const rows = page.getByRole('region', { name: 'Waiting for you' }).getByRole('listitem');
+    await expect(rows.first()).toBeVisible();
+    await expect(rows.first().getByRole('link')).toHaveAttribute('href', /\/employees\/[0-9a-f-]+$/);
 
     // The payroll month, with money written the way English writes it.
     await expect(page.getByRole('heading', { name: 'November 2026 payroll' })).toBeVisible();
     await expect(page.getByText('MAD', { exact: false }).first()).toBeVisible();
     await expect(page.getByText('1,284,650.00')).toBeVisible();
-    await expect(page.getByText('Pay date in 12 days, on 30 November')).toBeVisible();
+    await expect(page.getByText('Pay date in 7 days, on 30 November')).toBeVisible();
 
     // Every panel the design asks for.
     await expect(page.getByRole('heading', { name: 'Waiting for you' })).toBeVisible();
@@ -110,7 +161,7 @@ test.describe('NEW home dashboard', () => {
     // month elides after "de".
     await expect(page.getByRole('heading', { name: 'Paie de novembre 2026' })).toBeVisible();
     await expect(page.getByText(/1\s?284\s?650,00/)).toBeVisible();
-    await expect(page.getByText('mercredi 18 novembre 2026.', { exact: false })).toBeVisible();
+    await expect(page.getByText('lundi 23 novembre 2026.', { exact: false })).toBeVisible();
     await expect(page.getByText("Paie d'octobre", { exact: false })).toBeVisible();
     await expect(page.getByText('du 16 au 20 nov.').first()).toBeVisible();
   });
@@ -240,14 +291,13 @@ test.describe('NEW home dashboard', () => {
 });
 
 /** Signs in and lands on the home screen, with the clock pinned. */
+/** Opens the home screen on an already-signed-in page, at a given moment. */
 async function signIn(page: Page, when: string): Promise<void> {
   await pinClock(page, when);
-  await startSignIn(page);
-  await submitEmail(page, usersFor('desktop-chromium').employee.email);
-  await submitPassword(page, TEST_PASSWORD);
-  // Keycloak and three redirects, on a machine running the whole suite at once.
+  await page.goto('/home');
   await expect(page).toHaveURL(/\/home$/, { timeout: 15_000 });
-  // The welcome animation belongs to e2e/welcome.spec.ts; here it is in the way.
+  // Nothing should be playing — the animation follows a sign-in, and this page
+  // did not come from one — but if it ever does, it is in the way here.
   await dismissWelcome(page);
   await page.evaluate(async () => {
     await document.fonts.ready;

@@ -21,7 +21,7 @@ import { WELCOME_COOKIE, WELCOME_LAYERS, WELCOME_WORDMARK } from '../../lib/welc
  * It is only ever decoration over a page that has already loaded. Nothing here
  * waits for it: the dashboard is underneath from the first frame, a click or a key
  * skips it, and if anything goes wrong the overlay leaves anyway (the stylesheet
- * has a last-resort rule that removes it after six seconds).
+ * takes it away, and unlocks the page, on its own).
  */
 
 /** When each step starts, in milliseconds. The last one ends at 2.7s. */

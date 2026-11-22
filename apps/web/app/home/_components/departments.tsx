@@ -1,11 +1,31 @@
 import type { JSX } from 'react';
 import type { Formatter } from '../../../lib/format';
-import type { HomeData } from '../../../lib/home-data';
 
-/** Where the headcount sits (M01 / HR-08). */
-export function Departments({ data, f }: { data: HomeData; f: Formatter }): JSX.Element {
+export interface DepartmentCount {
+  readonly code: string;
+  readonly name: string;
+  readonly count: number;
+}
+
+/**
+ * Where the headcount sits (M01 / HR-01).
+ *
+ * Counted by the API over the files this person may see, so a manager's chart is
+ * their own branch and an HR manager's is the company.
+ */
+export function Departments({
+  departments,
+  total,
+  fixedTerm,
+  f,
+}: {
+  departments: readonly DepartmentCount[];
+  total: number;
+  fixedTerm: number;
+  f: Formatter;
+}): JSX.Element {
   const t = f.t.home.departments;
-  const largest = Math.max(...data.departments.map((department) => department.count));
+  const largest = Math.max(1, ...departments.map((department) => department.count));
 
   return (
     <section
@@ -18,17 +38,17 @@ export function Departments({ data, f }: { data: HomeData; f: Formatter }): JSX.
         </h2>
         <p className="num text-[13px] text-body">
           {f.text(t.note, {
-            count: { kind: 'count', value: data.headcount.total },
-            fixedTerm: { kind: 'count', value: data.headcount.fixedTerm },
+            count: { kind: 'count', value: total },
+            fixedTerm: { kind: 'count', value: fixedTerm },
           })}
         </p>
       </div>
 
       <ul className="m-0 flex list-none flex-col gap-4 p-0">
-        {data.departments.map((department) => (
-          <li key={department.key} className="flex flex-col gap-2">
+        {departments.map((department) => (
+          <li key={department.code} className="flex flex-col gap-2">
             <span className="flex justify-between text-sm text-navy">
-              <span>{t.names[department.key]}</span>
+              <span>{department.name}</span>
               <span className="num font-semibold">{f.count(department.count)}</span>
             </span>
             {/* The bar is the same number again, drawn: it is marked decorative so a

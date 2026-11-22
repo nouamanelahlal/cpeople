@@ -40,6 +40,7 @@ export type Values = Readonly<Record<string, Value>>;
 
 export type DepartmentKey = 'kitchen' | 'outlet' | 'pastry' | 'administration' | 'warehouse';
 
+/** How loud a row is: something wrong, something to know, something routine. */
 export type Tone = 'warning' | 'info' | 'neutral';
 
 export type IconName =
@@ -69,25 +70,6 @@ export interface RunStep {
 export interface RunFigure {
   readonly key: 'gross' | 'net' | 'charges' | 'tax';
   readonly minor: number;
-  readonly values: Values;
-}
-
-export interface Kpi {
-  readonly key: 'headcount' | 'present' | 'leave' | 'documents';
-  readonly value: number;
-  readonly icon: IconName;
-  readonly values: Values;
-}
-
-export interface Task {
-  readonly key:
-    | 'holidayReview'
-    | 'leaveApproval'
-    | 'expenseApproval'
-    | 'contractEnding'
-    | 'unmatchedPunches';
-  readonly icon: IconName;
-  readonly tone: Tone;
   readonly values: Values;
 }
 
@@ -142,8 +124,6 @@ export interface HomeData {
     readonly figures: readonly RunFigure[];
     readonly steps: readonly RunStep[];
   };
-  readonly kpis: readonly Kpi[];
-  readonly tasks: readonly Task[];
   readonly week: readonly AwayDay[];
   readonly holiday: { readonly key: 'independence'; readonly working: number };
   readonly away: readonly AwayPerson[];
@@ -200,79 +180,6 @@ export function homeData(): HomeData {
         { key: 'post', state: 'todo', values: {} },
       ],
     },
-
-    kpis: [
-      {
-        key: 'headcount',
-        value: 148,
-        icon: 'users',
-        values: { joined: count(3), left: count(1), month: { kind: 'month', iso: '2026-11-01' } },
-      },
-      {
-        key: 'present',
-        value: 41,
-        icon: 'clock',
-        values: { expected: count(42), time: { kind: 'time', iso: '2026-11-18T07:15:00+01:00' } },
-      },
-      { key: 'leave', value: 7, icon: 'calendar', values: { count: count(2) } },
-      {
-        key: 'documents',
-        value: 5,
-        icon: 'document',
-        values: { days: count(30), permits: count(2), certificates: count(3) },
-      },
-    ],
-
-    tasks: [
-      {
-        key: 'holidayReview',
-        icon: 'alert',
-        tone: 'warning',
-        values: { count: count(42), date: { kind: 'dayMonth', iso: '2026-11-18' } },
-      },
-      {
-        key: 'leaveApproval',
-        icon: 'calendar',
-        tone: 'info',
-        values: {
-          name: text('Karim Alaoui'),
-          from: { kind: 'dayOfMonth', iso: '2026-11-24' },
-          to: { kind: 'dayMonth', iso: '2026-11-28' },
-          days: count(4),
-        },
-      },
-      {
-        key: 'expenseApproval',
-        icon: 'expense',
-        tone: 'info',
-        values: {
-          name: text('Nadia Berrada'),
-          amount: { kind: 'money', minor: 64_000 },
-          receipts: count(2),
-          month: { kind: 'month', iso: '2026-11-01' },
-        },
-      },
-      {
-        key: 'contractEnding',
-        icon: 'contract',
-        tone: 'warning',
-        values: {
-          name: text('Omar Chraibi'),
-          date: { kind: 'dayMonth', iso: '2026-11-30' },
-          days: count(12),
-        },
-      },
-      {
-        key: 'unmatchedPunches',
-        icon: 'clock',
-        tone: 'neutral',
-        values: {
-          count: count(3),
-          device: { kind: 'department', key: 'kitchen' },
-          time: { kind: 'dateTime', iso: '2026-11-18T07:15:00+01:00' },
-        },
-      },
-    ],
 
     week: [
       { iso: '2026-11-16', away: 2, holiday: false },

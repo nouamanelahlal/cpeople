@@ -12,9 +12,12 @@ import { Icon } from '../../_shell/icons';
 export function Connections({
   connections,
   f,
+  preview,
 }: {
   connections: readonly Connection[];
   f: Formatter;
+  /** This panel is still sample data: the tag says which workshop brings it. */
+  preview?: JSX.Element;
 }): JSX.Element {
   const t = f.t.home.connections;
 
@@ -23,8 +26,9 @@ export function Connections({
       aria-labelledby="connections-title"
       className="flex flex-col gap-4 rounded-[20px] border border-card-border bg-white p-6"
     >
-      <h2 id="connections-title" className="text-lg font-semibold text-navy">
+      <h2 id="connections-title" className="flex items-center gap-2 text-lg font-semibold text-navy">
         {t.title}
+        {preview}
       </h2>
 
       <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">

@@ -30,12 +30,15 @@ export function CostChart({
   ticks,
   labels,
   description,
+  preview,
 }: {
   months: readonly CostChartMonth[];
   paths: { gross: string; grossArea: string; charges: string; chargesArea: string };
   ticks: readonly string[];
   labels: { title: string; subtitle: string; gross: string; charges: string };
   description: string;
+  /** This panel is still sample data: the tag says which workshop brings it. */
+  preview?: JSX.Element;
 }): JSX.Element {
   const [focused, setFocused] = useState(months.length - 1);
   const month = months[focused] ?? months[months.length - 1]!;
@@ -50,8 +53,9 @@ export function CostChart({
     >
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h2 id="cost-title" className="text-lg font-semibold text-navy">
+          <h2 id="cost-title" className="flex items-center gap-2 text-lg font-semibold text-navy">
             {labels.title}
+            {preview}
           </h2>
           <p className="text-[13px] text-body">{labels.subtitle}</p>
         </div>

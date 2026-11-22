@@ -682,11 +682,20 @@ function plan(random: () => number): PlannedPerson[] {
     { type: 'MEDICAL', inDays: -6 },
     { type: 'RESIDENCE', inDays: -40 },
   ];
-  const withExpiring = people
-    .filter((candidate) => candidate.level === 3 && candidate.status === 'active')
-    .slice(10, 17);
-  for (const [index, candidate] of withExpiring.entries()) {
-    candidate.expiring = expiring[index];
+  // One per department where possible, so the five are spread across the company
+  // and a manager's count differs from HR's — which is the point of the scope.
+  const perDepartment = DEPARTMENTS.map((department) =>
+    people.filter(
+      (candidate) =>
+        candidate.department === department.code &&
+        candidate.level === 3 &&
+        candidate.status === 'active',
+    ),
+  );
+  for (const [index, item] of expiring.entries()) {
+    const column = perDepartment[index % perDepartment.length]!;
+    const candidate = column[Math.floor(index / perDepartment.length) + 4];
+    if (candidate) candidate.expiring = item;
   }
 
   return people;

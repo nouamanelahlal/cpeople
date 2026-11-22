@@ -5,7 +5,7 @@
   "type": "module",
   "description": "CPeople REST API (NestJS modular monolith)",
   "scripts": {
-    "dev": "cross-env CPEOPLE_LOCAL_DEV=true TENANT_HEADER_ALLOWED=true nest start --watch",
+    "dev": "cross-env CPEOPLE_LOCAL_DEV=true CPEOPLE_DEMO_TODAY=2026-11-23 TENANT_HEADER_ALLOWED=true nest start --watch",
     "build": "nest build",
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",

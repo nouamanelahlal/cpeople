@@ -17,10 +17,13 @@ export function PayrollPanel({
   data,
   f,
   daysToPay,
+  preview,
 }: {
   data: HomeData;
   f: Formatter;
   daysToPay: number;
+  /** This panel is still sample data: the tag says which workshop brings it. */
+  preview?: JSX.Element;
 }): JSX.Element {
   const t = f.t.home.run;
   const { run } = data;
@@ -67,7 +70,8 @@ export function PayrollPanel({
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {preview}
           <button
             type="button"
             className="h-12 rounded-xl border border-white/70 px-[22px] text-sm font-semibold text-white transition-[background-color,border-color,box-shadow,transform] duration-200 ease-out hover:border-white hover:bg-white/10 motion-safe:hover:-translate-y-px"

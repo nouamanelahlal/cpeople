@@ -114,8 +114,10 @@
     gap: 28px;
     background: radial-gradient(circle at 50% 44%, #ffffff 0%, var(--color-page) 62%);
     /* A last resort: if the script that runs this never finishes, the overlay still
-       gets out of the way rather than sitting over the dashboard for ever. */
-    animation: cp-welcome-failsafe 0s linear 6s forwards;
+       gets out of the way rather than sitting over the dashboard for ever. The
+       same deadline as the lock below, so the page is never unlocked under an
+       overlay that is still there, nor locked under one that has gone. */
+    animation: cp-welcome-failsafe 0s linear 12s forwards;
   }
 
   .cp-welcome[data-state='leaving'] {
@@ -217,13 +219,17 @@
      from the server, so the lock is there from the first paint rather than from
      whenever the script arrives; `:has()` makes sure it is a lock on this page and
      not on any other page the cookie happens to outlive. It lifts when the overlay
-     goes — by finishing, by being skipped, or by the component being taken away —
-     and failing all of that, on its own after six seconds, which is the same
-     deadline the overlay itself has. */
+     goes — by finishing, by being skipped, or by the component being taken away.
+
+     Failing all of that it lifts on its own, but late: this clock starts at load
+     and the overlay's starts when the script that runs it arrives, so a tight
+     deadline here unlocks the page under an animation that is still playing. The
+     overlay is gone in under three seconds whenever anything at all is working,
+     and twelve is for the case where nothing is. */
   html[data-welcome]:has(.cp-welcome),
   html[data-welcome]:has(.cp-welcome) body {
     overflow: hidden;
-    animation: cp-welcome-unlock 0s linear 6s forwards;
+    animation: cp-welcome-unlock 0s linear 12s forwards;
   }
 
   @keyframes cp-welcome-unlock {
@@ -244,7 +250,7 @@
   html[data-welcome]:has(.cp-welcome) .cp-settle {
     overflow: clip;
     max-block-size: 100dvh;
-    animation: cp-welcome-unclip 0s linear 6s forwards;
+    animation: cp-welcome-unclip 0s linear 12s forwards;
   }
 
   @keyframes cp-welcome-unclip {

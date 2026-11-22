@@ -25,3 +25,6 @@ packages/db/src/generated/
 apps/web/public/brand/cpeople-icon-256.png
 docs/brand/consap-c-white.png
 docs/brand/cpeople-wordmark.png
+
+# Signed-in sessions saved by the end-to-end suite.
+.auth/

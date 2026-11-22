@@ -89,6 +89,14 @@ jobs:
       # server whether it is actually serving our pages.
       - name: Verify the sign-in theme is being served
         run: pnpm kc:verify-theme
+      # The home screen's figures are counted in the database, so the schema and
+      # the demo data have to be there before anything signs in.
+      - name: Create the schema and the demo data
+        run: |
+          pnpm db:deploy
+          pnpm db:seed
+        env:
+          CPEOPLE_LOCAL_DEV: 'true'
       - run: pnpm e2e
         env:
           CPEOPLE_LOCAL_DEV: 'true'

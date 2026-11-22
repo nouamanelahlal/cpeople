@@ -161,11 +161,19 @@ test.describe('NEW welcome animation', () => {
           return {
             across: root.scrollWidth - root.clientWidth,
             down: root.scrollHeight - root.clientHeight,
+            // Reported with the sample, so a failure says which of the two went
+            // missing: the lock on the page or the overlay that justifies it.
+            state: root.dataset.welcome ?? 'none',
+            overlay: document.querySelector('.cp-welcome') !== null,
           };
         });
 
         if (spill.across > 0 || spill.down > 0) {
-          overflowed.push(`${size.width}x${size.height}: across ${spill.across}, down ${spill.down}`);
+          overflowed.push(
+            `${size.width}x${size.height} at ${Date.now() - (deadline - 6_000)}ms: ` +
+              `across ${spill.across}, down ${spill.down}, state ${spill.state}, ` +
+              `overlay ${spill.overlay}`,
+          );
         }
 
         await page.waitForTimeout(120);

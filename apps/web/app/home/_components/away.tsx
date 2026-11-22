@@ -3,7 +3,16 @@ import type { Formatter } from '../../../lib/format';
 import type { HomeData } from '../../../lib/home-data';
 
 /** Who is off this week, and what today is (M08 / M09, HR-04). */
-export function Away({ data, f }: { data: HomeData; f: Formatter }): JSX.Element {
+export function Away({
+  data,
+  f,
+  preview,
+}: {
+  data: HomeData;
+  f: Formatter;
+  /** This panel is still sample data: the tag says which workshop brings it. */
+  preview?: JSX.Element;
+}): JSX.Element {
   const t = f.t.home.away;
 
   return (
@@ -12,8 +21,9 @@ export function Away({ data, f }: { data: HomeData; f: Formatter }): JSX.Element
       className="flex min-w-0 shrink grow basis-[300px] flex-col gap-4 rounded-[20px] border border-card-border bg-white p-6"
     >
       <div className="flex items-baseline justify-between gap-3">
-        <h2 id="away-title" className="text-lg font-semibold text-navy">
+        <h2 id="away-title" className="flex items-center gap-2 text-lg font-semibold text-navy">
           {t.title}
+          {preview}
         </h2>
         <a href="#" className="text-sm font-semibold">
           {t.calendar}
