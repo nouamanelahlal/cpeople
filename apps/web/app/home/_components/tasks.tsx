@@ -1,7 +1,7 @@
 import type { JSX } from 'react';
 import type { Formatter } from '../../../lib/format';
 import type { Task, Tone } from '../../../lib/home-data';
-import { Icon } from './icons';
+import { Icon } from '../../_shell/icons';
 
 const TONES: Record<Tone, string> = {
   warning: 'bg-warning-bg text-warning-ink',

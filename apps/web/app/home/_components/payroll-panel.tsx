@@ -3,7 +3,7 @@ import type { JSX } from 'react';
 import type { Formatter } from '../../../lib/format';
 import type { HomeData } from '../../../lib/home-data';
 import mark from '../../../public/icon-512.png';
-import { Icon } from './icons';
+import { Icon } from '../../_shell/icons';
 
 /**
  * The payroll month: where it is, what it costs, and what happens next

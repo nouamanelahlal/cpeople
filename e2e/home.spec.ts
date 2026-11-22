@@ -197,18 +197,20 @@ test.describe('NEW home dashboard', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await signIn(page, MORNING);
 
+    // The two places that move on this screen when motion is welcome: the menu as
+    // it opens, and the watermark drifting under the pointer. Both carry an
+    // explicit motion-reduce rule, and both must be inert here.
     const moving = await page.evaluate(() => {
       const nav = document.querySelector('nav[aria-label="Main"]')!;
-      const card = document.querySelector('a[href="#"]')!;
+      const mark = document.querySelector('.cp-symbol-mark')!;
       return {
         nav: getComputedStyle(nav).transitionProperty,
-        hover: getComputedStyle(card).transitionProperty,
+        mark: getComputedStyle(mark).transitionProperty,
       };
     });
 
     expect(moving.nav).toBe('none');
-    // The cards still change colour on hover; what stops is the movement.
-    expect(moving.hover).not.toContain('transform');
+    expect(moving.mark).toBe('none');
   });
 
   test('matches the approved home screen, in English and in French', async ({ page }, testInfo) => {

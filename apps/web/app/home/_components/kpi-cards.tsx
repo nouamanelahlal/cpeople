@@ -1,7 +1,7 @@
 import type { JSX } from 'react';
 import type { Formatter } from '../../../lib/format';
 import type { Kpi } from '../../../lib/home-data';
-import { Icon } from './icons';
+import { Icon } from '../../_shell/icons';
 
 /**
  * A tint per card, so the four are told apart at a glance and not by reading: the

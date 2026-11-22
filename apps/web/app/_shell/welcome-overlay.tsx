@@ -8,7 +8,7 @@ import {
   type CSSProperties,
   type JSX,
 } from 'react';
-import { WELCOME_COOKIE, WELCOME_LAYERS, WELCOME_WORDMARK } from '../../../lib/welcome';
+import { WELCOME_COOKIE, WELCOME_LAYERS, WELCOME_WORDMARK } from '../../lib/welcome';
 
 /**
  * The welcome animation, played once after a sign-in

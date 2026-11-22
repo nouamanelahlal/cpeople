@@ -1,7 +1,7 @@
 import type { JSX } from 'react';
 import type { Formatter } from '../../../lib/format';
 import type { Connection } from '../../../lib/home-data';
-import { Icon } from './icons';
+import { Icon } from '../../_shell/icons';
 
 /**
  * The declarations and the systems CPeople talks to (M16, M17, M18, M10).

@@ -12,10 +12,10 @@ import {
   type ReactNode,
 } from 'react';
 import type { Locale } from '@cpeople/shared';
-import type { IconName } from '../../../lib/home-data';
-import icon from '../../../public/icon-192.png';
-import wordmark from '../../../public/brand/cpeople-wordmark.png';
-import { chooseLocale } from '../../actions';
+import type { IconName } from '../../lib/home-data';
+import icon from '../../public/icon-192.png';
+import wordmark from '../../public/brand/cpeople-wordmark.png';
+import { chooseLocale } from '../actions';
 import { BellIcon, CloseIcon, Icon, MenuIcon, PinIcon, SearchIcon } from './icons';
 
 export interface NavItem {
@@ -23,6 +23,7 @@ export interface NavItem {
   readonly label: string;
   readonly aria: string;
   readonly icon: IconName;
+  readonly href: string;
   readonly badge?: number;
   readonly current?: boolean;
 }
@@ -255,7 +256,7 @@ export function AppShell({
                 {group.items.map((item) => (
                   <a
                     key={item.key}
-                    href="#"
+                    href={item.href}
                     aria-label={item.aria}
                     aria-current={item.current ? 'page' : undefined}
                     className={`relative flex min-h-11 items-center gap-3.5 whitespace-nowrap rounded-[10px] px-3 py-2.5 text-sm transition-colors duration-150 ease-out hover:bg-hover motion-reduce:transition-none ${

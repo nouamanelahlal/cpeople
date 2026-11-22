@@ -66,6 +66,26 @@ export const fr: Messages = {
     announce: 'Connexion à CPeople',
     skip: 'Passer l’animation d’accueil',
   },
+  modules: {
+    building: 'Cet écran est en cours de construction pour l’atelier HR-01.',
+    hr01: 'Atelier HR-01 · 23 novembre 2026',
+    hr02: 'Atelier HR-02 · 24 novembre 2026',
+    hr03: 'Atelier HR-03 · 25 novembre 2026',
+    later: 'Plus tard dans le MVP',
+    attendance:
+      'Jours travaillés, heures supplémentaires et jours de week-end, importés des pointeuses par fichier ou par API.',
+    leave:
+      'Les congés selon la loi marocaine et le contrat, demandés par le salarié puis validés par le N+1 et le N+2.',
+    payroll:
+      'La paie mensuelle — CNSS, AMO, CIMR et IR — ouverte, calculée, vérifiée, validée puis clôturée.',
+    payslips: 'Les bulletins de paie au format marocain, envoyés par e-mail après la validation RH.',
+    declarations: 'Les données mensuelles de la déclaration CNSS pour Damancom, et les données de l’IR.',
+    sapPosting:
+      'Le journal de paie, vérifié débit contre crédit puis comptabilisé dans SAP S/4HANA par centre de coût.',
+    expenses:
+      'Les notes de frais : le salarié dépose, le manager valide, la paie rembourse.',
+    settings: 'L’entreprise, son organisation, les modèles de contrats et de documents, et qui a le droit de voir quoi.',
+  },
   home: {
     greeting: {
       // Bonjour covers the morning and the afternoon; "Bienvenue" belongs to the

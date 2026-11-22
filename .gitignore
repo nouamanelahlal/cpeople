@@ -17,3 +17,11 @@ packages/db/src/generated/
 *.tsbuildinfo
 # Screenshots from the Playwright MCP browser
 .playwright-mcp/
+
+# Brand files whose provenance is not settled. They are on the designer's machine
+# and in the project folder, not in the repository, until we know where they came
+# from and under what licence. Ignored so a wide `git add` cannot sweep them in;
+# delete these three lines once they are cleared.
+apps/web/public/brand/cpeople-icon-256.png
+docs/brand/consap-c-white.png
+docs/brand/cpeople-wordmark.png

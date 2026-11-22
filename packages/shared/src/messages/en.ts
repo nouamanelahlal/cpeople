@@ -61,6 +61,27 @@ export const en = {
     announce: 'Signing you in to CPeople',
     skip: 'Skip the welcome animation',
   },
+  /** The modules each menu item leads to, and when each one is shown (HR-01). */
+  modules: {
+    building: 'This screen is being built for the HR-01 workshop.',
+    hr01: 'Workshop HR-01 · 23 November 2026',
+    hr02: 'Workshop HR-02 · 24 November 2026',
+    hr03: 'Workshop HR-03 · 25 November 2026',
+    later: 'Later in the MVP',
+    attendance:
+      'Worked days, overtime and weekend days, imported from the attendance devices by file or API.',
+    leave:
+      'Leave under Moroccan law and the contract, requested by the employee and approved by N+1 then N+2.',
+    payroll:
+      'The monthly payroll run — CNSS, AMO, CIMR and income tax — opened, calculated, reviewed, approved and locked.',
+    payslips: 'PDF payslips in the Moroccan layout, e-mailed to each employee after HR approval.',
+    declarations: 'The monthly CNSS declaration data for Damancom, and the monthly income-tax data.',
+    sapPosting:
+      'The payroll journal, checked debit against credit and posted to SAP S/4HANA by cost centre.',
+    expenses:
+      'Expense claims: the employee submits, the manager approves, and payroll reimburses them.',
+    settings: 'The company, its organisation, the templates behind contracts and documents, and who may see what.',
+  },
   home: {
     greeting: {
       morning: 'Good morning, {name}',

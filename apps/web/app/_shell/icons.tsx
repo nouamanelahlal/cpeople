@@ -1,5 +1,5 @@
 import type { JSX } from 'react';
-import type { IconName } from '../../../lib/home-data';
+import type { IconName } from '../../lib/home-data';
 
 /**
  * One stroked line-art set, as the design draws it
