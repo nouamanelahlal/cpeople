@@ -23,7 +23,15 @@
     "kc:theme": "bash infra/keycloak/theme-builder/build.sh",
     "kc:image": "pnpm kc:theme && docker build -t cpeople-keycloak:local infra/keycloak",
     "kc:verify-theme": "node infra/keycloak/verify-theme.mjs",
-    "db:demo:reset": "pnpm --filter @cpeople/db run seed"
+    "db:demo:reset": "pnpm --filter @cpeople/db run seed",
+    "demo:up": "docker compose -f infra/docker/docker-compose.yml up -d",
+    "demo:prepare": "cross-env CPEOPLE_LOCAL_DEV=true node infra/keycloak/local-dev/demo-mode.mjs prepare",
+    "demo:restore": "cross-env CPEOPLE_LOCAL_DEV=true node infra/keycloak/local-dev/demo-mode.mjs restore",
+    "demo:reset": "pnpm db:deploy && pnpm db:demo:reset",
+    "demo:start": "pnpm demo:up && pnpm db:deploy && pnpm db:demo:reset && pnpm kc:local-dev && pnpm demo:prepare && pnpm dev",
+    "demo:check": "node infra/demo/check.mjs",
+    "demo:rehearse": "cross-env CPEOPLE_REHEARSAL=1 playwright test e2e/hr01-rehearsal.spec.ts --project=desktop-chromium",
+    "demo:guide": "node docs/demo/build-pdf.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

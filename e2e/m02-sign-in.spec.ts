@@ -13,6 +13,7 @@ import {
   signOutFromMenu,
   submitPassword,
   TEST_PASSWORD,
+  twoStepSignInIsOn,
   usersFor,
   waitForEmail,
   type ProjectUsers,
@@ -76,6 +77,11 @@ test.describe('M02 sign-in', () => {
   });
 
   test('asks the payroll role for an authenticator code', async ({ page }) => {
+    test.skip(
+      !(await twoStepSignInIsOn()),
+      'Two-step sign-in is switched off for a workshop; pnpm demo:restore puts it back.',
+    );
+
     await startSignIn(page);
 
     await submitEmail(page, users.payroll.email);
@@ -322,6 +328,11 @@ test.describe('M02 sign-in in French', () => {
     await chooseLanguage(page, 'Français');
     await page.getByRole('button', { name: /se connecter/i }).click();
     await page.locator('#username').waitFor({ state: 'visible' });
+
+    test.skip(
+      !(await twoStepSignInIsOn()),
+      'Two-step sign-in is switched off for a workshop; pnpm demo:restore puts it back.',
+    );
 
     await expect(page.getByPlaceholder(/adresse e-mail/i)).toBeVisible();
     await submitEmail(page, users.payroll.email);

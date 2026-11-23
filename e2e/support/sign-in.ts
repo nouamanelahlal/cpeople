@@ -235,6 +235,28 @@ async function adminToken(): Promise<string> {
 }
 
 /**
+ * Whether the realm still asks the senior roles for an authenticator code.
+ *
+ * A workshop runs with that step switched off (`pnpm demo:prepare`), and the
+ * tests that are *about* the code step then have nothing to test. They skip and
+ * say so rather than failing, because the realm being in demo mode is a
+ * deliberate state, not a broken one.
+ */
+export async function twoStepSignInIsOn(): Promise<boolean> {
+  const token = await adminToken();
+  const response = await fetch(`${KEYCLOAK_URL}/admin/realms/${REALM}/roles/hr-admin/composites`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    return true;
+  }
+
+  const composites = (await response.json()) as { name: string }[];
+  return composites.some((role) => role.name === 'mfa-required');
+}
+
+/**
  * Clears a user's failed-login count.
  *
  * The lockout test deliberately locks an account; without this the next run would
