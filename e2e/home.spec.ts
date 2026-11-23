@@ -8,6 +8,7 @@ import {
   TEST_PASSWORD,
   usersFor,
 } from './support/sign-in';
+import { resetDemoData } from './support/demo-data';
 import { skipWithoutBaseline } from './support/snapshots';
 
 // The home screen (NEW / M23), built from docs/design/home-dashboard.dc.html.
@@ -71,6 +72,15 @@ test.beforeAll(async ({ browser }, testInfo) => {
 
   await context.storageState({ path: SESSION });
   await context.close();
+});
+
+/**
+ * The seeded company, as this file expects to find it: the tests before this
+ * one hire people and sign contracts, and the figures here are asserted.
+ */
+test.beforeAll(({ browserName: _browserName }, testInfo) => {
+  if (testInfo.project.name !== 'desktop-chromium') return;
+  resetDemoData();
 });
 
 test.describe('NEW home dashboard', () => {

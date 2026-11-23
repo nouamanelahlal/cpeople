@@ -1,5 +1,6 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { DEMO_USERS, sessionPath, useEnglish, type DemoRole } from './support/demo-users';
+import { resetDemoData } from './support/demo-data';
 
 /**
  * The HR-01 demo smoke test (spec section 10), run after steps 4, 8 and 12.
@@ -25,6 +26,15 @@ test.beforeEach(({ browserName: _browserName }, testInfo) => {
 
 // Three real sign-ins, once each: the roles are the subject here, and the sign-in
 // itself is e2e/m02-sign-in.spec.ts's.
+
+/**
+ * The seeded company, as this file expects to find it: the tests before this
+ * one hire people and sign contracts, and the figures here are asserted.
+ */
+test.beforeAll(({ browserName: _browserName }, testInfo) => {
+  if (testInfo.project.name !== 'desktop-chromium') return;
+  resetDemoData();
+});
 
 test.describe('HR-01 demo smoke test', () => {
   // One sign-in at a time: Keycloak turns away a repeat sign-in of the same

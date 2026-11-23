@@ -1,5 +1,6 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { openAs, useEnglish, type DemoRole } from './support/demo-users';
+import { resetDemoData } from './support/demo-data';
 
 /**
  * Documents and expiry (HR-01 spec 6.7).
@@ -27,6 +28,15 @@ const PDF = Buffer.from(
 
 /** What the company looked like before this file touched it. */
 let expiringBefore = 0;
+
+/**
+ * The seeded company, as this file expects to find it: the tests before this
+ * one hire people and sign contracts, and the figures here are asserted.
+ */
+test.beforeAll(({ browserName: _browserName }, testInfo) => {
+  if (testInfo.project.name !== 'desktop-chromium') return;
+  resetDemoData();
+});
 
 test.describe('HR-01 documents and expiry', () => {
   test.describe.configure({ mode: 'serial' });

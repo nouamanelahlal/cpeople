@@ -1,5 +1,6 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { openAs, useEnglish, type DemoRole } from './support/demo-users';
+import { resetDemoData } from './support/demo-data';
 
 /**
  * Contracts: generated, signed, renewed, ended (HR-01 spec 6.6).
@@ -20,6 +21,15 @@ const SCAN = Buffer.from(
   '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n',
   'utf8',
 );
+
+/**
+ * The seeded company, as this file expects to find it: the tests before this
+ * one hire people and sign contracts, and the figures here are asserted.
+ */
+test.beforeAll(({ browserName: _browserName }, testInfo) => {
+  if (testInfo.project.name !== 'desktop-chromium') return;
+  resetDemoData();
+});
 
 test.describe('HR-01 contracts', () => {
   test.describe.configure({ mode: 'serial' });

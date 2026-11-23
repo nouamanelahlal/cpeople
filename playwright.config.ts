@@ -5,16 +5,27 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
   globalSetup: './e2e/global-setup.ts',
-  // A sign-in test is several real browser round trips through Keycloak, and the
-  // dev server compiles routes the first time each is asked for. 30s is too tight
-  // once three browser projects run at once — and each page is compiled on
-  // first request by a development build, with several workers asking at once.
+  // A sign-in test is several real browser round trips through Keycloak, and a
+  // development build compiles each page the first time it is asked for, so the
+  // first test to reach a screen pays for it.
   timeout: 120_000,
   fullyParallel: true,
+  /*
+   * One worker, on purpose.
+   *
+   * The suite drives one application against one demo database, and the HR-01
+   * tests change it: they hire people, upload documents, sign contracts and
+   * renew fixed terms. Run in parallel, a test that asserts "148 employees" is
+   * racing another that has just created the 149th — and the figures are the
+   * point of a demo, so they are asserted rather than observed.
+   *
+   * Everything is therefore ordered: the demo data is reseeded once before the
+   * run (e2e/global-setup.ts), and the files go one after another.
+   */
+  workers: 1,
   // How long one expectation waits. The default five seconds is a guess about a
   // built application; this suite drives a development build, where the first
-  // request for a page compiles it and several workers ask at once. A real
-  // failure still fails — a little later.
+  // request for a page compiles it. A real failure still fails — a little later.
   expect: { timeout: 15_000 },
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { openAs, useEnglish } from './support/demo-users';
+import { resetDemoData } from './support/demo-data';
 import { skipWithoutBaseline } from './support/snapshots';
 
 /**
@@ -21,6 +22,15 @@ test.beforeEach(({ browserName: _browserName }, testInfo) => {
   testInfo.setTimeout(150_000);
 });
 
+
+/**
+ * The seeded company, as this file expects to find it: the tests before this
+ * one hire people and sign contracts, and the figures here are asserted.
+ */
+test.beforeAll(({ browserName: _browserName }, testInfo) => {
+  if (testInfo.project.name !== 'desktop-chromium') return;
+  resetDemoData();
+});
 
 test.describe('HR-01 employee list', () => {
   test.describe.configure({ mode: 'serial' });
