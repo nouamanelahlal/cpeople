@@ -11,6 +11,11 @@
 
 import type { CPeoplePrismaClient } from '../client.js';
 import { clearHr02Leave, seedHr02Leave, type LeaveSeedCounts } from './hr02.js';
+import {
+  clearHr02Requests,
+  seedHr02Requests,
+  type LeaveRequestSeedCounts,
+} from './hr02-requests.js';
 
 /**
  * The day the demo is given, and the day every date here is measured from: the
@@ -72,6 +77,15 @@ interface CastMember {
   readonly email?: string;
 }
 
+/**
+ * The demo accounts whose sign-in is set to English.
+ *
+ * The rest of the company reads French, as an HR team in Casablanca would. This
+ * matches infra/keycloak/import-local-dev, so that the language somebody sees on
+ * screen is the language they are written to in.
+ */
+const ENGLISH_READERS = new Set(['admin@smg-demo.test', 'manager@smg-demo.test']);
+
 /** The people the demo script names, so the screens tell one coherent story. */
 const CAST: readonly CastMember[] = [
   { number: 'SMG-0001', first: 'Salma', last: 'Benali', gender: 'female', department: 'ADM', role: 'HR manager', email: 'hr@smg-demo.test' },
@@ -124,6 +138,7 @@ export interface DemoSeedResult {
   readonly tasks: number;
   /** The leave set-up seeded with them (M08): types, rules, weeks, holidays. */
   readonly leave: LeaveSeedCounts;
+  readonly leaveRequests: LeaveRequestSeedCounts;
 }
 
 /**
@@ -314,6 +329,10 @@ export async function seedHr01Demo(
         address: person.address,
         phone: person.phone,
         email: person.email,
+        // Which language this person is written to in. Morocco's HR paperwork is
+        // French, and the four who also sign in match the language their account
+        // is set to, so an e-mail and the screens agree.
+        preferredLocale: ENGLISH_READERS.has(person.email ?? '') ? 'en' : 'fr',
         positionId: positions.get(person.position)!,
         departmentId: departments.get(person.department)!,
         siteId: sites.get(departmentOf(person.department).site)!,
@@ -446,7 +465,18 @@ export async function seedHr01Demo(
     }
   }
 
-  return { employees: people.length, contracts, documents: documents.length, tasks, leave };
+  // Leave requests last: they hang off the people, the sites and the set-up,
+  // and they read the line of management rather than inventing one.
+  const leaveRequests = await seedHr02Requests(prisma, tenantId);
+
+  return {
+    employees: people.length,
+    contracts,
+    documents: documents.length,
+    tasks,
+    leave,
+    leaveRequests,
+  };
 }
 
 /** Everything this tenant's demo owns, in an order the foreign keys allow. */
@@ -454,6 +484,7 @@ async function clear(prisma: CPeoplePrismaClient, tenantId: string): Promise<voi
   const where = { tenantId };
 
   await prisma.department.updateMany({ where, data: { headEmployeeId: null } });
+  await clearHr02Requests(prisma, tenantId);
   await prisma.onboardingTask.deleteMany({ where });
   await prisma.employeeDocument.deleteMany({ where });
   await prisma.contract.deleteMany({ where });

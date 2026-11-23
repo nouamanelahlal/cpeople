@@ -38,6 +38,26 @@ export interface AppConfig {
 
   /** Where HTML is turned into PDF (CLAUDE.md: Gotenberg, never a browser here). */
   readonly gotenbergUrl: string;
+
+  /** Where the notices about leave are sent from, and where they link back to. */
+  readonly mail: MailConfig;
+}
+
+/**
+ * Sending e-mail.
+ *
+ * A developer's checkout talks to the Mailpit in infra/docker, which catches
+ * everything and delivers nothing — the right behaviour for a machine full of
+ * invented addresses. A deployed environment passes its own relay, and the API
+ * refuses to start without one rather than silently dropping notices that people
+ * are waiting for.
+ */
+export interface MailConfig {
+  readonly host: string;
+  readonly port: number;
+  readonly from: string;
+  /** The address of the web application, for the links inside a message. */
+  readonly appUrl: string;
 }
 
 /**
@@ -58,6 +78,14 @@ export interface StorageConfig {
 }
 
 const DEFAULT_PORT = 3100;
+
+/** The Mailpit and the web app in a developer's checkout. */
+const LOCAL_DEV_MAIL = {
+  host: 'localhost',
+  port: 1025,
+  from: 'CPeople <no-reply@cpeople.local>',
+  appUrl: 'http://localhost:3000',
+} as const;
 const DEFAULT_AUDIENCE = 'cpeople-api';
 
 /** The realm served by the local Docker stack (infra/docker/docker-compose.yml). */
@@ -142,7 +170,33 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       /\/$/,
       '',
     ),
+    mail: loadMailConfig(env, localDev),
   };
+}
+
+function loadMailConfig(env: NodeJS.ProcessEnv, localDev: boolean): MailConfig {
+  const host = env.MAIL_HOST?.trim();
+  const from = env.MAIL_FROM?.trim();
+  const appUrl = env.APP_URL?.trim();
+
+  if (localDev && !host) {
+    return { ...LOCAL_DEV_MAIL };
+  }
+
+  if (!host || !from || !appUrl) {
+    throw new Error(
+      'MAIL_HOST, MAIL_FROM and APP_URL must all be set. Leave requests notify the people ' +
+        'waiting on them, and an environment that cannot send would approve requests nobody ' +
+        'was told about.',
+    );
+  }
+
+  const port = Number(env.MAIL_PORT ?? 25);
+  if (!Number.isInteger(port) || port <= 0) {
+    throw new Error(`MAIL_PORT must be a positive integer, got "${env.MAIL_PORT}".`);
+  }
+
+  return { host, port, from, appUrl: appUrl.replace(/\/$/, '') };
 }
 
 function loadStorageConfig(env: NodeJS.ProcessEnv, localDev: boolean): StorageConfig {
@@ -187,6 +241,7 @@ export class AppConfigService implements AppConfig {
   readonly port: number;
   readonly storage: StorageConfig;
   readonly gotenbergUrl: string;
+  readonly mail: MailConfig;
 
   constructor(config: AppConfig) {
     this.localDev = config.localDev;
@@ -196,5 +251,6 @@ export class AppConfigService implements AppConfig {
     this.port = config.port;
     this.storage = config.storage;
     this.gotenbergUrl = config.gotenbergUrl;
+    this.mail = config.mail;
   }
 }

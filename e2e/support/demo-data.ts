@@ -11,10 +11,15 @@ import { execFileSync } from 'node:child_process';
  *
  * Deterministic and quick (a few seconds). The suite runs one file at a time,
  * so no two of these can collide.
+ *
+ * It runs the seed that is already built, deliberately: rebuilding the package
+ * rewrites `@cpeople/db/dist`, the API's watcher sees it and restarts, and the
+ * next page in the test finds nothing listening. The global setup builds it
+ * once, before anything is running.
  */
 export function resetDemoData(): void {
   try {
-    execFileSync('pnpm', ['--silent', '--filter', '@cpeople/db', 'run', 'seed'], {
+    execFileSync('pnpm', ['--silent', '--filter', '@cpeople/db', 'run', 'seed:built'], {
       cwd: process.cwd(),
       stdio: 'ignore',
       shell: process.platform === 'win32',

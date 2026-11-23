@@ -56,6 +56,7 @@ export interface LeavePolicy {
   readonly teamOffWarningPercent: number;
   readonly leaveYearStart: string;
   readonly note?: string;
+  readonly hrEmail?: string;
 }
 
 export interface LeaveSettings {
@@ -64,6 +65,8 @@ export interface LeaveSettings {
   readonly holidays: readonly PublicHoliday[];
   readonly holidayYears: readonly number[];
   readonly year: number;
+  readonly yearComplete: boolean;
+  readonly completeYears: readonly number[];
   readonly policy: LeavePolicy;
   readonly today: string;
   readonly mayManage: boolean;

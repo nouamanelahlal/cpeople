@@ -13,7 +13,11 @@ export type {
   Company,
   ContractStatus,
   EmployeeStatus,
+  LeaveCalculationKind,
   LeaveDayBasis,
+  LeaveDayPart,
+  LeaveDecisionKind,
+  LeaveRequestStatus,
   Prisma,
   Tenant,
 } from './generated/prisma/client.js';

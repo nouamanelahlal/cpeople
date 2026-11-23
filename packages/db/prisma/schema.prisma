@@ -9,8 +9,8 @@
 //  6. Salary, CIN and RIB are encrypted at field level.
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
   // ESM with .js specifiers: NestJS 12 and Prisma 7 are both ESM-only, and tsc
   // resolves "./x.js" to the generated "./x.ts" source when it compiles the package.
   moduleFormat        = "esm"
@@ -56,6 +56,10 @@ model Tenant {
   leaveRules         LeaveRule[]
   siteWorkWeeks      SiteWorkWeek[]
   leaveSettings      LeaveSettings?
+  leaveRequests      LeaveRequest[]
+  leaveCalculations  LeaveCalculation[]
+  leaveDecisions     LeaveDecision[]
+  publicHolidayYears PublicHolidayYear[]
 
   @@map("tenant")
 }
@@ -63,10 +67,10 @@ model Tenant {
 /// A legal entity inside a tenant (M01 / IMP-01). Country-neutral by design:
 /// the Moroccan employer identifiers hang off the MA country pack, not off this table.
 model Company {
-  id       String @id @default(uuid(7)) @db.Uuid
-  tenantId String @map("tenant_id") @db.Uuid
-  name     String
-  legalName String @map("legal_name")
+  id              String   @id @default(uuid(7)) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  name            String
+  legalName       String   @map("legal_name")
   /// ISO 4217. Stored with the company so every amount it owns carries a currency.
   defaultCurrency String   @map("default_currency") @db.Char(3)
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -150,8 +154,8 @@ model Site {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  company     Company      @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  company     Company        @relation(fields: [companyId], references: [id], onDelete: Restrict)
   departments Department[]
   employees   Employee[]
   contracts   Contract[]
@@ -245,17 +249,21 @@ model Employee {
   employeeNumber String         @map("employee_number")
   status         EmployeeStatus @default(onboarding)
 
-  firstName     String        @map("first_name")
-  lastName      String        @map("last_name")
-  gender        Gender        @default(unspecified)
-  birthDate     DateTime      @map("birth_date") @db.Date
-  nationality   String        @db.Char(2)
+  firstName       String        @map("first_name")
+  lastName        String        @map("last_name")
+  gender          Gender        @default(unspecified)
+  birthDate       DateTime      @map("birth_date") @db.Date
+  nationality     String        @db.Char(2)
   /// National identity document. Morocco: the CIN; the MA pack owns the format.
-  nationalId    String        @map("national_id")
-  maritalStatus MaritalStatus @default(single) @map("marital_status")
-  address       String?
-  phone         String?
-  email         String?
+  nationalId      String        @map("national_id")
+  maritalStatus   MaritalStatus @default(single) @map("marital_status")
+  address         String?
+  phone           String?
+  email           String?
+  /// Which language this person is written to in (M09 / HR-04). Morocco's HR
+  /// paperwork is French, so that is the default; the sign-in account carries the
+  /// same preference for the screens.
+  preferredLocale String        @default("fr") @map("preferred_locale") @db.VarChar(5)
 
   positionId         String    @map("position_id") @db.Uuid
   departmentId       String    @map("department_id") @db.Uuid
@@ -290,12 +298,13 @@ model Employee {
   costCentre CostCentre? @relation(fields: [costCentreId], references: [id], onDelete: Restrict)
   manager    Employee?   @relation("ReportsTo", fields: [managerId], references: [id], onDelete: SetNull)
 
-  reports    Employee[]         @relation("ReportsTo")
-  heads      Department[]       @relation("DepartmentHead")
-  dependents Dependent[]
-  contracts  Contract[]
-  documents  EmployeeDocument[]
-  tasks      OnboardingTask[]
+  reports       Employee[]         @relation("ReportsTo")
+  leaveRequests LeaveRequest[]     @relation("LeaveRequests")
+  heads         Department[]       @relation("DepartmentHead")
+  dependents    Dependent[]
+  contracts     Contract[]
+  documents     EmployeeDocument[]
+  tasks         OnboardingTask[]
 
   @@unique([tenantId, employeeNumber])
   @@unique([tenantId, nationalId])
@@ -638,8 +647,9 @@ model LeaveType {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  tenant Tenant      @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  rules  LeaveRule[]
+  tenant   Tenant         @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  rules    LeaveRule[]
+  requests LeaveRequest[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -692,11 +702,11 @@ model LeaveRule {
 /// days is Monday to Sunday" has no single answer. Effective-dated, because a
 /// trading pattern changes and last year's leave still has to add up.
 model SiteWorkWeek {
-  id       String @id @default(uuid(7)) @db.Uuid
-  tenantId String @map("tenant_id") @db.Uuid
-  siteId   String @map("site_id") @db.Uuid
+  id          String @id @default(uuid(7)) @db.Uuid
+  tenantId    String @map("tenant_id") @db.Uuid
+  siteId      String @map("site_id") @db.Uuid
   /// Days worked, 0 for Sunday through 6 for Saturday — what `getUTCDay()` answers.
-  workingDays Int[] @map("working_days")
+  workingDays Int[]  @map("working_days")
 
   effectiveFrom DateTime @map("effective_from") @db.Date
   note          String?
@@ -722,9 +732,12 @@ model LeaveSettings {
   /// Warn when more than this share of a department is off on the same day. A
   /// warning shown to the requester and the approver; it refuses nothing
   /// (HR-02 open point 6).
-  teamOffWarningPercent Int    @default(33) @map("team_off_warning_percent")
+  teamOffWarningPercent Int     @default(33) @map("team_off_warning_percent")
   /// The day the leave year starts, as MM-DD. Not a date: it repeats.
-  leaveYearStart        String @default("01-01") @map("leave_year_start")
+  leaveYearStart        String  @default("01-01") @map("leave_year_start")
+  /// Where a request with nobody to approve it is sent. A team address rather
+  /// than a person, so that it survives somebody leaving (HR-02 open point 11).
+  hrEmail               String? @map("hr_email")
 
   note      String?
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -734,4 +747,216 @@ model LeaveSettings {
 
   @@index([tenantId])
   @@map("leave_settings")
+}
+
+// ---------------------------------------------------------------------------
+// Leave requests, their approval, and the arithmetic behind them (M09 / HR-04).
+//
+// The rule this part of the schema exists to keep: **an approved request is
+// never quietly recalculated.** What a request costs is worked out when it is
+// sent and again when it is approved, and each answer is stored with the rule
+// row, the working week and the public holidays that produced it. If one of
+// those changes afterwards the stored answer stays, the difference is shown to
+// HR, and somebody accepts it. Nobody's balance moves because a setting was
+// edited on a Tuesday.
+// ---------------------------------------------------------------------------
+
+/// Where a request has got to (HR-02 spec 2).
+enum LeaveRequestStatus {
+  /// With the manager.
+  pending_n1
+  /// With the manager's manager, for the types that need a second yes.
+  pending_n2
+  /// With HR, because there is no manager to ask, or the manager is the requester.
+  pending_hr
+  approved
+  rejected
+  /// Taken back by the requester before anybody decided.
+  withdrawn
+  /// Approved, and the requester has asked to cancel it. Cancelling needs a yes too.
+  cancellation_pending
+  cancelled
+
+  @@map("leave_request_status")
+}
+
+/// Which part of a day is taken. A single day may be a morning or an afternoon.
+enum LeaveDayPart {
+  full
+  morning
+  afternoon
+
+  @@map("leave_day_part")
+}
+
+/// Why a calculation was made, which is also the order they happen in.
+enum LeaveCalculationKind {
+  /// When the request was sent.
+  submitted
+  /// When it was approved. This is the one a balance moves by.
+  approved
+  /// A setting changed while the request was still pending, so it was redone.
+  recalculated
+  /// A setting changed after approval and HR accepted the difference.
+  accepted
+
+  @@map("leave_calculation_kind")
+}
+
+/// What somebody did to a request, in their own words where there are any.
+enum LeaveDecisionKind {
+  submitted
+  approved_n1
+  approved_n2
+  rejected
+  withdrawn
+  cancellation_requested
+  cancellation_approved
+  cancellation_rejected
+  /// HR deciding in place of the line manager, which always carries a reason.
+  hr_override
+  recalculated
+  change_accepted
+
+  @@map("leave_decision_kind")
+}
+
+/// One request for time off (M09 / HR-04).
+model LeaveRequest {
+  id          String             @id @default(uuid(7)) @db.Uuid
+  tenantId    String             @map("tenant_id") @db.Uuid
+  employeeId  String             @map("employee_id") @db.Uuid
+  leaveTypeId String             @map("leave_type_id") @db.Uuid
+  status      LeaveRequestStatus @default(pending_n1)
+
+  startDate DateTime     @map("start_date") @db.Date
+  endDate   DateTime     @map("end_date") @db.Date
+  startPart LeaveDayPart @default(full) @map("start_part")
+  endPart   LeaveDayPart @default(full) @map("end_part")
+
+  /// The requester's own words. Private: it never goes in an e-mail, because a
+  /// reason for sick leave is a medical detail (HR-02 spec 2).
+  reason String?
+
+  /// What it costs, as last agreed. The calculation rows below say how, and this
+  /// never moves without one of them being written.
+  dayCount Decimal @map("day_count") @db.Decimal(5, 2)
+
+  /// The approvers, resolved from the organisation when the request was sent, so
+  /// that a later reorganisation does not change who was asked.
+  n1Id String? @map("n1_id") @db.Uuid
+  n2Id String? @map("n2_id") @db.Uuid
+  /// True when there was nobody to ask and HR was asked instead.
+  toHr Boolean @default(false) @map("to_hr")
+
+  submittedAt DateTime  @default(now()) @map("submitted_at") @db.Timestamptz(3)
+  decidedAt   DateTime? @map("decided_at") @db.Timestamptz(3)
+
+  /// Set when a setting changed under a request that was still pending and it was
+  /// redone. The requester and the approver are told, on the request itself.
+  recalculatedAt DateTime? @map("recalculated_at") @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  employee     Employee           @relation("LeaveRequests", fields: [employeeId], references: [id], onDelete: Restrict)
+  leaveType    LeaveType          @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict)
+  calculations LeaveCalculation[]
+  decisions    LeaveDecision[]
+
+  @@index([tenantId])
+  @@index([tenantId, employeeId])
+  @@index([tenantId, status])
+  @@index([tenantId, startDate])
+  @@map("leave_request")
+}
+
+/// What a request cost, and everything that decided it (HR-02 spec, point 1).
+///
+/// Insert-only in spirit and in use: a new answer is a new row. Keeping the rule
+/// row, the working week and the exact holidays means a count can be explained a
+/// year later, and that a changed setting is detected rather than guessed.
+model LeaveCalculation {
+  id        String               @id @default(uuid(7)) @db.Uuid
+  tenantId  String               @map("tenant_id") @db.Uuid
+  requestId String               @map("request_id") @db.Uuid
+  kind      LeaveCalculationKind
+
+  dayCount Decimal @map("day_count") @db.Decimal(5, 2)
+  /// Every day of the span and what it was worth, half-day markers included:
+  /// [{ date, part, days, reason }].
+  days     Json
+
+  /// The versions that were applied.
+  leaveRuleId      String?       @map("leave_rule_id") @db.Uuid
+  workWeekId       String?       @map("work_week_id") @db.Uuid
+  holidayIds       String[]      @map("holiday_ids") @db.Uuid
+  workingDays      Int[]         @map("working_days")
+  dayBasis         LeaveDayBasis @map("day_basis")
+  /// Whether the holidays of every year the request touches were marked complete
+  /// at the time. False means the count may still move.
+  holidaysComplete Boolean       @default(false) @map("holidays_complete")
+
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  tenant  Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  request LeaveRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, requestId])
+  @@map("leave_calculation")
+}
+
+/// Who did what to a request, in order (M09 / HR-04).
+///
+/// The audit log keeps the same facts for the whole system; this is the story
+/// the request's own screen tells, to the people the request belongs to.
+model LeaveDecision {
+  id        String            @id @default(uuid(7)) @db.Uuid
+  tenantId  String            @map("tenant_id") @db.Uuid
+  requestId String            @map("request_id") @db.Uuid
+  kind      LeaveDecisionKind
+
+  /// The employee file of whoever did it, where they have one.
+  byEmployeeId String? @map("by_employee_id") @db.Uuid
+  byName       String  @map("by_name")
+  byRole       String  @map("by_role")
+  /// Required of an HR override, optional elsewhere.
+  reason       String?
+
+  at DateTime @default(now()) @db.Timestamptz(3)
+
+  tenant  Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  request LeaveRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, requestId])
+  @@map("leave_decision")
+}
+
+/// Whether a year's public holidays are finished (HR-02 spec, point 3).
+///
+/// The moveable religious holidays are announced each year, so a year's list is
+/// incomplete until an administrator says it is not. Until then every request
+/// falling in that year warns the requester, the approver and HR that the count
+/// may still move.
+model PublicHolidayYear {
+  id          String  @id @default(uuid(7)) @db.Uuid
+  tenantId    String  @map("tenant_id") @db.Uuid
+  countryCode String  @map("country_code") @db.Char(2)
+  year        Int
+  complete    Boolean @default(false)
+
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(3)
+  completedBy String?   @map("completed_by")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, countryCode, year])
+  @@index([tenantId])
+  @@map("public_holiday_year")
 }

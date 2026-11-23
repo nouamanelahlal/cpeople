@@ -68,6 +68,10 @@ async function main(): Promise<void> {
           `${counts.leave.leaveRules} rules, ${counts.leave.workWeeks} working weeks, ` +
           `${counts.leave.holidays} public holidays — all marked to be confirmed`,
       );
+      console.log(
+        `  HR-02 leave requests: ${counts.leaveRequests.requests} requests, ` +
+          `${counts.leaveRequests.pending} of them waiting on somebody`,
+      );
     }
   }
 }

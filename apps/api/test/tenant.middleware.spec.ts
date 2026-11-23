@@ -20,9 +20,15 @@ const KEYCLOAK = {
   keycloakAudience: 'cpeople-api',
 };
 
-/** Nothing here touches storage; it is named because the settings are one shape. */
+/** Nothing here touches storage or mail; they are named because the settings are one shape. */
 const STORAGE = {
   gotenbergUrl: 'http://localhost:3001',
+  mail: {
+    host: 'localhost',
+    port: 1025,
+    from: 'CPeople <no-reply@cpeople.local>',
+    appUrl: 'http://localhost:3000',
+  },
   storage: {
     endpoint: 'http://localhost:9000',
     region: 'us-east-1',
@@ -126,6 +132,11 @@ describe('M21 configuration fails closed', () => {
     S3_ACCESS_KEY_ID: 'key',
     S3_SECRET_ACCESS_KEY: 'secret',
     GOTENBERG_URL: 'https://documents.cpeople.ma',
+    // Notices about leave have to be able to leave the building: an approval
+    // nobody was told about is a request still sitting in somebody's inbox.
+    MAIL_HOST: 'smtp.cpeople.ma',
+    MAIL_FROM: 'CPeople <no-reply@cpeople.ma>',
+    APP_URL: 'https://app.cpeople.ma',
   };
 
   it('does not allow the tenant header in a deployed environment', () => {
@@ -208,10 +219,52 @@ describe('HR-01 document storage is configured before the API starts', () => {
       S3_ACCESS_KEY_ID: 'key',
       S3_SECRET_ACCESS_KEY: 'secret',
       GOTENBERG_URL: 'https://documents.cpeople.ma/',
+      MAIL_HOST: 'smtp.cpeople.ma',
+      MAIL_FROM: 'CPeople <no-reply@cpeople.ma>',
+      APP_URL: 'https://app.cpeople.ma',
     });
 
     expect(config.storage.createBucket).toBe(false);
     // The trailing slash goes, so paths can be joined without doubling it.
     expect(config.gotenbergUrl).toBe('https://documents.cpeople.ma');
+  });
+});
+
+describe('M09 notices can leave the building before the API starts', () => {
+  const deployed = {
+    DATABASE_URL: 'postgresql://user:pw@db.internal:5432/cpeople',
+    KEYCLOAK_ISSUER: 'https://id.cpeople.ma/realms/cpeople',
+    S3_ENDPOINT: 'https://storage.cpeople.ma',
+    S3_BUCKET: 'cpeople-prod',
+    S3_ACCESS_KEY_ID: 'key',
+    S3_SECRET_ACCESS_KEY: 'secret',
+    GOTENBERG_URL: 'https://documents.cpeople.ma',
+  };
+
+  it('refuses to start where it could not send a notice', () => {
+    // A leave request that is approved and nobody is told about is a request
+    // still sitting in an inbox, so an environment that cannot send does not run.
+    expect(() => loadAppConfig(deployed)).toThrow(/MAIL_HOST/);
+  });
+
+  it('falls back to the local catcher in a developer checkout', () => {
+    const config = loadAppConfig({ CPEOPLE_LOCAL_DEV: 'true' });
+
+    // Mailpit, from infra/docker: it catches everything and delivers nothing,
+    // which is the right behaviour on a machine full of invented addresses.
+    expect(config.mail.host).toBe('localhost');
+    expect(config.mail.port).toBe(1025);
+    expect(config.mail.appUrl).toBe('http://localhost:3000');
+  });
+
+  it('trims the trailing slash off the address links are built from', () => {
+    const config = loadAppConfig({
+      ...deployed,
+      MAIL_HOST: 'smtp.cpeople.ma',
+      MAIL_FROM: 'CPeople <no-reply@cpeople.ma>',
+      APP_URL: 'https://app.cpeople.ma/',
+    });
+
+    expect(config.mail.appUrl).toBe('https://app.cpeople.ma');
   });
 });

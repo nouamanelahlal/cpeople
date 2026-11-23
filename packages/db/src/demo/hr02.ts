@@ -192,6 +192,9 @@ export async function seedHr02Leave(
       // never more than a warning (HR-02 open point 6).
       teamOffWarningPercent: 33,
       leaveYearStart: '01-01',
+      // Where a request with nobody above the requester is sent. A team address,
+      // so that it survives somebody leaving (HR-02 open point 11).
+      hrEmail: 'hr@smg-demo.test',
       note: DEMO_NOTE,
     },
   });
@@ -267,6 +270,16 @@ export async function seedHr02Leave(
       confirmed: false,
       note: HOLIDAY_NOTE,
     })),
+  });
+
+  // 2026's list is finished; 2027's is not, because the moveable religious
+  // holidays for next year have not been announced. That difference is the
+  // point: a request falling in 2027 says its count may still move.
+  await prisma.publicHolidayYear.createMany({
+    data: [
+      { tenantId, countryCode: 'MA', year: 2026, complete: true, completedAt: new Date(), completedBy: 'Demo seed' },
+      { tenantId, countryCode: 'MA', year: 2027, complete: false },
+    ],
   });
 
   return {

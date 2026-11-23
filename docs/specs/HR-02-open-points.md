@@ -65,6 +65,10 @@ name. Each extra step is a day or two of waiting for the employee.
 | **Where it is set** | Settings → Leave → **Types**, one switch per type. |
 | **Still open** | Whether length should also trigger it — for example, any absence over ten working days. The system does not look at length today; adding it is a rule, not a rebuild. |
 
+> **Confirmed by ConSAP on 23 November 2026:** unpaid and exceptional leave need
+> N+2. It stays a per-type switch all the same, so SMG can change it at the
+> workshop without waiting for a release.
+
 ---
 
 ## 3. The working week, and weekend work
@@ -101,6 +105,10 @@ means a payroll that has been approved can still change underneath it.
 | **Default** | 30 days for sick leave, 0 days for everything else — annual leave is asked for in advance or not at all. |
 | **Where it is set** | Settings → Leave → **Rules**, `maxBackdateDays`, per type and effective-dated. |
 | **Still open** | Whether anything may be backdated into a payroll month that is already locked. Today nothing stops it, because payroll locking is HR-03's. **This needs an answer before the two modules meet.** |
+
+> **Confirmed by ConSAP on 23 November 2026:** sick leave may be dated back
+> 30 days; everything else, not at all. Effective-dated per type, so a different
+> answer from SMG is a new rule row rather than a change to the code.
 
 ---
 
@@ -186,6 +194,69 @@ out, lost, or carried to a final payslip?
 |---|---|
 | **Default** | Nothing. The balance simply stops being counted when the file becomes a leaver. |
 | **Where it is set** | Not built. It is a payroll question (M11), and we would rather hear the answer before building it. |
+
+---
+
+## 11. An approver who is away
+
+**Question.** When the person who should approve a request is on leave
+themselves — or has left — who decides?
+
+**Why it matters.** Requests stop. A manager away for a fortnight in August is
+exactly when their team books time off, and a request nobody can approve is a
+request the employee cannot plan around.
+
+| | |
+|---|---|
+| **Default** | Nothing automatic. HR can decide any request in place of the line manager; it is recorded as an **HR decision with a reason** and shown on the request, so stepping in is visible rather than invisible. Where a request has nobody to approve it at all — the general manager's own leave, or an employee with no manager on file — it goes to HR from the start. |
+| **Where it is set** | Settings → Leave → **Policy**, for the address HR notices are sent to. The override itself is not a setting: it is who HR are. |
+| **Still open** | Whether SMG wants real **delegation** — "while I am away, Mouad approves for me", with a start and an end date — or whether HR stepping in is enough. Delegation is deliberately **not built**: it is a week of work and a new way for a request to reach the wrong person, and we would rather hear the answer first. |
+
+---
+
+## 12. Who HR notices go to
+
+**Question.** Which address should requests with no line manager be sent to?
+
+| | |
+|---|---|
+| **Default** | One address per company, seeded as the demo's HR account. A team address rather than a person, so that it survives somebody leaving. |
+| **Where it is set** | Settings → Leave → **Policy**. |
+| **Still open** | Whether more than one person should be told, and whether a request sitting unanswered for a few days should chase somebody. Nothing chases anybody today. |
+
+---
+
+## 13. When a holiday or a rule changes under a request
+
+**Question.** Who should be told, and who decides, when a change to the calendar
+or to a rule moves the number of days an existing request costs?
+
+**Why it matters.** This is the one place where an administrator editing a
+setting could quietly change what somebody is paid.
+
+| | |
+|---|---|
+| **Default** | Requests still waiting for a decision are **counted again at once**, and the person who asked and the person deciding are both told — the request shows what it was and what it has become. Requests that are already **approved are not touched**: they keep what was agreed and appear on HR's **"to review"** list with both numbers, and the balance only moves when HR accepts the difference, which is audited. |
+| **Where it is set** | Not a setting — it is how the flow works. Leave → **To review** (HR only). |
+| **Still open** | Whether an approved request from a **closed payroll month** should ever be corrected, or whether the difference belongs in the following month instead. That is a payroll question (M10/M11) and the answer changes what "accept" should do. |
+
+---
+
+## 14. "The holidays for this year are finished"
+
+**Question.** Who says that a year's public holiday list is complete, and by
+when each year?
+
+**Why it matters.** The moveable religious holidays are announced each year, so
+a list can be entirely correct in March and still be missing three days. Until
+somebody says a year is finished, every request falling in it is counted on an
+incomplete calendar.
+
+| | |
+|---|---|
+| **Default** | A per-year switch, off until an administrator turns it on. While it is off, every request touching that year warns the requester, the approver **and** HR that the day count may still change. 2026 is seeded as complete and 2027 is not, which is what the demo shows. |
+| **Where it is set** | Settings → Leave → **Public holidays** → "Holidays complete for {year}". |
+| **Still open** | Who at SMG owns this each year, and whether we should refuse to approve leave in a year that is not finished rather than only warning. Today it only warns. |
 
 ---
 

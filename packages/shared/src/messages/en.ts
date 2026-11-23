@@ -472,6 +472,9 @@ export const en = {
         contract: 'Generate, renew or end a contract',
         documents: 'Add and remove documents',
         onboarding: 'Onboarding tasks',
+        leaveAsk: 'Ask for leave',
+        leaveApprove: 'Approve leave',
+        leaveAll: 'All leave requests',
         organisation: 'Organisation settings',
         templates: 'Templates and document types',
         data: 'Import and export employee data',
@@ -863,6 +866,13 @@ export const en = {
       addTitle: 'Add a public holiday',
       date: 'Date',
       name: 'Name',
+      complete: 'Holidays complete for {year}',
+      completeNote:
+        'Tick this once every holiday for the year is on the list, including the religious ones. Until then, requests falling in {year} say their day count may still change.',
+      completed: 'The {year} list is complete.',
+      notCompleted: 'The {year} list is not finished yet.',
+      completeSave: 'Save this',
+      reopen: 'Reopen {year}',
       save: 'Add it',
       added: 'Added.',
       remove: 'Remove',
@@ -888,6 +898,248 @@ export const en = {
     failed: 'That could not be saved. Try again in a moment.',
   },
   /** The leave types the seed knows. Anything else shows its stored name. */
+  /**
+   * Asking for leave, and deciding it (M09 / HR-04).
+   *
+   * Plain words throughout: the people reading these are not administrators of
+   * anything, they are asking for a Tuesday off.
+   */
+  leave: {
+    title: 'Leave',
+    subtitle: 'Ask for time off, and follow what happens to it.',
+    tabs: {
+      mine: 'My leave',
+      approvals: 'To approve',
+      all: 'All requests',
+      review: 'To review',
+    },
+    status: {
+      pending_n1: 'With your manager',
+      pending_n2: 'With the second approver',
+      pending_hr: 'With HR',
+      approved: 'Approved',
+      rejected: 'Refused',
+      withdrawn: 'Taken back',
+      cancellation_pending: 'Cancellation asked for',
+      cancelled: 'Cancelled',
+    },
+    /** The same states, said about somebody else's request. */
+    statusOther: {
+      pending_n1: 'With the manager',
+      pending_n2: 'With the second approver',
+      pending_hr: 'With HR',
+      approved: 'Approved',
+      rejected: 'Refused',
+      withdrawn: 'Taken back',
+      cancellation_pending: 'Cancellation asked for',
+      cancelled: 'Cancelled',
+    },
+    open: 'Open',
+    with: 'With {name}',
+    days: '{days} days',
+    halfDay: 'half a day',
+    oneDay: '1 day',
+    columns: {
+      who: 'Who',
+      type: 'Type',
+      dates: 'Dates',
+      days: 'Days',
+      status: 'State',
+      waitingOn: 'Waiting on',
+      asked: 'Asked',
+      actions: '',
+    },
+    parts: {
+      full: 'All day',
+      morning: 'Morning',
+      afternoon: 'Afternoon',
+    },
+    /** How a span reads once the half-days are in it. */
+    span: {
+      same: '{date}',
+      sameHalf: '{date}, {part}',
+      range: '{from} to {to}',
+      rangeParts: '{from} ({fromPart}) to {to} ({toPart})',
+    },
+    mine: {
+      title: 'My leave',
+      note: 'Everything you have asked for, newest first.',
+      empty: 'You have not asked for any leave yet.',
+      ask: 'Ask for leave',
+    },
+    approvals: {
+      title: 'To approve',
+      note: 'Requests waiting for you. Approving one books the days; refusing one sends it back with your reason.',
+      empty: 'Nothing is waiting for you.',
+      approve: 'Approve',
+      reject: 'Refuse',
+      approveCancellation: 'Agree to the cancellation',
+      rejectCancellation: 'Keep the leave as it is',
+      reason: 'Reason',
+      reasonNote: 'Shown to the person who asked.',
+      reasonRequired: 'Say why, so the person who asked knows.',
+      decided: 'Done.',
+    },
+    all: {
+      title: 'All requests',
+      note: 'Every request in the company. HR can decide any of them, which is recorded as an override with a reason.',
+      empty: 'No requests yet.',
+      override: 'Decide as HR',
+      overrideTitle: 'Decide {name}’s request as HR',
+      overrideNote:
+        'This takes the decision out of the line manager’s hands, so it is recorded with your reason and shown on the request.',
+      overrideReason: 'Why HR is deciding this',
+      filterStatus: 'State',
+      filterAll: 'All states',
+    },
+    review: {
+      title: 'To review',
+      note: 'A public holiday, a working week or a rule changed under these requests. Pending ones were redone; approved ones keep what was agreed until you accept the difference.',
+      empty: 'Nothing to review. Every request matches the settings in force.',
+      was: 'Agreed',
+      now: 'Now works out as',
+      difference: '{days} days',
+      why: 'Why',
+      accept: 'Accept the new count',
+      acceptAll: 'Accept all',
+      accepted: 'Accepted. The balance has been corrected.',
+      pendingNote: 'Redone automatically — the requester and the approver have been told.',
+      approvedNote: 'Approved, so nothing has moved. Accepting it corrects the balance.',
+      reasons: {
+        holidays: 'Public holidays changed',
+        week: 'The working week changed',
+        rule: 'The leave rule changed',
+        unknown: 'A setting changed',
+      },
+    },
+    form: {
+      title: 'Ask for leave',
+      type: 'Type of leave',
+      from: 'First day',
+      to: 'Last day',
+      fromPart: 'Part of the first day',
+      toPart: 'Part of the last day',
+      reason: 'Reason',
+      reasonNote: 'Optional, and private. It is never put in an e-mail.',
+      document: 'This type needs a document. Add it to the file after you have sent the request.',
+      submit: 'Send the request',
+      cancel: 'Cancel',
+      counting: 'Working it out…',
+      count: 'This request costs {days} days.',
+      countNote: 'Counted in {basis}, using {site}’s working week.',
+      basis: {
+        working: 'working days',
+        calendar: 'calendar days',
+      },
+      sent: 'Sent. {name} has been told.',
+      sentHr: 'Sent to HR.',
+    },
+    detail: {
+      title: 'Request',
+      asked: 'Asked on {date}',
+      history: 'What has happened',
+      calculations: 'How the days were counted',
+      calculationNote:
+        'Each line is what the request cost at that moment, with the rule, the working week and the holidays that were applied.',
+      holidaysApplied: '{count} public holidays fell inside it',
+      noHolidays: 'No public holidays fell inside it',
+      withdraw: 'Take it back',
+      askCancellation: 'Ask to cancel it',
+      cancellationNote: 'It is approved, so cancelling it needs a yes as well.',
+      back: 'Back to leave',
+      kinds: {
+        submitted: 'Asked for',
+        approved_n1: 'Approved by the manager',
+        approved_n2: 'Approved by the second approver',
+        rejected: 'Refused',
+        withdrawn: 'Taken back',
+        cancellation_requested: 'Cancellation asked for',
+        cancellation_approved: 'Cancellation agreed',
+        cancellation_rejected: 'Cancellation refused',
+        hr_override: 'Decided by HR',
+        recalculated: 'Days recounted after a settings change',
+        change_accepted: 'New count accepted by HR',
+      },
+      calculationKinds: {
+        submitted: 'When it was sent',
+        approved: 'When it was approved',
+        recalculated: 'After a settings change',
+        accepted: 'Accepted by HR',
+      },
+    },
+    warnings: {
+      title: 'Worth knowing',
+      holidays:
+        'Public holidays for {year} are not confirmed yet; the day count may change.',
+      balance:
+        'This would take {name} past the days available: {remaining} left, and this asks for {days}.',
+      balanceOwn: 'This would take you past the days available: {remaining} left, and this asks for {days}.',
+      teamOff:
+        '{percent}% of {department} is already off on at least one of these days, above the {threshold}% the company set.',
+      notice:
+        'This type expects {days} days’ notice, and this request gives {given}.',
+      backdate: 'This request starts in the past.',
+      none: 'Nothing to flag.',
+    },
+    errors: {
+      overlap: 'You already have leave booked over {dates}.',
+      overlapOther: '{name} already has leave booked over {dates}.',
+      span: 'The last day cannot be before the first.',
+      halfDay: 'This type is taken in whole days.',
+      tooLong: 'That is longer than a request can be. Split it, or ask HR.',
+      unknownType: 'That type of leave is not in use.',
+      notYours: 'That request is not yours to decide.',
+      notPending: 'That request has already been decided.',
+      noEmployee: 'Your sign-in is not linked to an employee file, so you cannot ask for leave yet.',
+      backdateTooFar: 'This type may be dated back {days} days at most.',
+      unavailable: 'Leave could not be loaded. Try again in a moment.',
+      failed: 'That could not be saved. Try again in a moment.',
+    },
+    notice: {
+      recalculated:
+        'The days were recounted on {date} after a settings change: {from} became {to}.',
+      seen: 'Understood',
+    },
+    /**
+     * What the e-mails say.
+     *
+     * Deliberately thin: who it is about, what the dates are, and a link. No
+     * reason, and nothing about anybody's health — an inbox is not private, and
+     * the application has no business putting a medical detail in one.
+     */
+    mail: {
+      submitted: {
+        subject: 'Leave request from {name}',
+        body: '{name} has asked for leave from {from} to {to} ({days} days). It is waiting for you.',
+      },
+      approvedForYou: {
+        subject: 'Your leave has been approved',
+        body: 'Your leave from {from} to {to} ({days} days) has been approved.',
+      },
+      rejectedForYou: {
+        subject: 'Your leave request was refused',
+        body: 'Your leave request from {from} to {to} was refused. The reason is on the request.',
+      },
+      secondApproval: {
+        subject: 'Leave request to approve: {name}',
+        body: '{name}’s leave from {from} to {to} ({days} days) has been approved by their manager and now needs your approval.',
+      },
+      cancellationRequested: {
+        subject: '{name} wants to cancel approved leave',
+        body: '{name} has asked to cancel approved leave from {from} to {to}. It is waiting for you.',
+      },
+      cancellationDecided: {
+        subject: 'Your cancellation request has been decided',
+        body: 'Your request to cancel the leave from {from} to {to} has been decided.',
+      },
+      recalculated: {
+        subject: 'The days on a leave request have changed',
+        body: 'A settings change has altered the number of days on the leave from {from} to {to}. It is now {days} days.',
+      },
+      open: 'Open it in CPeople',
+      footer: 'CPeople — you are receiving this because of a leave request you are part of.',
+    },
+  },
   leaveTypes: {
     ANNUAL: 'Annual leave',
     SICK: 'Sick leave',

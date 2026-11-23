@@ -28,6 +28,20 @@ export {
   weekday,
 } from './leave-days.js';
 export type { DayBasis, DayPart, LeaveCalendar, LeaveDay, LeaveSpan } from './leave-days.js';
+export {
+  afterFirstApproval,
+  approvalChain,
+  awaiting,
+  BLOCKING_STATUSES,
+  CLOSED_STATUSES,
+  isBlocking,
+  isPending,
+  occupiedHalves,
+  PENDING_STATUSES,
+  spansClash,
+  yearsOf,
+} from './leave-approval.js';
+export type { ApprovalChain, LeaveStatus } from './leave-approval.js';
 export { CURRENCY, DEFAULT_LOCALE, LOCALES, intlLocale, toLocale } from './locale.js';
 export { frenchNumberWords } from './number-words-fr.js';
 export type { Locale } from './locale.js';

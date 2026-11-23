@@ -19,6 +19,7 @@ import {
   saveLeaveRule,
   saveLeaveType,
   saveWorkWeek,
+  setHolidayYearComplete,
 } from './actions';
 
 const TIME_ZONE = 'Africa/Casablanca';
@@ -614,6 +615,50 @@ function Holidays({ settings, f }: { settings: LeaveSettings; f: Formatter }): J
       <p className="m-0 rounded-2xl border border-card-border bg-surface-quiet px-4 py-3 text-[13px] text-body">
         {t.missing}
       </p>
+
+      {/* The switch that stops every request in this year carrying a warning. */}
+      <div
+        className={`flex flex-col gap-2 rounded-2xl border px-4 py-3.5 ${
+          settings.yearComplete
+            ? 'border-success-border bg-success-bg'
+            : 'border-warning-bg bg-warning-bg'
+        }`}
+      >
+        <form action={setHolidayYearComplete} className="flex flex-wrap items-center gap-3">
+          <input type="hidden" name="year" value={settings.year} />
+          <label
+            className={`flex items-center gap-2.5 text-sm font-semibold ${
+              settings.yearComplete ? 'text-success-ink' : 'text-warning-ink'
+            }`}
+          >
+            <input
+              type="checkbox"
+              name="complete"
+              defaultChecked={settings.yearComplete}
+              disabled={!settings.mayManage}
+              className="size-4 accent-[var(--color-blue)]"
+            />
+            {f.plain(t.complete, { year: String(settings.year) })}
+          </label>
+
+          {settings.mayManage && (
+            <button
+              type="submit"
+              className="quiet-button h-9 border-button-border px-3 text-[13px] font-semibold text-navy"
+            >
+              {t.completeSave}
+            </button>
+          )}
+        </form>
+
+        <p
+          className={`m-0 max-w-prose text-xs ${
+            settings.yearComplete ? 'text-success-ink' : 'text-warning-ink'
+          }`}
+        >
+          {f.plain(t.completeNote, { year: String(settings.year) })}
+        </p>
+      </div>
 
       {settings.holidays.length === 0 ? (
         <p className="m-0 py-6 text-sm text-body">{t.empty}</p>
