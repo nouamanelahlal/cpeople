@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AccessModule } from '../../common/access/access.module.js';
 import { AuditModule } from '../../common/audit/audit.module.js';
 import { PrismaModule } from '../../common/prisma/prisma.module.js';
+import { ChartService } from './chart.service.js';
 import { OrganisationController } from './organisation.controller.js';
 import { OrganisationService } from './organisation.service.js';
 
@@ -9,6 +10,6 @@ import { OrganisationService } from './organisation.service.js';
 @Module({
   imports: [AccessModule, AuditModule, PrismaModule],
   controllers: [OrganisationController],
-  providers: [OrganisationService],
+  providers: [OrganisationService, ChartService],
 })
 export class OrganisationModule {}

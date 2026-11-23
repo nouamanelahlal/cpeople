@@ -7,8 +7,9 @@ export default defineConfig({
   globalSetup: './e2e/global-setup.ts',
   // A sign-in test is several real browser round trips through Keycloak, and the
   // dev server compiles routes the first time each is asked for. 30s is too tight
-  // once three browser projects run at once.
-  timeout: 60_000,
+  // once three browser projects run at once — and each page is compiled on
+  // first request by a development build, with several workers asking at once.
+  timeout: 120_000,
   fullyParallel: true,
   // How long one expectation waits. The default five seconds is a guess about a
   // built application; this suite drives a development build, where the first
