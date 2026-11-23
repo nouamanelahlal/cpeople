@@ -652,7 +652,9 @@ function Contracts({ file, f }: { file: EmployeeFile; f: Formatter }): JSX.Eleme
           key={contract.id}
           className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line py-3.5 first:border-t-0 first:pt-0"
         >
-          <span className="text-sm font-semibold text-navy">{contract.type.name}</span>
+          <a href={`/contracts/${contract.id}`} className="text-sm font-semibold text-navy">
+            {contract.type.name}
+          </a>
           <Pill tone={contract.status === 'signed' ? 'tint' : 'quiet'}>
             {t.contractStatus[contract.status]}
           </Pill>

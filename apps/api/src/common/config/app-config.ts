@@ -35,6 +35,9 @@ export interface AppConfig {
 
   /** Where uploaded documents are kept (CLAUDE.md: S3-compatible storage). */
   readonly storage: StorageConfig;
+
+  /** Where HTML is turned into PDF (CLAUDE.md: Gotenberg, never a browser here). */
+  readonly gotenbergUrl: string;
 }
 
 /**
@@ -61,6 +64,9 @@ const DEFAULT_AUDIENCE = 'cpeople-api';
 const LOCAL_DEV_ISSUER = 'http://localhost:8080/realms/cpeople';
 
 /** The object store in infra/docker/docker-compose.yml. */
+/** The document service in infra/docker/docker-compose.yml. */
+const LOCAL_DEV_GOTENBERG = 'http://localhost:3001';
+
 const LOCAL_DEV_STORAGE = {
   endpoint: 'http://localhost:9000',
   region: 'us-east-1',
@@ -109,6 +115,17 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     throw new Error(`KEYCLOAK_ISSUER must be an https URL outside local development, got "${keycloakIssuer}".`);
   }
 
+  // Storage first, so an environment missing both is told about both in the
+  // order it will meet them.
+  const storage = loadStorageConfig(env, localDev);
+
+  if (!localDev && !env.GOTENBERG_URL?.trim()) {
+    throw new Error(
+      'GOTENBERG_URL is not set. Contracts and payslips are rendered to PDF by Gotenberg, ' +
+        'and an environment that cannot reach it would offer a button that always fails.',
+    );
+  }
+
   const port = Number(env.API_PORT ?? DEFAULT_PORT);
   if (!Number.isInteger(port) || port <= 0) {
     throw new Error(`API_PORT must be a positive integer, got "${env.API_PORT}".`);
@@ -120,7 +137,11 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     keycloakIssuer: keycloakIssuer.replace(/\/$/, ''),
     keycloakAudience: env.KEYCLOAK_AUDIENCE?.trim() || DEFAULT_AUDIENCE,
     port,
-    storage: loadStorageConfig(env, localDev),
+    storage,
+    gotenbergUrl: (env.GOTENBERG_URL?.trim() || (localDev ? LOCAL_DEV_GOTENBERG : '')).replace(
+      /\/$/,
+      '',
+    ),
   };
 }
 
@@ -165,6 +186,7 @@ export class AppConfigService implements AppConfig {
   readonly keycloakAudience: string;
   readonly port: number;
   readonly storage: StorageConfig;
+  readonly gotenbergUrl: string;
 
   constructor(config: AppConfig) {
     this.localDev = config.localDev;
@@ -173,5 +195,6 @@ export class AppConfigService implements AppConfig {
     this.keycloakAudience = config.keycloakAudience;
     this.port = config.port;
     this.storage = config.storage;
+    this.gotenbergUrl = config.gotenbergUrl;
   }
 }

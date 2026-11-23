@@ -75,6 +75,7 @@ describe('M02 the realm must be configured before the API starts', () => {
     S3_BUCKET: 'cpeople-prod',
     S3_ACCESS_KEY_ID: 'key',
     S3_SECRET_ACCESS_KEY: 'secret',
+    GOTENBERG_URL: 'https://documents.cpeople.ma',
   };
 
   it('refuses to start in a deployed environment with no issuer', () => {

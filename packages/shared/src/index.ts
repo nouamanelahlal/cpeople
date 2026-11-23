@@ -20,6 +20,7 @@ export {
 } from './documents.js';
 export type { DocumentState } from './documents.js';
 export { CURRENCY, DEFAULT_LOCALE, LOCALES, intlLocale, toLocale } from './locale.js';
+export { frenchNumberWords } from './number-words-fr.js';
 export type { Locale } from './locale.js';
 export { en, fr, getMessages } from './messages/index.js';
 export type { Messages } from './messages/index.js';

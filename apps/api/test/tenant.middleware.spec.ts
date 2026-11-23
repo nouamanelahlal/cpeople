@@ -22,6 +22,7 @@ const KEYCLOAK = {
 
 /** Nothing here touches storage; it is named because the settings are one shape. */
 const STORAGE = {
+  gotenbergUrl: 'http://localhost:3001',
   storage: {
     endpoint: 'http://localhost:9000',
     region: 'us-east-1',
@@ -124,6 +125,7 @@ describe('M21 configuration fails closed', () => {
     S3_BUCKET: 'cpeople-prod',
     S3_ACCESS_KEY_ID: 'key',
     S3_SECRET_ACCESS_KEY: 'secret',
+    GOTENBERG_URL: 'https://documents.cpeople.ma',
   };
 
   it('does not allow the tenant header in a deployed environment', () => {
@@ -170,6 +172,18 @@ describe('HR-01 document storage is configured before the API starts', () => {
     KEYCLOAK_ISSUER: 'https://id.cpeople.ma/realms/cpeople',
   };
 
+  it('refuses to start in a deployed environment with nowhere to render a PDF', () => {
+    expect(() =>
+      loadAppConfig({
+        ...deployed,
+        S3_ENDPOINT: 'https://s3.cpeople.ma',
+        S3_BUCKET: 'cpeople-prod',
+        S3_ACCESS_KEY_ID: 'key',
+        S3_SECRET_ACCESS_KEY: 'secret',
+      }),
+    ).toThrow(/GOTENBERG_URL/);
+  });
+
   it('refuses to start in a deployed environment with nowhere to put documents', () => {
     // Accepting an upload and losing it is worse than not starting.
     expect(() => loadAppConfig(deployed)).toThrow(/S3_ENDPOINT/);
@@ -193,8 +207,11 @@ describe('HR-01 document storage is configured before the API starts', () => {
       S3_BUCKET: 'cpeople-prod',
       S3_ACCESS_KEY_ID: 'key',
       S3_SECRET_ACCESS_KEY: 'secret',
+      GOTENBERG_URL: 'https://documents.cpeople.ma/',
     });
 
     expect(config.storage.createBucket).toBe(false);
+    // The trailing slash goes, so paths can be joined without doubling it.
+    expect(config.gotenbergUrl).toBe('https://documents.cpeople.ma');
   });
 });
