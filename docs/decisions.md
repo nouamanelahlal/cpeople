@@ -13,4 +13,6 @@
 - GitHub or GitLab
 - Hosting provider in Morocco and budget; CNDP declaration
 - Damancom and IR file formats (payroll expert)
+- Password policy and lockout thresholds, to confirm with SMG's IT in the fit-to-standard
+  workshop (what the realm ships is in `infra/keycloak/README.md`)
 - K1–K6 in `mvp-scope.md` §2

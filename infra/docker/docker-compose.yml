@@ -14,12 +14,44 @@ services:
     image: redis:7
     ports: ["6379:6379"]
 
+  # Sign-in (M02 / HR-08). The realm is code: infra/keycloak/import/cpeople-realm.json
+  # is imported on first start, so nothing lives only in the admin console. After
+  # editing it, reload with:
+  #   docker compose -f infra/docker/docker-compose.yml up -d --force-recreate keycloak
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
-    command: start-dev
+    # The import directory is assembled from two read-only sources: the base realm
+    # every environment uses, plus the fake users that only a local checkout gets.
+    # A deployed environment imports ../keycloak/import and nothing else.
+    command:
+      - -c
+      - |
+        set -e
+        mkdir -p /opt/keycloak/data/import
+        cp /keycloak-import-base/*.json /opt/keycloak/data/import/
+        cp /keycloak-import-local-dev/*.json /opt/keycloak/data/import/
+        exec /opt/keycloak/bin/kc.sh start-dev --import-realm
+    entrypoint: ["/bin/bash"]
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin_dev
+      # Read by the sign-in theme: where "Book a demo" in the header points.
+      # Each environment sets its own.
+      CPEOPLE_BOOK_A_DEMO_URL: https://consap.ma/cpeople
+      # The realm turns on Keycloak's e-mail event listener so a locked-out person
+      # hears about it. Left to itself that listener also e-mails on every failed
+      # sign-in, which would be a mailbox full of mistyped passwords, so it is held
+      # to the one event. Same value in infra/keycloak/Dockerfile, for deployments.
+      KC_SPI_EVENTS_LISTENER_EMAIL_INCLUDE_EVENTS: USER_DISABLED_BY_TEMPORARY_LOCKOUT
+    volumes:
+      - ../keycloak/import:/keycloak-import-base:ro
+      - ../keycloak/import-local-dev:/keycloak-import-local-dev:ro
+      - ../keycloak/themes:/opt/keycloak/themes:ro
+      # The Keycloakify sign-in theme, built by `pnpm kc:theme`. It is a build
+      # artifact, so it is not committed; without it Keycloak falls back to the
+      # stock pages and everything still works.
+      - ../keycloak/providers:/opt/keycloak/providers
+    depends_on: [mailpit]
     ports: ["8080:8080"]
 
   # S3-compatible file storage. MinIO no longer publishes Docker images (removed from

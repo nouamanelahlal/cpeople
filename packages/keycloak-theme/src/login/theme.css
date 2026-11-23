@@ -1,0 +1,814 @@
+/* CPeople sign-in theme.
+   Values follow docs/design/login*.dc.html; colours come from the ConSAP tokens and
+   are never redefined here (CLAUDE.md rule 10).
+   Spacing uses logical properties throughout, so Arabic works later without a rewrite. */
+
+@import '@cpeople/ui/tokens.vars.css';
+
+/* Montserrat, served by Keycloak itself.
+   A sign-in page must not call out to Google: it would leak every visitor to a
+   third party and leave the brand typeface at the mercy of a network the user may
+   not reach. The files are the upstream variable font (SIL OFL, see
+   assets/fonts/OFL.txt), subset to latin and latin-ext, which is what EN and FR
+   need. 100-900 because one variable file covers every weight the pages use. */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../assets/fonts/montserrat-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../assets/fonts/montserrat-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  --cp-radius-field: 12px;
+  --cp-radius-panel: 28px;
+  --cp-field-height: 48px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--cp-page);
+  color: var(--cp-navy);
+  font-family: var(--cp-font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--cp-blue);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--cp-navy);
+}
+
+button,
+input {
+  font-family: inherit;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--cp-cyan);
+  outline-offset: 2px;
+}
+
+/* ---------- Shell ---------- */
+
+.cp-shell {
+  display: flex;
+  flex-wrap: wrap;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.cp-main {
+  flex: 1 1 480px;
+  min-width: 0;
+  padding: 28px clamp(20px, 4vw, 48px);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.cp-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cp-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cp-logo img {
+  display: block;
+}
+
+.cp-logo-wordmark {
+  height: 32px;
+  width: auto;
+}
+
+.cp-header-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--cp-body);
+}
+
+.cp-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.cp-card {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.cp-badge {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid var(--cp-card-border);
+  box-shadow: 0 6px 16px rgba(15, 25, 55, 0.06);
+  color: var(--cp-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  flex: none;
+}
+
+.cp-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: center;
+}
+
+.cp-heading h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  /* French headings run longer than English ones. */
+  text-wrap: balance;
+}
+
+.cp-heading p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--cp-body);
+}
+
+.cp-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cp-legal {
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--cp-body);
+}
+
+.cp-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--cp-body);
+}
+
+.cp-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  align-self: flex-start;
+}
+
+.cp-back svg {
+  /* Points back, whichever way the page reads. */
+  transform: scaleX(1);
+}
+
+[dir='rtl'] .cp-back svg {
+  transform: scaleX(-1);
+}
+
+/* ---------- Form controls ---------- */
+
+.cp-input {
+  height: var(--cp-field-height);
+  width: 100%;
+  padding-inline: 14px;
+  border: 1px solid var(--cp-field-border);
+  border-radius: var(--cp-radius-field);
+  font-size: 15px;
+  color: var(--cp-navy);
+  background: #ffffff;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.cp-input::placeholder {
+  color: var(--cp-body);
+  opacity: 0.75;
+}
+
+.cp-input:focus {
+  outline: none;
+  border-color: var(--cp-blue);
+  box-shadow: 0 0 0 4px rgba(63, 179, 215, 0.25);
+}
+
+.cp-input[aria-invalid='true'] {
+  border-color: #c0392b;
+}
+
+.cp-password {
+  position: relative;
+}
+
+.cp-password .cp-input {
+  padding-inline-end: 52px;
+}
+
+.cp-password-toggle {
+  position: absolute;
+  inset-inline-end: 4px;
+  top: 4px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--cp-body);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.cp-code {
+  height: 60px;
+  padding-inline: 18px;
+  font-size: 24px;
+  font-weight: 300;
+  letter-spacing: 0.3em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The wide spacing is for the digits. Applied to the placeholder it runs the
+   wording off the end of the field on a phone. */
+.cp-code::placeholder {
+  font-size: 15px;
+  letter-spacing: normal;
+}
+
+.cp-identity {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--cp-radius-field);
+  background: #ffffff;
+  border: 1px solid var(--cp-field-border);
+  font-size: 14px;
+}
+
+.cp-identity span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cp-identity a,
+.cp-identity button {
+  border: 0;
+  background: none;
+  padding: 4px;
+  color: var(--cp-blue);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  flex: none;
+}
+
+/* The way out under a sign-in error: quiet, because it is there for the people the
+   error did not help, and it must not compete with the error itself. */
+.cp-help {
+  margin: -4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--cp-body);
+}
+
+.cp-help a {
+  font-weight: 600;
+}
+
+.cp-forgot {
+  align-self: flex-end;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ---------- Buttons ---------- */
+
+.cp-button {
+  height: var(--cp-field-height);
+  width: 100%;
+  border-radius: var(--cp-radius-field);
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 0;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.cp-button--primary {
+  background: var(--cp-blue);
+  color: #ffffff;
+}
+
+.cp-button--primary:hover {
+  background: var(--cp-blue-hover);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(14, 123, 176, 0.28);
+}
+
+.cp-button--light {
+  background: #ffffff;
+  color: var(--cp-navy);
+  border: 1px solid var(--cp-field-border);
+  height: 46px;
+}
+
+.cp-button--light:hover {
+  background: #f7fafc;
+  border-color: #bfddeb;
+  box-shadow: 0 4px 12px rgba(15, 25, 55, 0.06);
+}
+
+.cp-button--header {
+  height: 40px;
+  width: auto;
+  padding-inline: 16px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cp-button--primary:hover {
+    transform: translateY(-1px);
+  }
+}
+
+/* ---------- Identity providers ---------- */
+
+.cp-providers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cp-provider-logo {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.cp-separator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--cp-body);
+}
+
+.cp-separator::before,
+.cp-separator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--cp-field-border);
+}
+
+/* ---------- Messages ---------- */
+
+.cp-alert {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: var(--cp-radius-field);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.cp-alert svg {
+  flex: 0 0 18px;
+  margin-top: 2px;
+}
+
+.cp-alert--error {
+  background: var(--cp-danger-bg);
+  border: 1px solid var(--cp-danger-border);
+  color: var(--cp-danger-ink);
+}
+
+.cp-alert--error a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.cp-alert--success {
+  background: var(--cp-success-bg);
+  border: 1px solid var(--cp-success-border);
+  color: var(--cp-success-ink);
+}
+
+.cp-alert--info {
+  background: var(--cp-tint);
+  border: 1px solid #bfddeb;
+  color: var(--cp-navy);
+}
+
+/* ---------- Language ---------- */
+
+.cp-language {
+  position: relative;
+}
+
+.cp-language-button {
+  height: 36px;
+  padding-inline: 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--cp-body);
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.cp-language-button:hover {
+  background: #ffffff;
+  border-color: var(--cp-field-border);
+}
+
+.cp-language-menu {
+  position: absolute;
+  inset-inline-end: 0;
+  bottom: calc(100% + 6px);
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  min-width: 160px;
+  background: #ffffff;
+  border: 1px solid var(--cp-card-border);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(15, 25, 55, 0.12);
+  z-index: 10;
+}
+
+.cp-language-menu a {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--cp-navy);
+}
+
+.cp-language-menu a:hover {
+  background: var(--cp-tint);
+}
+
+/* ---------- Showcase ---------- */
+
+.cp-showcase {
+  flex: 1 1 560px;
+  min-width: 0;
+  padding: 16px;
+  display: flex;
+}
+
+.cp-showcase-panel {
+  /* Two rows: the drawing, then the activity cards. The cards take the height they
+     need and the drawing gets what is left, so no guess about reserved space can be
+     wrong at an unusual window size. */
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  position: relative;
+  overflow: hidden;
+  flex: 1;
+  min-height: calc(100vh - 32px);
+  border-radius: var(--cp-radius-panel);
+  background: linear-gradient(
+    180deg,
+    #f7fbfe 0%,
+    #e3f2fa 28%,
+    #a6daee 55%,
+    #3fa3d2 78%,
+    var(--cp-blue) 100%
+  );
+  box-shadow: inset 0 0 0 1px rgba(15, 25, 55, 0.05);
+}
+
+/* The drawing lives in here and nowhere else: whatever the window size, it is cut
+   off above the activity cards rather than drifting over them. */
+.cp-showcase-top {
+  grid-row: 1;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* The tiles are rotated, so their drawing spills well outside the grid's own box.
+   What keeps that spill off the words and off the cards is a mask rather than a
+   clip: a cut leaves half a tile with a straight edge down the middle of it, which
+   no amount of positioning hides. The mask fades the drawing out on all four sides
+   instead, reaching fully transparent at every edge of this box — so nothing is
+   ever cut, because nothing is still there to cut.
+
+   `mask-repeat: no-repeat` is what makes the box a boundary at all: outside it the
+   mask is empty, so the spill beyond simply does not paint.
+
+   The four fades are named here and read by the panel test, which checks that the
+   part people actually see — this box less its fades — keeps clear of the headline
+   and the activity cards. One source of truth for where the drawing really is. */
+.cp-tiles-area {
+  --cp-fade-inline-start: 28%;
+  --cp-fade-inline-end: 20%;
+  --cp-fade-block-start: 14%;
+  --cp-fade-block-end: 16%;
+  --cp-fade-x: to right;
+
+  position: absolute;
+  inset-inline-start: 40%;
+  inset-inline-end: 0;
+  top: 0;
+  bottom: 0;
+
+  -webkit-mask-image:
+    linear-gradient(
+      var(--cp-fade-x),
+      transparent 0,
+      #000 var(--cp-fade-inline-start),
+      #000 calc(100% - var(--cp-fade-inline-end)),
+      transparent 100%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 var(--cp-fade-block-start),
+      #000 calc(100% - var(--cp-fade-block-end)),
+      transparent 100%
+    );
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(
+      var(--cp-fade-x),
+      transparent 0,
+      #000 var(--cp-fade-inline-start),
+      #000 calc(100% - var(--cp-fade-inline-end)),
+      transparent 100%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 var(--cp-fade-block-start),
+      #000 calc(100% - var(--cp-fade-block-end)),
+      transparent 100%
+    );
+  mask-repeat: no-repeat;
+  mask-composite: intersect;
+}
+
+/* Right to left one day: the drawing fades towards the words, whichever side the
+   words are on. */
+[dir='rtl'] .cp-tiles-area {
+  --cp-fade-x: to left;
+}
+
+.cp-tiles {
+  /* Inside the mask box, not hanging over its edge: the fade is what ends the
+     drawing now, and it can only fade what it is given. */
+  position: absolute;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
+  top: clamp(24px, 14%, 120px);
+  max-width: 560px;
+  aspect-ratio: 1;
+  transform: rotateX(55deg) rotateZ(-45deg);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(8px, 3.5%, 18px);
+  opacity: 0.9;
+}
+
+.cp-tile {
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.12));
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 14px 30px rgba(14, 123, 176, 0.12);
+}
+
+.cp-float {
+  /* Kept a clear 32px off the panel's edges — more than its 28px corner radius, so
+     the rounded corner cannot bite it either — with the drift it is about to do
+     added on top, because the icon is at its highest in the middle of that drift. */
+  --cp-float-clearance: 32px;
+  --cp-float-drift: 12px;
+
+  position: absolute;
+  inset-inline-end: max(var(--cp-float-clearance), clamp(32px, 9%, 96px));
+  top: max(calc(var(--cp-float-clearance) + var(--cp-float-drift)), clamp(24px, 12%, 96px));
+  width: clamp(84px, 13%, 136px);
+  height: auto;
+  aspect-ratio: 1;
+  filter: drop-shadow(0 26px 40px rgba(14, 123, 176, 0.45));
+  animation: cp-float 6s ease-in-out infinite;
+}
+
+.cp-showcase-copy {
+  /* Above the tiles: the words win any argument about space. */
+  position: relative;
+  z-index: 1;
+  padding: clamp(24px, 5%, 44px) clamp(24px, 5%, 44px) 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: min(400px, 44%);
+}
+
+.cp-showcase-copy h2 {
+  margin: 0;
+  font-size: clamp(26px, 3.2vw, 38px);
+  font-weight: 300;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--cp-navy);
+  white-space: pre-line;
+}
+
+.cp-showcase-copy p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--cp-body);
+}
+
+.cp-activity {
+  grid-row: 2;
+  list-style: none;
+  margin: 0;
+  padding: 0 clamp(16px, 4%, 32px) clamp(16px, 4%, 32px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cp-activity li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: rgba(6, 40, 70, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #ffffff;
+}
+
+.cp-activity-avatar {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.cp-activity-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.cp-activity-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.cp-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cp-working);
+  animation: cp-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes cp-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(calc(-1 * var(--cp-float-drift)));
+  }
+}
+
+@keyframes cp-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* The panel is decoration: it says nothing the form does not, so on a phone it
+   simply goes, leaving the whole screen to signing in. */
+@media (max-width: 900px) {
+  .cp-showcase {
+    display: none;
+  }
+
+  .cp-main {
+    flex-basis: 100%;
+  }
+}
+
+/* On a phone the header keeps the logo and the one action; the lead-in line is
+   the first thing that can go. */
+@media (max-width: 480px) {
+  .cp-header-cta > span {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-float,
+  .cp-dot {
+    animation: none;
+  }
+}
+
+.cp-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

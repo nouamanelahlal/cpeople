@@ -1,0 +1,358 @@
+{
+  "realm": "cpeople",
+  "displayName": "CPeople",
+  "displayNameHtml": "CPeople",
+  "enabled": true,
+  "loginWithEmailAllowed": true,
+  "registrationAllowed": false,
+  "registrationEmailAsUsername": true,
+  "duplicateEmailsAllowed": false,
+  "editUsernameAllowed": false,
+  "verifyEmail": false,
+  "resetPasswordAllowed": true,
+  "rememberMe": false,
+  "loginTheme": "cpeople",
+  "accountTheme": "keycloak.v3",
+  "emailTheme": "cpeople",
+  "internationalizationEnabled": true,
+  "supportedLocales": [
+    "en",
+    "fr"
+  ],
+  "defaultLocale": "en",
+  "organizationsEnabled": true,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxTemporaryLockouts": 0,
+  "failureFactor": 5,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "passwordPolicy": "length(12) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and notUsername and notEmail and passwordHistory(5)",
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyDigits": 6,
+  "otpPolicyPeriod": 30,
+  "otpPolicyInitialCounter": 0,
+  "otpPolicyLookAheadWindow": 1,
+  "otpPolicyCodeReusable": false,
+  "otpSupportedApplications": [
+    "totpAppFreeOTPName",
+    "totpAppGoogleName",
+    "totpAppMicrosoftAuthenticatorName"
+  ],
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "accessTokenLifespan": 300,
+  "actionTokenGeneratedByUserLifespan": 900,
+  "eventsListeners": ["jboss-logging", "email"],
+  "smtpServer": {
+    "host": "mailpit",
+    "port": "1025",
+    "from": "no-reply@cpeople.local",
+    "fromDisplayName": "CPeople",
+    "replyTo": "",
+    "envelopeFrom": "",
+    "ssl": "false",
+    "starttls": "false",
+    "auth": "false"
+  },
+  "roles": {
+    "realm": [
+      {
+        "name": "mfa-required",
+        "description": "Marker role: holders must pass the authenticator-code step. Composed into the roles that handle pay and platform settings, so the sign-in flow conditions on one role instead of a list.",
+        "composite": false
+      },
+      {
+        "name": "platform-admin",
+        "description": "ConSAP platform administrator: tenants, environments, configuration (M02).",
+        "composite": true,
+        "composites": {
+          "realm": [
+            "mfa-required"
+          ]
+        }
+      },
+      {
+        "name": "hr-admin",
+        "description": "HR administrator: employee records, contracts, leave rules (M02).",
+        "composite": true,
+        "composites": {
+          "realm": [
+            "mfa-required"
+          ]
+        }
+      },
+      {
+        "name": "payroll-manager",
+        "description": "Runs, reviews and approves payroll (M02).",
+        "composite": true,
+        "composites": {
+          "realm": [
+            "mfa-required"
+          ]
+        }
+      },
+      {
+        "name": "manager",
+        "description": "Line manager: approves their team's leave and expenses (M02).",
+        "composite": false
+      },
+      {
+        "name": "employee",
+        "description": "Self-service: own payslips, leave requests, expenses (M02).",
+        "composite": false
+      }
+    ]
+  },
+  "defaultRole": {
+    "name": "default-roles-cpeople",
+    "description": "Everyone who signs in is at least an employee.",
+    "composite": true,
+    "clientRole": false,
+    "composites": {
+      "realm": [
+        "offline_access",
+        "uma_authorization",
+        "employee"
+      ],
+      "client": {
+        "account": [
+          "manage-account",
+          "view-profile"
+        ]
+      }
+    }
+  },
+  "clients": [
+    {
+      "clientId": "cpeople-web",
+      "name": "CPeople web",
+      "description": "The Next.js front end. Public client: authorization code flow with PKCE, no secret.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "frontchannelLogout": true,
+      "rootUrl": "http://localhost:3000",
+      "baseUrl": "/",
+      "redirectUris": [
+        "http://localhost:3000/api/auth/callback/keycloak",
+        "http://localhost:3000/api/auth/callback/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000/*",
+        "client.use.lightweight.access.token.enabled": "false"
+      },
+      "defaultClientScopes": [
+        "profile",
+        "email",
+        "roles",
+        "web-origins",
+        "acr",
+        "basic",
+        "organization"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access"
+      ],
+      "protocolMappers": [
+        {
+          "name": "organization",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-organization-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "organization",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "multivalued": "true",
+            "addOrganizationAttributes": "true",
+            "addOrganizationId": "true"
+          }
+        },
+        {
+          "name": "audience-cpeople-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "cpeople-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        },
+        {
+          "name": "locale",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "locale",
+            "claim.name": "locale",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "cpeople-api",
+      "name": "CPeople API",
+      "description": "The NestJS API. A resource server: it validates tokens and issues none, so no flow is enabled here.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    }
+  ],
+  "browserFlow": "cpeople-browser",
+  "authenticationFlows": [
+    {
+      "alias": "cpeople-browser",
+      "description": "CPeople sign-in: email, password, and an authenticator code for the roles that handle pay or platform settings.",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-cookie",
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "identity-provider-redirector",
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "flowAlias": "cpeople-browser-forms",
+          "requirement": "ALTERNATIVE",
+          "priority": 30,
+          "autheticatorFlow": true,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "cpeople-browser-forms",
+      "description": "Email and password on one page, submitted together, then a code for the roles that need one. The page shows two steps; Keycloak sees one submission, so an unknown address reveals nothing.",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-username-password-form",
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "flowAlias": "cpeople-browser-otp",
+          "requirement": "CONDITIONAL",
+          "priority": 30,
+          "autheticatorFlow": true,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "cpeople-browser-otp",
+      "description": "Runs only for holders of mfa-required, which payroll-manager, hr-admin and platform-admin are composed of. A holder with no authenticator yet is made to set one up.",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-user-role",
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false,
+          "authenticatorConfig": "cpeople-mfa-role-condition"
+        },
+        {
+          "authenticator": "auth-otp-form",
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    }
+  ],
+  "authenticatorConfig": [
+    {
+      "alias": "cpeople-mfa-role-condition",
+      "config": {
+        "condUserRole": "mfa-required",
+        "negate": "false"
+      }
+    }
+  ],
+  "organizations": [
+    {
+      "name": "SMG Demo",
+      "alias": "smg-demo",
+      "enabled": true,
+      "description": "Demo tenant with fake data (M01). Matches the smg-demo tenant row.",
+      "redirectUrl": "",
+      "domains": [
+        {
+          "name": "smg-demo.test",
+          "verified": false
+        }
+      ],
+      "attributes": {
+        "tenantId": [
+          "0193c0de-0000-7000-8000-000000000001"
+        ]
+      }
+    },
+    {
+      "name": "Atlas Demo",
+      "alias": "atlas-demo",
+      "enabled": true,
+      "description": "A second demo tenant, so tenant separation is visible while developing.",
+      "redirectUrl": "",
+      "domains": [
+        {
+          "name": "atlas-demo.test",
+          "verified": false
+        }
+      ],
+      "attributes": {
+        "tenantId": [
+          "0193c0de-0000-7000-8000-000000000002"
+        ]
+      }
+    }
+  ]
+}

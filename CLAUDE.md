@@ -49,11 +49,73 @@ organisation · employees · time-absence · payroll · payslips · declarations
 ## Environments
 Dev (dev.cpeople.ma), Test (test.cpeople.ma), Prod (app.cpeople.ma). Each has its own database, Keycloak realm, secrets and storage. The same build moves Dev → Test → Prod and is never rebuilt in between.
 
-## Commands (to fill in once scaffolded)
-- `pnpm install`
+## Commands
+Once, on a new machine:
+- `corepack enable` · `pnpm install` · `pnpm exec playwright install chromium`
 - `docker compose -f infra/docker/docker-compose.yml up -d`
-- `pnpm dev` · `pnpm test` · `pnpm lint` · `pnpm db:migrate`
-- `pnpm exec playwright install chromium` (once) · `pnpm e2e` · `pnpm e2e:ui` · `pnpm e2e:report`
+- `pnpm db:migrate` (creates the schema and the row-level-security policies) · `pnpm db:seed` (fake tenants)
+
+Day to day:
+- `pnpm dev` — web on :3000, API on :3100 (`/api/docs` for OpenAPI)
+- `pnpm test` · `pnpm lint` · `pnpm typecheck` · `pnpm build`
+- `pnpm e2e` · `pnpm e2e:ui` · `pnpm e2e:report`
+- `pnpm db:deploy` (apply migrations) · `pnpm db:reset` (drop and rebuild, dev only)
+
+`pnpm test` and `pnpm db:*` need the local Postgres up.
+
+## Two database connections, never interchangeable
+- `DATABASE_URL` — the **runtime** pool. Connects as `cpeople_app`, which owns no table and has
+  only the grants it needs, so the row-level-security policies apply to every query it runs: a
+  query that skips `withTenant()` returns nothing instead of every tenant's rows. The API has
+  only this one.
+- `MIGRATION_DATABASE_URL` — the **owner**. Migrations, seeds and tenant provisioning, on the
+  command line. Never used to serve a request. In a deployed environment this role needs
+  `BYPASSRLS` to provision tenants, because every tenant table is `FORCE ROW LEVEL SECURITY`.
+
+The migrations create `cpeople_app` with no password; each environment gives it credentials when
+the database is provisioned. Locally `pnpm db:migrate` does it on the throwaway Docker database.
+
+## Sign-in (M02 / HR-08)
+Keycloak. See `infra/keycloak/README.md`; in short:
+- Email, then password, then a 6-digit authenticator code for holders of `mfa-required`, which
+  `payroll-manager`, `hr-admin` and `platform-admin` are composed of.
+- **The realm import is in two parts.** `infra/keycloak/import/` is the base realm — flows,
+  roles, policies, clients, organisations — and every environment imports it. It holds no users
+  and no secrets. `infra/keycloak/import-local-dev/` holds the fake users, their passwords and
+  the test authenticator secret, and only the local Docker stack loads it.
+- One Keycloak organisation per tenant, carrying the tenant's Postgres id as a `tenantId`
+  attribute. **The API takes the tenant from that claim and from nowhere else.** The ids must
+  match `DEMO_TENANT_IDS` in `packages/db/src/seed.ts`.
+- Membership of the local fake users is applied by `pnpm kc:local-dev`, because realm import
+  reads the organisations before the user file. The end-to-end suite runs it itself.
+- The sign-in pages are ours: a Keycloakify (React) theme in `packages/keycloak-theme`,
+  following `docs/design/login*.dc.html`. Build it with `pnpm kc:theme`; the jar is a build
+  artifact and is not committed. Locally a missing theme falls back to Keycloak's own pages;
+  **in a deployed environment it must not** — `pnpm kc:image` bakes it in and fails the build
+  without it, and `pnpm kc:verify-theme` fails the deploy if a running Keycloak has fallen back.
+- The web app is a plain OpenID Connect client (`openid-client`): authorization code with PKCE,
+  an encrypted httpOnly session cookie, refresh through `/api/auth/refresh`, and sign-out that
+  ends the Keycloak session too. Every page is protected unless it is listed in `PUBLIC_PATHS`
+  in `apps/web/proxy.ts`.
+- `KEYCLOAK_ISSUER` and `SESSION_SECRET` (plus `APP_URL`, and `KEYCLOAK_CLIENT_SECRET` where the
+  client is confidential) must be set in every deployed environment; only a local checkout falls
+  back to the Docker realm.
+
+## Settings that must never be set in a deployed environment
+Both default to off, and the API refuses to start if the combination is wrong.
+- `CPEOPLE_LOCAL_DEV=true` — marks a developer's checkout (and the CI database, which is the
+  same throwaway stack). The repository's own scripts set it; no deployment does. It is what
+  allows the local Docker credentials to stand in for the two URLs above, and what lets
+  `local-dev-role` give `cpeople_app` a development password. Without it, a missing
+  `DATABASE_URL` is a startup failure.
+- `TENANT_HEADER_ALLOWED=true` — lets an `x-tenant-id` request header choose the tenant for a
+  request with no token, which is useful for poking at the API locally. A client choosing its own
+  tenant would reach every other tenant's payroll, so it is honoured only together with
+  `CPEOPLE_LOCAL_DEV`; set in Dev, Test or Prod, it stops the API at boot. Signed-in requests do
+  not use it: they carry the tenant in the token.
+
+Dev, Test and Prod set `DATABASE_URL` (and `MIGRATION_DATABASE_URL` for the migration job) and
+neither flag.
 
 ## Browser automation
 Playwright only (tests in `e2e/`, live browser via `.mcp.json`). Do not add Puppeteer: it duplicates Playwright. Payslip and contract PDFs come from Gotenberg, not a headless browser in the app.

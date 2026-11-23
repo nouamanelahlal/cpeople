@@ -1,0 +1,292 @@
+@import 'tailwindcss';
+@import '@cpeople/ui/tokens.css';
+
+/* House rules from the approved brand (docs/design/home-dashboard.dc.html).
+   Anything brand-wide belongs in @cpeople/ui, not here. */
+
+@layer base {
+  /* The gutter is always reserved, so nothing on the page moves sideways when a
+     scrollbar comes or goes — which it does when the welcome animation locks and
+     releases scrolling. */
+  html {
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    background-color: var(--color-page);
+    color: var(--color-body);
+    font-family: var(--font-sans);
+  }
+
+  /* Tabular figures everywhere an amount, a date or a count is shown. */
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+
+  a {
+    color: var(--color-blue);
+  }
+
+  a:hover {
+    color: var(--color-navy);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-cyan);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* The CPeople symbol as a watermark that takes its card's own colour: the file
+     supplies the shape, the background supplies the paint (which is how the
+     design draws it, docs/design/home-dashboard.dc.html). */
+  .cp-symbol-mark {
+    -webkit-mask: url('/brand/cpeople-symbol.png') no-repeat center / contain;
+    mask: url('/brand/cpeople-symbol.png') no-repeat center / contain;
+  }
+
+  /* The quiet white button the whole shell is made of: the search box's
+     neighbours, the menu's pin, the account chip (docs/design/home-dashboard.dc.html).
+     It lifts a pixel under the pointer, and holds still for anyone who asked for
+     less movement. */
+  .quiet-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    border: 1px solid var(--color-card-border);
+    background: #ffffff;
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .quiet-button:hover {
+    background: var(--color-hover);
+    border-color: #bfddeb;
+    box-shadow: 0 6px 18px rgb(15 25 55 / 0.1);
+  }
+
+  .quiet-button:active {
+    box-shadow: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .quiet-button:hover {
+      transform: translateY(-1px);
+    }
+
+    .quiet-button:active {
+      transform: translateY(0);
+    }
+  }
+}
+
+/* ---------- The welcome animation (NEW / M02) ----------
+
+   Plays once, right after a sign-in, over the home screen that is already loaded
+   underneath. Everything here moves with transform, opacity, clip-path and the one
+   registered property below — no library, no video, nothing that would hold up the
+   data the dashboard is fetching.
+
+   The layers come from docs/welcome-animation/brand/welcome-animation/, cut from
+   the approved icon. Stacked in order they rebuild it exactly, and the last frame
+   switches to the original artwork, so nothing here is ever a redrawing of it. */
+
+@property --sweep {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@layer components {
+  .cp-welcome {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    background: radial-gradient(circle at 50% 44%, #ffffff 0%, var(--color-page) 62%);
+    /* A last resort: if the script that runs this never finishes, the overlay still
+       gets out of the way rather than sitting over the dashboard for ever. The
+       same deadline as the lock below, so the page is never unlocked under an
+       overlay that is still there, nor locked under one that has gone. */
+    animation: cp-welcome-failsafe 0s linear 12s forwards;
+  }
+
+  .cp-welcome[data-state='leaving'] {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  @keyframes cp-welcome-failsafe {
+    to {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+  }
+
+  .cp-welcome-tile {
+    position: relative;
+    width: 176px;
+    height: 176px;
+    filter: drop-shadow(0 22px 36px rgb(14 123 176 / 0.3));
+  }
+
+  .cp-welcome-layer {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* The C and the people before anything happens: there, but barely. */
+  .cp-welcome-ghost {
+    opacity: 0.16;
+  }
+
+  /* The C draws along its own curve: a conic mask centred where the curve turns,
+     opened from 245deg to 200deg (the README's figures). The soft 8deg tail is the
+     tip of the stroke. */
+  .cp-welcome-c {
+    -webkit-mask: conic-gradient(
+      from 245deg at 60.5% 89.06%,
+      #000 0deg,
+      #000 var(--sweep),
+      transparent calc(var(--sweep) + 8deg)
+    );
+    mask: conic-gradient(
+      from 245deg at 60.5% 89.06%,
+      #000 0deg,
+      #000 var(--sweep),
+      transparent calc(var(--sweep) + 8deg)
+    );
+  }
+
+  .cp-welcome-word {
+    display: block;
+    height: 52px;
+    width: auto;
+  }
+
+  /* Reduced motion is handled by showing the finished logo from the start, so the
+     only transition left is the one that takes the overlay away. */
+  .cp-welcome--motion .cp-welcome-tile {
+    transition:
+      opacity 0.35s ease-out,
+      transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .cp-welcome--motion .cp-welcome-c {
+    transition: --sweep 0.65s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+
+  .cp-welcome--motion .cp-welcome-person {
+    transition:
+      opacity 0.28s ease-out,
+      transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .cp-welcome--motion .cp-welcome-final {
+    transition: opacity 0.25s ease;
+  }
+
+  .cp-welcome--motion .cp-welcome-word {
+    transition:
+      clip-path 0.45s cubic-bezier(0.65, 0, 0.35, 1),
+      opacity 0.35s ease,
+      transform 0.45s ease-out;
+  }
+
+  .cp-welcome--motion,
+  .cp-welcome[data-state='leaving'] {
+    transition: opacity 0.45s ease;
+  }
+
+  /* Nothing scrolls while the animation is on screen: there is nothing to scroll
+     to, and the scaled dashboard behind it would otherwise put scrollbars on a
+     page nobody can reach.
+
+     Locked only while the overlay is actually on the page. The attribute comes
+     from the server, so the lock is there from the first paint rather than from
+     whenever the script arrives; `:has()` makes sure it is a lock on this page and
+     not on any other page the cookie happens to outlive. It lifts when the overlay
+     goes — by finishing, by being skipped, or by the component being taken away.
+
+     Failing all of that it lifts on its own, but late: this clock starts at load
+     and the overlay's starts when the script that runs it arrives, so a tight
+     deadline here unlocks the page under an animation that is still playing. The
+     overlay is gone in under three seconds whenever anything at all is working,
+     and twelve is for the case where nothing is. */
+  html[data-welcome]:has(.cp-welcome),
+  html[data-welcome]:has(.cp-welcome) body {
+    overflow: hidden;
+    animation: cp-welcome-unlock 0s linear 12s forwards;
+  }
+
+  @keyframes cp-welcome-unlock {
+    to {
+      overflow: auto;
+    }
+  }
+
+  /* The wrapper the dashboard settles inside: it clips what the 1.02 scale pushes
+     past the window, and is held to the window's height as well.
+
+     `overflow: hidden` stops the page scrolling but the document still reports its
+     full height, and a page that says it is a thousand pixels taller than the
+     window is a page with a scrollbar as far as anything measuring it is
+     concerned. Nothing below the fold is visible behind the overlay anyway.
+     `clip` and not `hidden` on purpose: it clips without making a scroll container
+     of it. */
+  html[data-welcome]:has(.cp-welcome) .cp-settle {
+    overflow: clip;
+    max-block-size: 100dvh;
+    animation: cp-welcome-unclip 0s linear 12s forwards;
+  }
+
+  @keyframes cp-welcome-unclip {
+    to {
+      overflow: visible;
+      max-block-size: none;
+    }
+  }
+
+  /* The dashboard settles into place as the overlay goes. The wrapper clips what
+     the 1.02 scale pushes past the window, so the scale is a visual effect and
+     never a bigger page. `overflow: clip` and not `hidden` on purpose: it clips
+     without making a scroll container of it. */
+  html[data-welcome] .cp-settle {
+    overflow: clip;
+    /* Held to the window as well as clipped: `overflow: hidden` stops the page
+       scrolling but the document still reports its full height, and a page that
+       says it is 1,000px taller than the window is a page with a scrollbar as far
+       as anything measuring it is concerned. Nothing below the fold is visible
+       behind the overlay anyway. */
+    max-block-size: 100dvh;
+  }
+
+  /* The class is taken off the moment it finishes, so nothing is left transformed:
+     a transformed ancestor would change what `position: fixed` means for the menu
+     inside it. */
+  .cp-app {
+    transform-origin: 50% 0;
+  }
+
+  html[data-welcome='playing'] .cp-app {
+    transform: scale(1.02);
+  }
+
+  html[data-welcome='settling'] .cp-app {
+    transform: scale(1);
+    transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+}

@@ -1,0 +1,77 @@
+/* ConSAP design tokens — the single source of truth for CPeople colour and type.
+   Approved brand, fixed (CLAUDE.md rule 10).
+
+   Plain custom properties, so anything can use them: Tailwind maps them into its
+   theme in tokens.css, and the Keycloak sign-in theme imports this file directly. */
+
+:root {
+  /* Brand */
+  --cp-navy: #0f1937; /* ink: headings, body emphasis. No large navy surfaces. */
+  --cp-cyan: #3fb3d7; /* fills, icons, focus ring, badges. Too light for small text. */
+  --cp-blue: #0e7bb0; /* hero panels, links, secondary actions, "BY CONSAP" */
+  --cp-blue-hover: #0b6a98; /* the only darker blue: primary button hover */
+  --cp-light-cyan: #5dcbe5; /* accents on dark backgrounds */
+  --cp-night: #060a14; /* dark surfaces only */
+
+  /* Surfaces */
+  --cp-page: #f0f0f0; /* app background */
+  --cp-tint: #e6f3fa; /* selected rows, info panels */
+  --cp-card-border: #e3e7ee; /* border of white cards */
+  --cp-field-border: #dce2ea; /* border of inputs and quiet buttons */
+
+  /* Text */
+  --cp-body: #4e566b; /* body text */
+
+  /* Status. Checked for AA on their own background. */
+  --cp-danger-bg: #fdedec;
+  --cp-danger-border: #f5c2c0;
+  --cp-danger-ink: #8e1f1b; /* 7.4:1 on --cp-danger-bg */
+  --cp-success-bg: #eaf7f0;
+  --cp-success-border: #bde5cf;
+  --cp-success-ink: #1b6b45; /* 5.5:1 on --cp-success-bg */
+  --cp-working: #ffc46b; /* in-progress dot, on dark glass only */
+  --cp-done: #9df0c6; /* done tick, on dark glass only */
+
+  /* Working surfaces, from the approved home screen
+     (docs/design/home-dashboard.dc.html). */
+  --cp-surface-quiet: #f3f5f8; /* icon tiles, the week strip */
+  --cp-surface-sunk: #f7f9fb; /* cards inside a card */
+  --cp-line: #eef1f5; /* row rules and progress tracks */
+  --cp-button-border: #d5dce6; /* quiet buttons, a shade firmer than a field */
+  --cp-hover: #f3f8fc; /* hover on anything white */
+  --cp-muted: #6b7286; /* group headings in the menu */
+
+  /* The four tinted cards: a tint to sit on, a wash for the C watermark, and an
+     ink for the icon. Each ink passes AA on its own tint, so a label can use it. */
+  --cp-sky-bg: #e4f2fa;
+  --cp-sky-wash: #c3e2f2;
+  --cp-sky-ink: #0e7bb0; /* 4.9:1 on --cp-sky-bg */
+  --cp-leaf-bg: #e3f5ee;
+  --cp-leaf-wash: #c2e7d7;
+  --cp-leaf-ink: #17785a; /* 4.6:1 on --cp-leaf-bg */
+  --cp-violet-bg: #eeebfa;
+  --cp-violet-wash: #d6cff3;
+  --cp-violet-ink: #5b4db0; /* 5.9:1 on --cp-violet-bg */
+  --cp-amber-bg: #fcefe3;
+  --cp-amber-wash: #f4d6b9;
+  --cp-amber-ink: #a65a12; /* 5.3:1 on --cp-amber-bg */
+
+  /* Pills on a white card: what a row is waiting for. */
+  --cp-warning-bg: #fff4e5;
+  --cp-warning-ink: #8a4b00; /* 7.0:1 on --cp-warning-bg */
+  --cp-info-bg: #e6f3fa;
+  --cp-info-ink: #0b5e86; /* 6.4:1 on --cp-info-bg */
+  --cp-neutral-bg: #f0f2f5;
+  --cp-neutral-ink: #4e566b; /* 6.9:1 on --cp-neutral-bg */
+  --cp-ok-bg: #e3f4ea;
+  --cp-ok-ink: #17663f; /* 6.4:1 on --cp-ok-bg */
+
+  /* Chart */
+  --cp-chart-gross: #0e7bb0;
+  --cp-chart-charges: #1e96c2;
+  --cp-chart-grid: #e3e7ee;
+  --cp-chart-axis: #d5dce6;
+
+  /* Type: Montserrat only. 300 display, 400 body, 600 labels and buttons. */
+  --cp-font-sans: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+}

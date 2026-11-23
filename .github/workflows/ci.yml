@@ -1,5 +1,4 @@
 # CPeople CI: runs on every push to main and on every pull request.
-# Steps that need code that doesn't exist yet are skipped until it does.
 name: CI
 
 on:
@@ -15,6 +14,30 @@ jobs:
   checks:
     name: Lint, types and unit tests
     runs-on: ubuntu-latest
+
+    # The row-level-security tests run against a real Postgres: a policy cannot be
+    # proved against a mock. Fake local credentials, the same as infra/docker.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: cpeople
+          POSTGRES_PASSWORD: cpeople_dev
+          POSTGRES_DB: cpeople
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # The service container above is a throwaway database with the committed
+      # development credentials, so CI runs the same path a developer does: the
+      # scripts provision the cpeople_app login role and fall back to those URLs.
+      # Deployed environments set DATABASE_URL and MIGRATION_DATABASE_URL instead.
+      CPEOPLE_LOCAL_DEV: 'true'
+
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -23,9 +46,10 @@ jobs:
           node-version: lts/*
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm -r --if-present lint
-      - run: pnpm -r --if-present typecheck
-      - run: pnpm -r --if-present test
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
 
   e2e:
     name: Playwright end-to-end
@@ -33,24 +57,51 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Skip until the web app exists
-        id: app
-        run: echo "exists=$([ -f apps/web/package.json ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
       - uses: pnpm/action-setup@v4
-        if: steps.app.outputs.exists == 'true'
       - uses: actions/setup-node@v4
-        if: steps.app.outputs.exists == 'true'
         with:
           node-version: lts/*
           cache: pnpm
-      - if: steps.app.outputs.exists == 'true'
-        run: pnpm install --frozen-lockfile
-      - if: steps.app.outputs.exists == 'true'
-        run: pnpm exec playwright install --with-deps chromium
-      - if: steps.app.outputs.exists == 'true'
-        run: pnpm e2e
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      # The sign-in pages are ours (packages/keycloak-theme). Building the image
+      # fails outright if the theme jar is missing, which is the point: a deployed
+      # environment must never fall back to Keycloak's own pages.
+      - name: Build the sign-in theme into the Keycloak image
+        run: pnpm kc:image
+      # The stack runs that image, so the tests sign in against what deploys. The
+      # password-reset test reads its message out of Mailpit, so everything comes up.
+      - name: Start the stack
+        run: |
+          docker compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.deployed-keycloak.yml up -d
+      - name: Wait for Keycloak to import the realm
+        run: |
+          for _ in $(seq 1 60); do
+            if curl -sfo /dev/null http://localhost:8080/realms/cpeople/.well-known/openid-configuration; then
+              echo "realm ready"; exit 0
+            fi
+            sleep 5
+          done
+          echo "Keycloak did not come up"
+          docker compose -f infra/docker/docker-compose.yml logs keycloak
+          exit 1
+      # The deploy gate: Keycloak falls back silently, so this asks the running
+      # server whether it is actually serving our pages.
+      - name: Verify the sign-in theme is being served
+        run: pnpm kc:verify-theme
+      # The home screen's figures are counted in the database, so the schema and
+      # the demo data have to be there before anything signs in.
+      - name: Create the schema and the demo data
+        run: |
+          pnpm db:deploy
+          pnpm db:seed
+        env:
+          CPEOPLE_LOCAL_DEV: 'true'
+      - run: pnpm e2e
+        env:
+          CPEOPLE_LOCAL_DEV: 'true'
       - uses: actions/upload-artifact@v4
-        if: failure() && steps.app.outputs.exists == 'true'
+        if: failure()
         with:
           name: playwright-report
           path: playwright-report/

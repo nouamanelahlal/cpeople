@@ -2,12 +2,45 @@
   "name": "cpeople",
   "private": true,
   "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20.19"
+  },
   "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "eslint .",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "db:generate": "pnpm --filter @cpeople/db run generate",
+    "db:migrate": "pnpm --filter @cpeople/db run migrate",
+    "db:deploy": "pnpm --filter @cpeople/db run migrate:deploy",
+    "db:reset": "pnpm --filter @cpeople/db run migrate:reset",
+    "db:seed": "pnpm --filter @cpeople/db run seed",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
-    "e2e:report": "playwright show-report"
+    "e2e:report": "playwright show-report",
+    "kc:local-dev": "cross-env CPEOPLE_LOCAL_DEV=true node infra/keycloak/local-dev/join-organisations.mjs",
+    "kc:theme": "bash infra/keycloak/theme-builder/build.sh",
+    "kc:image": "pnpm kc:theme && docker build -t cpeople-keycloak:local infra/keycloak",
+    "kc:verify-theme": "node infra/keycloak/verify-theme.mjs",
+    "db:demo:reset": "pnpm --filter @cpeople/db run seed",
+    "demo:up": "docker compose -f infra/docker/docker-compose.yml up -d",
+    "demo:prepare": "cross-env CPEOPLE_LOCAL_DEV=true node infra/keycloak/local-dev/demo-mode.mjs prepare",
+    "demo:restore": "cross-env CPEOPLE_LOCAL_DEV=true node infra/keycloak/local-dev/demo-mode.mjs restore",
+    "demo:reset": "pnpm db:deploy && pnpm db:demo:reset",
+    "demo:start": "pnpm demo:up && pnpm db:deploy && pnpm db:demo:reset && pnpm kc:local-dev && pnpm demo:prepare && pnpm dev",
+    "demo:check": "node infra/demo/check.mjs",
+    "demo:rehearse": "cross-env CPEOPLE_REHEARSAL=1 playwright test e2e/hr01-rehearsal.spec.ts --project=desktop-chromium",
+    "demo:guide": "node docs/demo/build-pdf.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "^1.65.1"
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.65.1",
+    "cross-env": "^10.1.0",
+    "eslint": "^10.15.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "turbo": "^2.11.13",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.73.0"
   }
 }

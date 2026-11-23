@@ -1,0 +1,40 @@
+{
+  "name": "@cpeople/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Prisma schema, migrations, row-level-security policies and seed for CPeople",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "generate": "prisma generate",
+    "build": "prisma generate && tsc -p tsconfig.build.json",
+    "typecheck": "prisma generate && tsc -p tsconfig.json --noEmit",
+    "migrate": "cross-env CPEOPLE_LOCAL_DEV=true prisma migrate dev && pnpm run local-role",
+    "migrate:deploy": "cross-env CPEOPLE_LOCAL_DEV=true prisma migrate deploy && pnpm run local-role",
+    "migrate:reset": "cross-env CPEOPLE_LOCAL_DEV=true prisma migrate reset && pnpm run local-role",
+    "seed": "pnpm run build && cross-env CPEOPLE_LOCAL_DEV=true node dist/seed.js",
+    "test": "prisma generate && cross-env CPEOPLE_LOCAL_DEV=true vitest run",
+    "local-role": "cross-env CPEOPLE_LOCAL_DEV=true node scripts/local-dev-role.mjs"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "7.10.1",
+    "@prisma/client": "7.10.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@types/pg": "^8.23.1",
+    "cross-env": "^10.1.0",
+    "dotenv": "^17.2.4",
+    "pg": "^8.23.1",
+    "prisma": "7.10.1",
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.1"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  }
+}

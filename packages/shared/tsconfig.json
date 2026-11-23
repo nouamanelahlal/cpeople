@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Node's own ESM resolution, like @cpeople/db: the API imports the built
+    // output and loads it as ESM, which is why every relative import here
+    // carries a .js specifier.
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "dist"
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"]
+}

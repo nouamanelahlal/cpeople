@@ -266,7 +266,7 @@ Source: team pack §03 Plan, HR & Payroll area guide §05–06.
 | Dates | Milestone | CPeople / HR & Payroll work | Exit criterion |
 |---|---|---|---|
 | 16–17 Nov 2026 | Signature and kick-off | Access, project folder, data templates for employees | Kick-off held; access granted |
-| 17 Nov – 2 Dec 2026 | Fit-to-standard workshops | HR workshop: pay elements, leave policy, approvals, attendance device and format, contract templates, CIMR and health insurance, current payroll tool, cost centres and G/L accounts | **Quality gate 1:** design signed by key users |
+| 17 Nov – 2 Dec 2026 | Fit-to-standard workshops | HR workshop: pay elements, leave policy, approvals, attendance device and format, contract templates, CIMR and health insurance, current payroll tool, cost centres and G/L accounts. **With SMG's IT (Mr. Vinoth): confirm the password policy and the lockout thresholds** — the realm ships 12 characters with upper and lower case, a digit and a symbol, not the e-mail address, the last 5 not reused, and a lock after 5 failed attempts that lifts by itself (M02 / HR-08) | **Quality gate 1:** design signed by key users |
 | 1 Dec 2026 | Client provides S/4HANA Cloud systems | Communication arrangement for the payroll posting | Systems available |
 | 1 – 24 Dec 2026 | Build | SMG tenant configured; attendance interface; payroll posting to S/4HANA; first trial load by 18 Dec | Configuration ready for tests |
 | 31 Dec 2026 | Client delivers employee files and payroll history | Employee and year-to-date import | Files received |

@@ -1,0 +1,68 @@
+/* Tailwind's view of the ConSAP tokens.
+
+   The values live in tokens.vars.css so that non-Tailwind consumers — the Keycloak
+   sign-in theme — use the very same ones. `@theme inline` maps them in, which is
+   what gives Tailwind its utilities (--color-navy -> text-navy / bg-navy). */
+
+@import './tokens.vars.css';
+
+@theme inline {
+  --color-navy: var(--cp-navy);
+  --color-cyan: var(--cp-cyan);
+  --color-blue: var(--cp-blue);
+  --color-blue-hover: var(--cp-blue-hover);
+  --color-light-cyan: var(--cp-light-cyan);
+  --color-night: var(--cp-night);
+
+  --color-page: var(--cp-page);
+  --color-tint: var(--cp-tint);
+  --color-card-border: var(--cp-card-border);
+  --color-field-border: var(--cp-field-border);
+
+  --color-body: var(--cp-body);
+  --color-muted: var(--cp-muted);
+
+  --color-surface-quiet: var(--cp-surface-quiet);
+  --color-surface-sunk: var(--cp-surface-sunk);
+  --color-line: var(--cp-line);
+  --color-button-border: var(--cp-button-border);
+  --color-hover: var(--cp-hover);
+
+  --color-sky-bg: var(--cp-sky-bg);
+  --color-sky-wash: var(--cp-sky-wash);
+  --color-sky-ink: var(--cp-sky-ink);
+  --color-leaf-bg: var(--cp-leaf-bg);
+  --color-leaf-wash: var(--cp-leaf-wash);
+  --color-leaf-ink: var(--cp-leaf-ink);
+  --color-violet-bg: var(--cp-violet-bg);
+  --color-violet-wash: var(--cp-violet-wash);
+  --color-violet-ink: var(--cp-violet-ink);
+  --color-amber-bg: var(--cp-amber-bg);
+  --color-amber-wash: var(--cp-amber-wash);
+  --color-amber-ink: var(--cp-amber-ink);
+
+  --color-warning-bg: var(--cp-warning-bg);
+  --color-warning-ink: var(--cp-warning-ink);
+  --color-info-bg: var(--cp-info-bg);
+  --color-info-ink: var(--cp-info-ink);
+  --color-neutral-bg: var(--cp-neutral-bg);
+  --color-neutral-ink: var(--cp-neutral-ink);
+  --color-ok-bg: var(--cp-ok-bg);
+  --color-ok-ink: var(--cp-ok-ink);
+
+  --color-chart-gross: var(--cp-chart-gross);
+  --color-chart-charges: var(--cp-chart-charges);
+  --color-chart-grid: var(--cp-chart-grid);
+  --color-chart-axis: var(--cp-chart-axis);
+
+  --color-danger-bg: var(--cp-danger-bg);
+  --color-danger-border: var(--cp-danger-border);
+  --color-danger-ink: var(--cp-danger-ink);
+  --color-success-bg: var(--cp-success-bg);
+  --color-success-border: var(--cp-success-border);
+  --color-success-ink: var(--cp-success-ink);
+
+  /* --font-montserrat is set by next/font in apps/web; the literal name is the
+     fallback for locally installed Montserrat. */
+  --font-sans: var(--font-montserrat), var(--cp-font-sans);
+}
