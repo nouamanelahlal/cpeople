@@ -39,7 +39,7 @@ export default async function SettingsPage(): Promise<JSX.Element> {
       href: '/settings/organisation',
       title: t.settings.sections.organisation,
       note: t.settings.sections.organisationNote,
-      ready: false,
+      ready: true,
     },
     {
       href: '/settings/data',
