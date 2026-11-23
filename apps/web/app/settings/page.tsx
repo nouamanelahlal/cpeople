@@ -30,6 +30,12 @@ export default async function SettingsPage(): Promise<JSX.Element> {
       ready: true,
     },
     {
+      href: '/settings/leave',
+      title: t.settings.sections.leave,
+      note: t.settings.sections.leaveNote,
+      ready: true,
+    },
+    {
       href: '/settings/audit',
       title: t.settings.sections.audit,
       note: t.settings.sections.auditNote,

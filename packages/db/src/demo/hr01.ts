@@ -10,6 +10,7 @@
 // "Reset demo data" meaningful — and what lets a test assert on a given person.
 
 import type { CPeoplePrismaClient } from '../client.js';
+import { clearHr02Leave, seedHr02Leave, type LeaveSeedCounts } from './hr02.js';
 
 /**
  * The day the demo is given, and the day every date here is measured from: the
@@ -116,25 +117,13 @@ const CHECKLIST = [
   { title: 'Uniform and badge', owner: 'manager', offset: 0, document: null, departments: [] },
 ] as const;
 
-/** Morocco's fixed national holidays. The MA country pack owns this list (M24). */
-const PUBLIC_HOLIDAYS_2026 = [
-  { date: '2026-01-01', name: "New Year's Day" },
-  { date: '2026-01-11', name: 'Proclamation of Independence' },
-  { date: '2026-01-14', name: 'Amazigh New Year' },
-  { date: '2026-05-01', name: 'Labour Day' },
-  { date: '2026-07-30', name: 'Throne Day' },
-  { date: '2026-08-14', name: 'Oued Ed-Dahab Day' },
-  { date: '2026-08-20', name: 'Revolution of the King and the People' },
-  { date: '2026-08-21', name: "Youth Day" },
-  { date: '2026-11-06', name: 'Green March Day' },
-  { date: '2026-11-18', name: 'Independence Day' },
-] as const;
-
 export interface DemoSeedResult {
   readonly employees: number;
   readonly contracts: number;
   readonly documents: number;
   readonly tasks: number;
+  /** The leave set-up seeded with them (M08): types, rules, weeks, holidays. */
+  readonly leave: LeaveSeedCounts;
 }
 
 /**
@@ -299,14 +288,9 @@ export async function seedHr01Demo(
     );
   }
 
-  await prisma.publicHoliday.createMany({
-    data: PUBLIC_HOLIDAYS_2026.map((holiday) => ({
-      tenantId,
-      countryCode: 'MA',
-      date: day(holiday.date),
-      name: holiday.name,
-    })),
-  });
+  // Leave set-up, and with it the public holidays: a calendar is time and
+  // absence's (M08), and every screen that counts days reads it from there.
+  const leave = await seedHr02Leave(prisma, tenantId, sites);
 
   // --- People -------------------------------------------------------------
   const people = plan(random);
@@ -462,7 +446,7 @@ export async function seedHr01Demo(
     }
   }
 
-  return { employees: people.length, contracts, documents: documents.length, tasks };
+  return { employees: people.length, contracts, documents: documents.length, tasks, leave };
 }
 
 /** Everything this tenant's demo owns, in an order the foreign keys allow. */
@@ -485,7 +469,7 @@ async function clear(prisma: CPeoplePrismaClient, tenantId: string): Promise<voi
   await prisma.department.deleteMany({ where });
   await prisma.costCentre.deleteMany({ where });
   await prisma.site.deleteMany({ where });
-  await prisma.publicHoliday.deleteMany({ where });
+  await clearHr02Leave(prisma, tenantId);
   await prisma.auditEvent.deleteMany({ where });
 }
 

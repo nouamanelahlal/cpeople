@@ -10,6 +10,7 @@ import { ContractsModule } from './modules/contracts/contracts.module.js';
 import { EmployeesModule } from './modules/employees/employees.module.js';
 import { HomeModule } from './modules/home/home.module.js';
 import { OrganisationModule } from './modules/organisation/organisation.module.js';
+import { TimeAbsenceModule } from './modules/time-absence/time-absence.module.js';
 
 // One folder per module under src/modules (CLAUDE.md). The modules still to come:
 // employees, time-absence, payroll, payslips, declarations, accounting, expenses,
@@ -26,6 +27,7 @@ import { OrganisationModule } from './modules/organisation/organisation.module.j
     EmployeesModule,
     HomeModule,
     OrganisationModule,
+    TimeAbsenceModule,
   ],
 })
 export class AppModule implements NestModule {
