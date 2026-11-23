@@ -52,6 +52,10 @@ model Tenant {
   onboardingTasks    OnboardingTask[]
   auditEvents        AuditEvent[]
   publicHolidays     PublicHoliday[]
+  leaveTypes         LeaveType[]
+  leaveRules         LeaveRule[]
+  siteWorkWeeks      SiteWorkWeek[]
+  leaveSettings      LeaveSettings?
 
   @@map("tenant")
 }
@@ -151,6 +155,7 @@ model Site {
   departments Department[]
   employees   Employee[]
   contracts   Contract[]
+  workWeeks   SiteWorkWeek[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -578,11 +583,155 @@ model PublicHoliday {
   countryCode String   @map("country_code") @db.Char(2)
   date        DateTime @db.Date
   name        String
+  /// Several Moroccan holidays move with the lunar calendar, so dates are entered
+  /// and never calculated. Until the client confirms a year's list, every row in
+  /// it says so on screen.
+  confirmed   Boolean  @default(false)
+  note        String?
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
 
-  @@unique([tenantId, date])
+  @@unique([tenantId, countryCode, date])
   @@index([tenantId])
+  @@index([tenantId, date])
   @@map("public_holiday")
+}
+
+/// How a leave type counts its days (M08 / HR-04).
+enum LeaveDayBasis {
+  /// Only the days this person would otherwise have worked.
+  working
+  /// Every day between the two dates, weekends and holidays included.
+  calendar
+
+  @@map("leave_day_basis")
+}
+
+/// A kind of absence (M08 / HR-04).
+///
+/// The seven seeded here are the ones SMG named; an administrator may add more.
+/// What each one *is* — paid or not, counted in working or calendar days, needing
+/// a document, needing a second approval — is data, because every one of those is
+/// a question for the client rather than a fact about the world.
+model LeaveType {
+  id       String  @id @default(uuid(7)) @db.Uuid
+  tenantId String  @map("tenant_id") @db.Uuid
+  /// ANNUAL, SICK, UNPAID, MATERNITY, PATERNITY, EXCEPTIONAL, OTHER, or a code the
+  /// client adds. The screens translate the ones they know and fall back to `name`.
+  code     String
+  name     String
+  paid     Boolean @default(true)
+
+  /// Whether a request of this kind is expected to carry a certificate.
+  requiresDocument       Boolean       @default(false) @map("requires_document")
+  dayBasis               LeaveDayBasis @default(working) @map("day_basis")
+  allowsHalfDays         Boolean       @default(true) @map("allows_half_days")
+  /// Whether the manager's manager approves it as well (HR-02 open point 2).
+  requiresSecondApproval Boolean       @default(false) @map("requires_second_approval")
+  /// Whether it draws on a balance at all. Unpaid leave does not.
+  tracksBalance          Boolean       @default(true) @map("tracks_balance")
+  active                 Boolean       @default(true)
+  sortOrder              Int           @map("sort_order")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant Tenant      @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  rules  LeaveRule[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("leave_type")
+}
+
+/// What a leave type is worth, from a date (M08 / HR-04, CLAUDE.md rule 3).
+///
+/// Effective-dated rows, like every other parameter in this product: a change for
+/// 2027 leaves 2026 alone, so last year's balances can still be explained. Not one
+/// of these numbers is written into the code, and every seeded row says it is a
+/// demo value waiting for the payroll expert.
+model LeaveRule {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  leaveTypeId   String    @map("leave_type_id") @db.Uuid
+  effectiveFrom DateTime  @map("effective_from") @db.Date
+  /// Open-ended until a later row supersedes it.
+  effectiveTo   DateTime? @map("effective_to") @db.Date
+
+  /// Days a full year gives. Null where the type has no entitlement of its own.
+  entitlementDays  Decimal? @map("entitlement_days") @db.Decimal(5, 2)
+  /// Days earned per month worked, where the right is earned rather than granted.
+  accrualPerMonth  Decimal? @map("accrual_per_month") @db.Decimal(5, 2)
+  /// The most that may be carried into the next leave year.
+  carryOverMaxDays Decimal? @map("carry_over_max_days") @db.Decimal(5, 2)
+  /// Days of notice expected before the first day off. A warning, not a refusal.
+  minNoticeDays    Int      @default(0) @map("min_notice_days")
+  /// How far back a request of this kind may be dated.
+  maxBackdateDays  Int      @default(0) @map("max_backdate_days")
+
+  /// Why this row says what it says: the agreement, the law, or nobody yet.
+  note      String?
+  /// False until the client and the payroll expert have said yes.
+  confirmed Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, leaveTypeId, effectiveFrom])
+  @@map("leave_rule")
+}
+
+/// Which days a site works (M08 / HR-04).
+///
+/// The outlets trade at the weekend and the head office does not, so "how many
+/// days is Monday to Sunday" has no single answer. Effective-dated, because a
+/// trading pattern changes and last year's leave still has to add up.
+model SiteWorkWeek {
+  id       String @id @default(uuid(7)) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  siteId   String @map("site_id") @db.Uuid
+  /// Days worked, 0 for Sunday through 6 for Saturday — what `getUTCDay()` answers.
+  workingDays Int[] @map("working_days")
+
+  effectiveFrom DateTime @map("effective_from") @db.Date
+  note          String?
+  confirmed     Boolean  @default(false)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, siteId, effectiveFrom])
+  @@index([tenantId])
+  @@map("site_work_week")
+}
+
+/// The company's own leave settings, one row per tenant (M08 / HR-04).
+///
+/// Only what is a company-wide decision rather than a property of a leave type.
+model LeaveSettings {
+  id       String @id @default(uuid(7)) @db.Uuid
+  tenantId String @unique @map("tenant_id") @db.Uuid
+
+  /// Warn when more than this share of a department is off on the same day. A
+  /// warning shown to the requester and the approver; it refuses nothing
+  /// (HR-02 open point 6).
+  teamOffWarningPercent Int    @default(33) @map("team_off_warning_percent")
+  /// The day the leave year starts, as MM-DD. Not a date: it repeats.
+  leaveYearStart        String @default("01-01") @map("leave_year_start")
+
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@map("leave_settings")
 }

@@ -19,6 +19,15 @@ export {
   widestAlertWindow,
 } from './documents.js';
 export type { DocumentState } from './documents.js';
+export {
+  formatLeaveDays,
+  halfDayAllowed,
+  leaveDays,
+  leaveDaysDetail,
+  MAX_SPAN_DAYS,
+  weekday,
+} from './leave-days.js';
+export type { DayBasis, DayPart, LeaveCalendar, LeaveDay, LeaveSpan } from './leave-days.js';
 export { CURRENCY, DEFAULT_LOCALE, LOCALES, intlLocale, toLocale } from './locale.js';
 export { frenchNumberWords } from './number-words-fr.js';
 export type { Locale } from './locale.js';

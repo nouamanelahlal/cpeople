@@ -110,3 +110,12 @@ describe('HR-01 settings', () => {
     expect(can('admin', 'organisation.manage')).toBe(true);
   });
 });
+
+describe('HR-02 leave set-up', () => {
+  it('belongs to HR and the administrator, as the workshop asks', () => {
+    expect(can('admin', 'leave.settings.manage')).toBe(true);
+    expect(can('hr', 'leave.settings.manage')).toBe(true);
+    expect(can('manager', 'leave.settings.manage')).toBe(false);
+    expect(can('employee', 'leave.settings.manage')).toBe(false);
+  });
+});

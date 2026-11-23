@@ -63,6 +63,11 @@ async function main(): Promise<void> {
         `  HR-01 demo (as at ${DEMO_TODAY}): ${counts.employees} employees, ` +
           `${counts.contracts} contracts, ${counts.documents} documents, ${counts.tasks} onboarding tasks`,
       );
+      console.log(
+        `  HR-02 leave set-up: ${counts.leave.leaveTypes} leave types, ` +
+          `${counts.leave.leaveRules} rules, ${counts.leave.workWeeks} working weeks, ` +
+          `${counts.leave.holidays} public holidays — all marked to be confirmed`,
+      );
     }
   }
 }
