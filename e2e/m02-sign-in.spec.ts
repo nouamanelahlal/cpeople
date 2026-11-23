@@ -277,6 +277,20 @@ test.describe('M02 session handling', () => {
     await expect(accountButton(page, users.employee.name)).toBeVisible();
   });
 
+  test('brings people back to the page they asked for, filters and all', async ({ page }) => {
+    await signIn(page, users);
+
+    // A renewed token must not quietly undo what they had asked for: a filtered
+    // list, a tab of a file, a page of results. The gate carries the whole
+    // address through the detour, not just the path.
+    const asked = '/employees?view=documents-expiring&sort=hireDate&dir=desc';
+    await page.goto(`/api/auth/refresh?callbackUrl=${encodeURIComponent(asked)}`);
+
+    await expect(page).toHaveURL(
+      /\/employees\?view=documents-expiring&sort=hireDate&dir=desc$/,
+    );
+  });
+
   test('signing out ends the Keycloak session, not just this one', async ({ page }) => {
     await signIn(page, users);
 

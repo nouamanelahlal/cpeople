@@ -1,3 +1,4 @@
+import { statSync } from 'node:fs';
 import { expect, type Browser, type Page } from '@playwright/test';
 import {
   dismissWelcome,
@@ -83,7 +84,11 @@ export async function useEnglish(page: Page): Promise<void> {
 
   if ((await toEnglish.count()) > 0) {
     await toEnglish.click();
-    await expect(page.getByRole('button', { name: 'Language: Français' })).toBeVisible();
+    // A language change is a round trip to the server and back to the page you
+    // were reading, which on a development build may be compiling it as it goes.
+    await expect(page.getByRole('button', { name: 'Language: Français' })).toBeVisible({
+      timeout: 20_000,
+    });
   }
 }
 
@@ -99,13 +104,38 @@ export function sessionPath(role: DemoRole): string {
   return `.auth/hr01-${role}.json`;
 }
 
-/** Signs one of them in, once, and keeps the session for the rest of the file. */
+/**
+ * How long a saved session is reused before someone signs in again.
+ *
+ * Keycloak forgets an idle session after thirty minutes, and every sign-in costs
+ * a round trip through three pages — two of them with an authenticator code that
+ * cannot be used twice. Twenty minutes keeps a whole suite run down to one
+ * sign-in per person while staying well inside what the realm allows.
+ */
+const SESSION_MINUTES = 20;
+
+/**
+ * Makes sure there is a session for one of them, signing in only when there is
+ * not one to hand. Files that each want the same person therefore sign in once
+ * between them, not once each.
+ */
 export async function saveSession(browser: Browser, role: DemoRole): Promise<void> {
+  const path = sessionPath(role);
+
+  try {
+    const age = Date.now() - statSync(path).mtimeMs;
+    if (age < SESSION_MINUTES * 60_000) {
+      return;
+    }
+  } catch {
+    // No session yet: sign in.
+  }
+
   const context = await browser.newContext({ timezoneId: 'Africa/Casablanca' });
   const page = await context.newPage();
 
   await signInAs(page, role);
-  await context.storageState({ path: sessionPath(role) });
+  await context.storageState({ path });
   await context.close();
 }
 

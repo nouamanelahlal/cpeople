@@ -168,7 +168,12 @@ test.describe('NEW welcome animation', () => {
           };
         });
 
-        if (spill.across > 0 || spill.down > 0) {
+        // Only while it is actually playing. The overlay can go between the check
+        // that it is there and this sample, and the page is then right to be a
+        // page again — scrollbars and all.
+        const playing = spill.overlay && spill.state !== 'none';
+
+        if (playing && (spill.across > 0 || spill.down > 0)) {
           overflowed.push(
             `${size.width}x${size.height} at ${Date.now() - (deadline - 6_000)}ms: ` +
               `across ${spill.across}, down ${spill.down}, state ${spill.state}, ` +

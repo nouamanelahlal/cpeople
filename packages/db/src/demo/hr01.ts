@@ -38,14 +38,20 @@ const SITES = [
 ] as const;
 
 /** Invented names, in the shape Moroccan names take. Nobody real is in here. */
-const GIVEN_NAMES = [
-  'Amine', 'Anas', 'Ayoub', 'Bilal', 'Chaimae', 'Driss', 'Fatima', 'Ghita', 'Hamza',
-  'Hanane', 'Hicham', 'Ibtissam', 'Imane', 'Ismail', 'Jalil', 'Kaoutar', 'Khadija',
-  'Leila', 'Mahdi', 'Malak', 'Mariam', 'Mehdi', 'Meryem', 'Mouad', 'Mounir', 'Nabil',
-  'Nadia', 'Nawal', 'Nizar', 'Omar', 'Oussama', 'Rachid', 'Rania', 'Reda', 'Safae',
-  'Salma', 'Samir', 'Sanae', 'Sara', 'Siham', 'Soufiane', 'Tarik', 'Wafae', 'Yasmine',
-  'Yassine', 'Younes', 'Youssef', 'Zakaria', 'Zineb',
-] as const;
+// Kept apart so that a file reads as one person: a demo where Karim is recorded
+// as a woman is one the client stops trusting at the first screen.
+const GIVEN_NAMES = {
+  female: [
+    'Chaimae', 'Fatima', 'Ghita', 'Hanane', 'Ibtissam', 'Imane', 'Kaoutar', 'Khadija',
+    'Leila', 'Malak', 'Mariam', 'Meryem', 'Nadia', 'Nawal', 'Rania', 'Safae', 'Salma',
+    'Sanae', 'Sara', 'Siham', 'Wafae', 'Yasmine', 'Zineb',
+  ],
+  male: [
+    'Amine', 'Anas', 'Ayoub', 'Bilal', 'Driss', 'Hamza', 'Hicham', 'Ismail', 'Jalil',
+    'Mahdi', 'Mehdi', 'Mouad', 'Mounir', 'Nabil', 'Nizar', 'Omar', 'Oussama', 'Rachid',
+    'Reda', 'Samir', 'Soufiane', 'Tarik', 'Yassine', 'Younes', 'Youssef', 'Zakaria',
+  ],
+} as const;
 
 const FAMILY_NAMES = [
   'Alaoui', 'Amrani', 'Benali', 'Bennani', 'Berrada', 'Bouazza', 'Chraibi', 'Daoudi',
@@ -59,6 +65,7 @@ interface CastMember {
   readonly first: string;
   readonly last: string;
   readonly department: (typeof DEPARTMENTS)[number]['code'];
+  readonly gender: 'female' | 'male';
   readonly role: string;
   /** Set for the four people who also sign in, so the rows match the realm. */
   readonly email?: string;
@@ -66,15 +73,15 @@ interface CastMember {
 
 /** The people the demo script names, so the screens tell one coherent story. */
 const CAST: readonly CastMember[] = [
-  { number: 'SMG-0001', first: 'Salma', last: 'Benali', department: 'ADM', role: 'HR manager', email: 'hr@smg-demo.test' },
-  { number: 'SMG-0002', first: 'Rachid', last: 'Kettani', department: 'KIT', role: 'Head of kitchen', email: 'manager@smg-demo.test' },
-  { number: 'SMG-0003', first: 'Karim', last: 'Alaoui', department: 'KIT', role: 'Commis de cuisine', email: 'employee@smg-demo.test' },
-  { number: 'SMG-0004', first: 'Leila', last: 'Fassi', department: 'OUT', role: 'Sales assistant' },
-  { number: 'SMG-0005', first: 'Mehdi', last: 'Idrissi', department: 'PAS', role: 'Pastry chef' },
-  { number: 'SMG-0006', first: 'Sara', last: 'Amrani', department: 'ADM', role: 'Accountant' },
-  { number: 'SMG-0007', first: 'Yassine', last: 'Tazi', department: 'WAR', role: 'Storekeeper' },
-  { number: 'SMG-0008', first: 'Nadia', last: 'Berrada', department: 'OUT', role: 'Sales assistant' },
-  { number: 'SMG-0009', first: 'Omar', last: 'Chraibi', department: 'KIT', role: 'Commis de cuisine' },
+  { number: 'SMG-0001', first: 'Salma', last: 'Benali', gender: 'female', department: 'ADM', role: 'HR manager', email: 'hr@smg-demo.test' },
+  { number: 'SMG-0002', first: 'Rachid', last: 'Kettani', gender: 'male', department: 'KIT', role: 'Head of kitchen', email: 'manager@smg-demo.test' },
+  { number: 'SMG-0003', first: 'Karim', last: 'Alaoui', gender: 'male', department: 'KIT', role: 'Commis de cuisine', email: 'employee@smg-demo.test' },
+  { number: 'SMG-0004', first: 'Leila', last: 'Fassi', gender: 'female', department: 'OUT', role: 'Sales assistant' },
+  { number: 'SMG-0005', first: 'Mehdi', last: 'Idrissi', gender: 'male', department: 'PAS', role: 'Pastry chef' },
+  { number: 'SMG-0006', first: 'Sara', last: 'Amrani', gender: 'female', department: 'ADM', role: 'Accountant' },
+  { number: 'SMG-0007', first: 'Yassine', last: 'Tazi', gender: 'male', department: 'WAR', role: 'Storekeeper' },
+  { number: 'SMG-0008', first: 'Nadia', last: 'Berrada', gender: 'female', department: 'OUT', role: 'Sales assistant' },
+  { number: 'SMG-0009', first: 'Omar', last: 'Chraibi', gender: 'male', department: 'KIT', role: 'Commis de cuisine' },
 ];
 
 const DOCUMENT_TYPES = [
@@ -522,7 +529,10 @@ interface PlannedPerson {
  */
 function plan(random: () => number): PlannedPerson[] {
   const people: PlannedPerson[] = [];
-  const used = new Set<string>();
+  // The named characters are spoken for before anyone is invented, so the
+  // generator cannot hand their names to somebody else and leave the demo with
+  // two Omar Chraibis.
+  const used = new Set<string>(CAST.map((member) => `${member.first} ${member.last}`));
   let keys = 0;
 
   const person = (options: {
@@ -530,11 +540,12 @@ function plan(random: () => number): PlannedPerson[] {
     level: number;
     manager: string | null;
   }): PlannedPerson => {
-    let first = pick(GIVEN_NAMES, random);
+    const gender = random() < 0.5 ? 'female' : 'male';
+    let first = pick(GIVEN_NAMES[gender], random);
     let last = pick(FAMILY_NAMES, random);
     // Two people may share a name; two people may not share an identifier.
     while (used.has(`${first} ${last}`)) {
-      first = pick(GIVEN_NAMES, random);
+      first = pick(GIVEN_NAMES[gender], random);
       last = pick(FAMILY_NAMES, random);
     }
     used.add(`${first} ${last}`);
@@ -548,7 +559,7 @@ function plan(random: () => number): PlannedPerson[] {
       number: '',
       first,
       last,
-      gender: random() < 0.5 ? 'female' : 'male',
+      gender,
       birthDate: addDays(DEMO_TODAY, -(Math.floor(random() * 10_000) + 8_000)),
       nationalId: identifier('A', random),
       maritalStatus: random() < 0.55 ? 'married' : 'single',
@@ -620,6 +631,7 @@ function plan(random: () => number): PlannedPerson[] {
     slot.number = member.number;
     slot.first = member.first;
     slot.last = member.last;
+    slot.gender = member.gender;
     slot.email = member.email ?? '';
   }
 

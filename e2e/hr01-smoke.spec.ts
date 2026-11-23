@@ -1,11 +1,5 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
-import {
-  DEMO_USERS,
-  saveSession,
-  sessionPath,
-  useEnglish,
-  type DemoRole,
-} from './support/demo-users';
+import { DEMO_USERS, sessionPath, useEnglish, type DemoRole } from './support/demo-users';
 
 /**
  * The HR-01 demo smoke test (spec section 10), run after steps 4, 8 and 12.
@@ -24,17 +18,13 @@ const PHONE = { width: 390, height: 844 };
 
 test.beforeEach(({ browserName: _browserName }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-chromium', 'One browser is enough.');
+  // These walk through a lot of the app, and a development build compiles each
+  // page the first time it is asked for.
+  testInfo.setTimeout(150_000);
 });
 
 // Three real sign-ins, once each: the roles are the subject here, and the sign-in
 // itself is e2e/m02-sign-in.spec.ts's.
-test.beforeAll(async ({ browser }, testInfo) => {
-  if (testInfo.project.name !== 'desktop-chromium') return;
-
-  for (const role of ['hr', 'manager', 'employee'] as const) {
-    await saveSession(browser, role);
-  }
-});
 
 test.describe('HR-01 demo smoke test', () => {
   // One sign-in at a time: Keycloak turns away a repeat sign-in of the same

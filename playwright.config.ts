@@ -10,6 +10,11 @@ export default defineConfig({
   // once three browser projects run at once.
   timeout: 60_000,
   fullyParallel: true,
+  // How long one expectation waits. The default five seconds is a guess about a
+  // built application; this suite drives a development build, where the first
+  // request for a page compiles it and several workers ask at once. A real
+  // failure still fails — a little later.
+  expect: { timeout: 15_000 },
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   reporter: [['html', { open: 'never' }], ['list']],
@@ -19,7 +24,14 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [
-    { name: 'desktop-chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
+    // Signs the demo's named people in before the suite starts; see
+    // e2e/demo-sessions.setup.ts for why that cannot be left to the files.
+    { name: 'demo-sessions', testMatch: /demo-sessions\.setup\.ts/ },
+    {
+      name: 'desktop-chromium',
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
+      dependencies: ['demo-sessions'],
+    },
     { name: 'mobile-chromium', use: { ...devices['Pixel 7'] } },
     { name: 'desktop-fr', use: { ...devices['Desktop Chrome'], locale: 'fr-MA' } },
   ],

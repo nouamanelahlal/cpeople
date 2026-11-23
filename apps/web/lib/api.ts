@@ -77,6 +77,37 @@ function worthRetrying(error: unknown): boolean {
 }
 
 /**
+ * Changes something, as the person reading the page.
+ *
+ * Writes are not retried: asking twice is how a change happens twice. An error
+ * carries the API's own body, because a refusal usually has something useful in
+ * it — which employee already holds that identifier, say.
+ */
+export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
+  const session = await getSession();
+  if (!session) {
+    throw new ApiError(401, path, 'nobody is signed in');
+  }
+
+  const response = await fetch(`${API_URL}${path}`, {
+    method: 'PATCH',
+    headers: {
+      authorization: `Bearer ${session.accessToken}`,
+      accept: 'application/json',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(body),
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    throw new ApiError(response.status, path, await response.text().catch(() => ''));
+  }
+
+  return (await response.json()) as T;
+}
+
+/**
  * The same, for a page that would rather draw something than nothing.
  *
  * The HR-01 screens are read-only summaries: if the API is unreachable, the

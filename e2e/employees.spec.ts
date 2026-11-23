@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { openAs, saveSession, useEnglish } from './support/demo-users';
+import { openAs, useEnglish } from './support/demo-users';
 import { skipWithoutBaseline } from './support/snapshots';
 
 /**
@@ -16,15 +16,11 @@ const DESKTOP = { width: 1440, height: 900 };
 
 test.beforeEach(({ browserName: _browserName }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-chromium', 'One browser is enough.');
+  // These walk through a lot of the app, and a development build compiles each
+  // page the first time it is asked for.
+  testInfo.setTimeout(150_000);
 });
 
-test.beforeAll(async ({ browser }, testInfo) => {
-  if (testInfo.project.name !== 'desktop-chromium') return;
-
-  for (const role of ['hr', 'manager', 'employee'] as const) {
-    await saveSession(browser, role);
-  }
-});
 
 test.describe('HR-01 employee list', () => {
   test.describe.configure({ mode: 'serial' });
@@ -96,13 +92,13 @@ test.describe('HR-01 employee list', () => {
 
     // Every word has to match something, so the surname alone finds the family
     // and the two words together find the person.
-    await page.getByRole('searchbox', { name: 'Search employees' }).fill('chraibi');
-    await page.keyboard.press('Enter');
-    const family = await page.getByRole('row').count();
-    expect(family).toBeGreaterThan(2);
+    await search(page, 'chraibi');
+    // Counted only once the answer is on screen: a count taken mid-navigation is
+    // a count of nothing.
+    await expect(page.getByRole('row').first()).toBeVisible();
+    expect(await page.getByRole('row').count()).toBeGreaterThan(2);
 
-    await page.getByRole('searchbox', { name: 'Search employees' }).fill('omar chraibi');
-    await page.keyboard.press('Enter');
+    await search(page, 'omar chraibi');
     await expect(page.getByRole('row')).toHaveCount(2);
 
     const omar = page.getByRole('row').nth(1);
@@ -113,14 +109,12 @@ test.describe('HR-01 employee list', () => {
     const number = (await omar.getByRole('cell').first().textContent())?.trim() ?? '';
     expect(number).not.toBe('');
 
-    await page.getByRole('searchbox', { name: 'Search employees' }).fill(number);
-    await page.keyboard.press('Enter');
+    await search(page, number);
     await expect(page.getByRole('row')).toHaveCount(2);
     await expect(page.getByRole('row').nth(1)).toContainText('Omar Chraibi');
 
     // A search that matches nobody says so, and offers the way back.
-    await page.getByRole('searchbox', { name: 'Search employees' }).fill('zzzz');
-    await page.keyboard.press('Enter');
+    await search(page, 'zzzz');
     await expect(page.getByText('No one matches these filters.')).toBeVisible();
     await page.getByRole('link', { name: 'Clear the filters' }).first().click();
     await expect(page.getByText('148 employees')).toBeVisible();
@@ -157,8 +151,7 @@ test.describe('HR-01 employee list', () => {
 
     // Searching the rest of the company finds nothing, because it is not theirs
     // to search: the scope is applied in the API, not in the page.
-    await manager.getByRole('searchbox', { name: 'Search employees' }).fill('Salma');
-    await manager.keyboard.press('Enter');
+    await search(manager, 'Salma');
     await expect(manager.getByText('No one matches these filters.')).toBeVisible();
 
     // And the national identifier is not something they may search by.
@@ -217,6 +210,15 @@ test.describe('HR-01 employee list', () => {
     await page.context().close();
   });
 });
+
+/** Types a search and waits until the address says it was asked. */
+async function search(page: Page, text: string): Promise<void> {
+  await page.getByRole('searchbox', { name: 'Search employees' }).fill(text);
+  await page.keyboard.press('Enter');
+  await page.waitForURL(`**/employees?*q=${encodeURIComponent(text).replace(/%20/g, '+')}*`, {
+    timeout: 30_000,
+  });
+}
 
 /** Signed in, reading English, whatever their account prefers. */
 async function open(
