@@ -20,6 +20,18 @@ const KEYCLOAK = {
   keycloakAudience: 'cpeople-api',
 };
 
+/** Nothing here touches storage; it is named because the settings are one shape. */
+const STORAGE = {
+  storage: {
+    endpoint: 'http://localhost:9000',
+    region: 'us-east-1',
+    bucket: 'cpeople-test',
+    accessKeyId: 'test',
+    secretAccessKey: 'test',
+    createBucket: false,
+  },
+};
+
 /** A local checkout with the header switched on, which is the only case that allows it. */
 function localDevConfig(): AppConfigService {
   return new AppConfigService({
@@ -27,6 +39,7 @@ function localDevConfig(): AppConfigService {
     tenantHeaderAllowed: true,
     port: 3100,
     ...KEYCLOAK,
+    ...STORAGE,
   });
 }
 
@@ -37,6 +50,7 @@ function deployedConfig(): AppConfigService {
     tenantHeaderAllowed: false,
     port: 3100,
     ...KEYCLOAK,
+    ...STORAGE,
   });
 }
 
@@ -104,6 +118,12 @@ describe('M21 configuration fails closed', () => {
   const deployed = {
     DATABASE_URL: 'postgresql://user:pw@db.internal:5432/cpeople',
     KEYCLOAK_ISSUER: 'https://id.cpeople.ma/realms/cpeople',
+    // A deployed environment names its own object store, and the API refuses to
+    // start without one; employee documents have to go somewhere.
+    S3_ENDPOINT: 'https://storage.cpeople.ma',
+    S3_BUCKET: 'cpeople-prod',
+    S3_ACCESS_KEY_ID: 'key',
+    S3_SECRET_ACCESS_KEY: 'secret',
   };
 
   it('does not allow the tenant header in a deployed environment', () => {
@@ -141,5 +161,40 @@ describe('M21 configuration fails closed', () => {
 
   it('refuses a port that is not a positive integer', () => {
     expect(() => loadAppConfig({ ...deployed, API_PORT: 'eighty' })).toThrow(/API_PORT/);
+  });
+});
+
+describe('HR-01 document storage is configured before the API starts', () => {
+  const deployed = {
+    DATABASE_URL: 'postgresql://user:pw@db.internal:5432/cpeople',
+    KEYCLOAK_ISSUER: 'https://id.cpeople.ma/realms/cpeople',
+  };
+
+  it('refuses to start in a deployed environment with nowhere to put documents', () => {
+    // Accepting an upload and losing it is worse than not starting.
+    expect(() => loadAppConfig(deployed)).toThrow(/S3_ENDPOINT/);
+    expect(() => loadAppConfig({ ...deployed, S3_ENDPOINT: 'https://s3.cpeople.ma' })).toThrow(
+      /S3_BUCKET/,
+    );
+  });
+
+  it('falls back to the local stack in a developer checkout, and makes its bucket', () => {
+    const config = loadAppConfig({ CPEOPLE_LOCAL_DEV: 'true' });
+
+    expect(config.storage.endpoint).toBe('http://localhost:9000');
+    expect(config.storage.bucket).toBe('cpeople-local');
+    expect(config.storage.createBucket).toBe(true);
+  });
+
+  it('never gives a deployed environment the right to create its own bucket', () => {
+    const config = loadAppConfig({
+      ...deployed,
+      S3_ENDPOINT: 'https://s3.cpeople.ma',
+      S3_BUCKET: 'cpeople-prod',
+      S3_ACCESS_KEY_ID: 'key',
+      S3_SECRET_ACCESS_KEY: 'secret',
+    });
+
+    expect(config.storage.createBucket).toBe(false);
   });
 });

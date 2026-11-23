@@ -5,12 +5,18 @@ import {
   employeeScope,
   visibleEmployeeIds,
 } from '../../common/access/visible-employees.js';
+import { expiringDocumentFilter, orNothing } from '../../common/documents/expiring.js';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
 import { demoToday, plainDate } from '../../common/time/clock.js';
 import type { HomeSummaryDto, HomeTaskDto } from './dto/home.dto.js';
 
-/** How far ahead the home screen looks for things about to happen. */
-const EXPIRY_WINDOW_DAYS = 30;
+/**
+ * How far ahead the home screen looks for things about to happen.
+ *
+ * Documents are not in this list: how soon a document counts as running out
+ * belongs to the kind of document, and the question is built per kind in
+ * common/documents/expiring.ts — the same one the employee list's filter asks.
+ */
 const CONTRACT_WINDOW_DAYS = 30;
 const WAITING_WINDOW_DAYS = 14;
 const WAITING_LIMIT = 6;
@@ -70,10 +76,7 @@ export class HomeService {
         tx.employee.count({ where: { ...scope, leftOn: { gte: startOfMonth(today) } } }),
         tx.employee.count({ where: { ...scope, status: 'onboarding' } }),
         tx.employeeDocument.count({
-          where: {
-            employee: employees,
-            expiryDate: { gte: date(today), lte: date(addDays(today, EXPIRY_WINDOW_DAYS)) },
-          },
+          where: { employee: employees, ...orNothing(await expiringDocumentFilter(tx, today)) },
         }),
         tx.contract.count({
           where: {
@@ -96,7 +99,7 @@ export class HomeService {
         fixedTerm,
         joinedThisMonth: joined,
         leftThisMonth: left,
-        documentsExpiring: { value: documentsExpiring, of: EXPIRY_WINDOW_DAYS },
+        documentsExpiring: { value: documentsExpiring },
         onboarding,
         onboardingOverdue,
         contractsEnding,

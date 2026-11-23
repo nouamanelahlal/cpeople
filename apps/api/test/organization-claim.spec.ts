@@ -69,7 +69,13 @@ describe('M02 the tenant comes from the organisation claim', () => {
 });
 
 describe('M02 the realm must be configured before the API starts', () => {
-  const deployed = { DATABASE_URL: 'postgresql://user:pw@db.internal:5432/cpeople' };
+  const deployed = {
+    DATABASE_URL: 'postgresql://user:pw@db.internal:5432/cpeople',
+    S3_ENDPOINT: 'https://storage.cpeople.ma',
+    S3_BUCKET: 'cpeople-prod',
+    S3_ACCESS_KEY_ID: 'key',
+    S3_SECRET_ACCESS_KEY: 'secret',
+  };
 
   it('refuses to start in a deployed environment with no issuer', () => {
     expect(() => loadAppConfig(deployed)).toThrow(/KEYCLOAK_ISSUER is not set/);

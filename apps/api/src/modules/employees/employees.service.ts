@@ -1,13 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import type { ContractStatus, TenantClient } from '@cpeople/db';
+import { documentState } from '@cpeople/shared';
 import { CurrentUserService } from '../../common/access/current-user.service.js';
 import { employeeScope, visibleEmployeeIds } from '../../common/access/visible-employees.js';
+import { expiringDocumentFilter, orNothing } from '../../common/documents/expiring.js';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
 import { demoToday, plainDate } from '../../common/time/clock.js';
 import type { EmployeeFacetsDto, EmployeeListDto } from './dto/employee-list.dto.js';
 import type { EmployeeQuery } from './dto/employee-query.dto.js';
 
-/** The window the list and the home screen both call "soon". */
+/**
+ * How far ahead "ending soon" looks for a contract.
+ *
+ * Documents have no single window — each kind says how much warning it needs —
+ * so they are asked for through common/documents/expiring.ts instead.
+ */
 const SOON_DAYS = 30;
 
 /**
@@ -63,7 +70,7 @@ export class EmployeesService {
           ? { contracts: { some: { ...running(), contractType: { code: query.contractType } } } }
           : {}),
         ...(query.view === 'documents-expiring'
-          ? { documents: { some: { expiryDate: { gte: date(today), lte: date(soon) } } } }
+          ? { documents: { some: orNothing(await expiringDocumentFilter(tx, today)) } }
           : {}),
         ...(query.view === 'contracts-ending'
           ? { contracts: { some: { ...running(), endDate: { gte: date(today), lte: date(soon) } } } }
@@ -117,7 +124,6 @@ export class EmployeesService {
         tx,
         rows.map((row) => row.id),
         today,
-        soon,
       );
 
       return {
@@ -214,25 +220,38 @@ export class EmployeesService {
     tx: TenantClient,
     ids: string[],
     today: string,
-    soon: string,
   ): Promise<Map<string, PaperState>> {
     const state = new Map<string, PaperState>();
     if (ids.length === 0) {
       return state;
     }
 
-    const soonest = await tx.employeeDocument.groupBy({
-      by: ['employeeId'],
+    // Read rather than grouped: the state of a document depends on the kind of
+    // document it is, so the soonest date alone cannot answer it.
+    const papers = await tx.employeeDocument.findMany({
       where: { employeeId: { in: ids }, expiryDate: { not: null } },
-      _min: { expiryDate: true },
+      select: {
+        employeeId: true,
+        expiryDate: true,
+        documentType: { select: { alertDaysBefore: true } },
+      },
     });
 
-    for (const row of soonest) {
-      const expiry = row._min.expiryDate;
-      if (!expiry) continue;
+    const rank: Record<PaperState, number> = { ok: 0, expiring: 1, expired: 2 };
 
-      const day = plainDate(expiry);
-      state.set(row.employeeId, day < today ? 'expired' : day <= soon ? 'expiring' : 'ok');
+    for (const paper of papers) {
+      const found = documentState(
+        plainDate(paper.expiryDate!),
+        today,
+        paper.documentType.alertDaysBefore,
+      );
+      // The worst thing in a file is what the row says about it.
+      const as: PaperState = found === 'valid' ? 'ok' : found;
+      const current = state.get(paper.employeeId) ?? 'ok';
+
+      if (rank[as] > rank[current]) {
+        state.set(paper.employeeId, as);
+      }
     }
 
     return state;

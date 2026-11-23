@@ -193,7 +193,7 @@ function kpiViews(summary: HomeSummary | null, f: Formatter): KpiView[] {
       icon: 'document',
       label: t.documents,
       value: summary ? f.count(summary.documentsExpiring.value) : unknown,
-      suffix: f.plain(t.documentsSuffix, { days: f.count(summary?.documentsExpiring.of ?? 30) }),
+      suffix: t.documentsSuffix,
       note: t.documentsNote,
       href: '/employees?filter=documents-expiring',
     },

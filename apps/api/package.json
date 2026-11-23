@@ -12,6 +12,7 @@
     "test": "cross-env CPEOPLE_LOCAL_DEV=true vitest run"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1175.0",
     "@cpeople/db": "workspace:*",
     "@cpeople/shared": "workspace:*",
     "@nestjs/common": "^12.5.1",
@@ -28,6 +29,7 @@
     "@nestjs/testing": "^12.5.1",
     "@swc/core": "^1.16.22",
     "@types/express": "^5.0.0",
+    "@types/multer": "^2.3.0",
     "@types/node": "^24.19.2",
     "cross-env": "^10.1.0",
     "typescript": "~6.0.3",

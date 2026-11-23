@@ -6,15 +6,18 @@ import {
   seniorityParts,
   tabHref,
   type AuditEvent,
+  type EmployeeDocuments,
   type EmployeeFile,
   type Tab,
 } from '../../../lib/employee-file';
 import { formatter, type Formatter } from '../../../lib/format';
 import { AppPage, appContext } from '../../_shell/app-page';
+import { DocumentsTab } from './_components/documents-tab';
 import { EditChoice, EditField, EditForm, EditGrid, EditSwitch } from './_components/edit-form';
 import { FileHeader } from './_components/file-header';
 import { FieldList, Masked, Panel, Pill, type Field } from './_components/file-parts';
 import { HistoryList } from './_components/history-list';
+import { UploadForm } from './_components/upload-form';
 
 const TIME_ZONE = 'Africa/Casablanca';
 
@@ -65,12 +68,23 @@ export default async function EmployeeFilePage({
   }
 
   const mayEdit = file.can.edit || file.can.editOwnContact;
-  const editing = mayEdit && one(query['edit']) === '1' && tab !== 'history' && tab !== 'contracts';
+  const editable = tab !== 'history' && tab !== 'contracts';
+  const asking = one(query['edit']) === '1';
 
   const history =
     tab === 'history' && file.can.seeHistory
       ? ((await apiGetOrNull<AuditEvent[]>(`/employees/${id}/history`)) ?? [])
       : [];
+
+  // The documents tab has a list and an upload form, and both come from the same
+  // answer: what is on file, and what kinds may be added to it.
+  const documents =
+    tab === 'documents'
+      ? await apiGetOrNull<EmployeeDocuments>(`/employees/${id}/documents`)
+      : null;
+
+  const uploading = tab === 'documents' && asking && (documents?.mayUpload ?? false);
+  const editing = (mayEdit && asking && editable && tab !== 'documents') || uploading;
 
   return (
     <AppPage
@@ -84,23 +98,42 @@ export default async function EmployeeFilePage({
         tab={tab}
         f={f}
         actions={
-          editing || !mayEdit ? null : (
-            <a
-              href={tabHref(file.id, tab, { edit: true })}
-              className="quiet-button h-11 shrink-0 border-button-border px-4 text-[13px] font-semibold text-navy"
-            >
-              {file.can.edit ? t.employeeFile.edit : t.employeeFile.editContact}
-            </a>
-          )
+          <FileActions
+            file={file}
+            tab={tab}
+            editing={editing}
+            mayEdit={mayEdit}
+            mayUpload={documents?.mayUpload ?? false}
+            t={t}
+          />
         }
       />
 
       <Notice query={query} t={t} />
 
-      {editing ? (
+      {uploading && documents ? (
+        <Panel title={t.employeeFile.documents.addTitle} note={t.employeeFile.documents.fileNote}>
+          <UploadForm
+            employeeId={file.id}
+            types={documents.types}
+            labels={{
+              type: t.employeeFile.documents.type,
+              file: t.employeeFile.documents.file,
+              fileNote: t.employeeFile.documents.fileNote,
+              issueDate: t.employeeFile.documents.issueDate,
+              expiryDate: t.employeeFile.documents.expiryDate,
+              expiryRequired: t.employeeFile.documents.expiryRequired,
+              note: t.employeeFile.documents.noteField,
+              upload: t.employeeFile.documents.upload,
+              cancel: t.employeeFile.cancel,
+              cancelHref: tabHref(file.id, 'documents'),
+            }}
+          />
+        </Panel>
+      ) : editing ? (
         <EditTab file={file} tab={tab} f={f} />
       ) : (
-        <ReadTab file={file} tab={tab} history={history} f={f} />
+        <ReadTab file={file} tab={tab} history={history} documents={documents} f={f} />
       )}
     </AppPage>
   );
@@ -144,6 +177,29 @@ function Notice({
     );
   }
 
+  if (one(query['uploaded']) === '1' || one(query['removed']) === '1') {
+    return (
+      <p className="m-0 rounded-2xl border border-success-border bg-success-bg px-4 py-3 text-sm text-success-ink">
+        {one(query['uploaded']) === '1'
+          ? t.employeeFile.documents.uploaded
+          : t.employeeFile.documents.removed}
+      </p>
+    );
+  }
+
+  if (error !== undefined && error in t.employeeFile.documents.failed) {
+    const reason = t.employeeFile.documents.failed[error as keyof typeof t.employeeFile.documents.failed];
+
+    return (
+      <p
+        role="alert"
+        className="m-0 rounded-2xl border border-danger-border bg-danger-bg px-4 py-3 text-sm text-danger-ink"
+      >
+        {t.employeeFile.documents.uploadFailed.replace('{reason}', reason)}
+      </p>
+    );
+  }
+
   if (error === 'saving-failed') {
     return (
       <p
@@ -158,16 +214,68 @@ function Notice({
   return null;
 }
 
+/**
+ * What the header offers on this tab.
+ *
+ * Editing a file and adding a document are different acts with different
+ * permissions, and the documents tab is where the second one lives.
+ */
+function FileActions({
+  file,
+  tab,
+  editing,
+  mayEdit,
+  mayUpload,
+  t,
+}: {
+  file: EmployeeFile;
+  tab: Tab;
+  editing: boolean;
+  mayEdit: boolean;
+  mayUpload: boolean;
+  t: Messages;
+}): JSX.Element | null {
+  if (editing) {
+    return null;
+  }
+
+  if (tab === 'documents') {
+    return mayUpload ? (
+      <a
+        href={tabHref(file.id, 'documents', { edit: true })}
+        className="quiet-button h-11 shrink-0 border-button-border px-4 text-[13px] font-semibold text-navy"
+      >
+        {t.employeeFile.documents.add}
+      </a>
+    ) : null;
+  }
+
+  if (!mayEdit || tab === 'history' || tab === 'contracts') {
+    return null;
+  }
+
+  return (
+    <a
+      href={tabHref(file.id, tab, { edit: true })}
+      className="quiet-button h-11 shrink-0 border-button-border px-4 text-[13px] font-semibold text-navy"
+    >
+      {file.can.edit ? t.employeeFile.edit : t.employeeFile.editContact}
+    </a>
+  );
+}
+
 /** The tab as it reads. */
 function ReadTab({
   file,
   tab,
   history,
+  documents,
   f,
 }: {
   file: EmployeeFile;
   tab: Tab;
   history: readonly AuditEvent[];
+  documents: EmployeeDocuments | null;
   f: Formatter;
 }): JSX.Element {
   const t = f.t.employeeFile;
@@ -201,6 +309,17 @@ function ReadTab({
       return (
         <Panel title={t.tabs.family} {...(file.can.seeSensitive ? {} : { note: t.maskedNote })}>
           <Family file={file} f={f} />
+        </Panel>
+      );
+
+    case 'documents':
+      return (
+        <Panel title={t.documents.title} note={t.documents.note}>
+          {documents === null ? (
+            <p className="m-0 text-sm text-body">{t.unavailable}</p>
+          ) : (
+            <DocumentsTab data={documents} employeeId={file.id} f={f} />
+          )}
         </Panel>
       );
 

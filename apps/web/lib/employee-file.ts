@@ -90,7 +90,15 @@ export interface AuditEvent {
 }
 
 /** The tabs of a file, in the order the spec puts them (6.3). */
-export const TABS = ['overview', 'job', 'pay', 'family', 'contracts', 'history'] as const;
+export const TABS = [
+  'overview',
+  'job',
+  'pay',
+  'family',
+  'documents',
+  'contracts',
+  'history',
+] as const;
 export type Tab = (typeof TABS)[number];
 
 export function readTab(raw: string | string[] | undefined): Tab {
@@ -111,4 +119,37 @@ export function tabHref(id: string, tab: Tab, options: { edit?: boolean } = {}):
 /** Seniority as a sentence takes years and months, not a count of months. */
 export function seniorityParts(months: number): { years: number; months: number } {
   return { years: Math.floor(months / 12), months: months % 12 };
+}
+
+/** One document on a file, as `GET /api/employees/:id/documents` answers it. */
+export interface DocumentType {
+  readonly code: string;
+  readonly name: string;
+  readonly requiresExpiry: boolean;
+  readonly alertDaysBefore: number;
+  readonly sensitive: boolean;
+}
+
+export interface EmployeeDocument {
+  readonly id: string;
+  readonly type: DocumentType;
+  readonly fileName: string;
+  readonly mimeType: string;
+  readonly byteSize: number;
+  readonly issueDate?: string;
+  readonly expiryDate?: string;
+  readonly state: 'valid' | 'expiring' | 'expired';
+  readonly daysLeft?: number;
+  readonly uploadedBy?: string;
+  readonly uploadedAt: string;
+  readonly note?: string;
+  readonly mayOpen: boolean;
+  readonly mayDelete: boolean;
+}
+
+export interface EmployeeDocuments {
+  readonly documents: readonly EmployeeDocument[];
+  readonly types: readonly DocumentType[];
+  readonly today: string;
+  readonly mayUpload: boolean;
 }

@@ -108,6 +108,56 @@ export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
 }
 
 /**
+ * Sends something that is not JSON, or nothing at all: an upload, a deletion.
+ *
+ * `FormData` carries its own content type with the boundary in it, so none is
+ * set here — setting one would break the body it describes.
+ */
+export async function apiSend<T>(
+  path: string,
+  body?: FormData,
+  method: 'POST' | 'DELETE' = 'POST',
+): Promise<T | null> {
+  const session = await getSession();
+  if (!session) {
+    throw new ApiError(401, path, 'nobody is signed in');
+  }
+
+  const response = await fetch(`${API_URL}${path}`, {
+    method,
+    headers: { authorization: `Bearer ${session.accessToken}`, accept: 'application/json' },
+    ...(body ? { body } : {}),
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    throw new ApiError(response.status, path, await response.text().catch(() => ''));
+  }
+
+  const text = await response.text();
+  return text === '' ? null : (JSON.parse(text) as T);
+}
+
+/**
+ * The bytes behind a path, as the API sends them: a document to look at.
+ *
+ * The browser cannot ask the API itself — the access token lives in a cookie the
+ * API never sees — so a route handler asks on its behalf and passes the answer
+ * through untouched.
+ */
+export async function apiStream(path: string): Promise<Response> {
+  const session = await getSession();
+  if (!session) {
+    throw new ApiError(401, path, 'nobody is signed in');
+  }
+
+  return fetch(`${API_URL}${path}`, {
+    headers: { authorization: `Bearer ${session.accessToken}` },
+    cache: 'no-store',
+  });
+}
+
+/**
  * The same, for a page that would rather draw something than nothing.
  *
  * The HR-01 screens are read-only summaries: if the API is unreachable, the

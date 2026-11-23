@@ -22,7 +22,8 @@ export interface HomeSummary {
   readonly fixedTerm: number;
   readonly joinedThisMonth: number;
   readonly leftThisMonth: number;
-  readonly documentsExpiring: { readonly value: number; readonly of?: number };
+  /** How many documents are inside their own kind's notice period (6.7). */
+  readonly documentsExpiring: { readonly value: number };
   readonly onboarding: number;
   readonly onboardingOverdue: number;
   readonly contractsEnding: number;

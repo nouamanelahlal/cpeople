@@ -97,18 +97,31 @@ export function EditField({
   note?: string;
   wide?: boolean;
 }): JSX.Element {
+  // A hint belongs beside the field, not inside its name: a label that reads
+  // "Phone the one payroll will call" is not a label anyone can ask for.
+  const noteId = note === undefined ? undefined : `${name}-note`;
+
   return (
-    <label className={`flex flex-col gap-1.5 ${wide ? 'col-span-full' : ''}`}>
-      <span className="text-xs font-semibold uppercase tracking-[0.04em] text-muted">{label}</span>
-      <input
-        type={type}
-        name={name}
-        defaultValue={defaultValue ?? ''}
-        required={required}
-        className="h-11 rounded-xl border border-field-border bg-white px-3.5 text-sm text-navy"
-      />
-      {note !== undefined && <span className="text-xs text-body">{note}</span>}
-    </label>
+    <div className={`flex flex-col gap-1.5 ${wide ? 'col-span-full' : ''}`}>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-semibold uppercase tracking-[0.04em] text-muted">
+          {label}
+        </span>
+        <input
+          type={type}
+          name={name}
+          defaultValue={defaultValue ?? ''}
+          required={required}
+          {...(noteId ? { 'aria-describedby': noteId } : {})}
+          className="h-11 rounded-xl border border-field-border bg-white px-3.5 text-sm text-navy"
+        />
+      </label>
+      {note !== undefined && (
+        <p id={noteId} className="m-0 text-xs text-body">
+          {note}
+        </p>
+      )}
+    </div>
   );
 }
 

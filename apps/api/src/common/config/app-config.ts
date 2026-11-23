@@ -32,6 +32,26 @@ export interface AppConfig {
   readonly keycloakAudience: string;
 
   readonly port: number;
+
+  /** Where uploaded documents are kept (CLAUDE.md: S3-compatible storage). */
+  readonly storage: StorageConfig;
+}
+
+/**
+ * The object store's settings.
+ *
+ * A developer's checkout falls back to the local Docker stack, as it does for the
+ * database and the realm. A deployed environment passes its own, and the API
+ * refuses to start without them rather than quietly writing documents nowhere.
+ */
+export interface StorageConfig {
+  readonly endpoint: string;
+  readonly region: string;
+  readonly bucket: string;
+  readonly accessKeyId: string;
+  readonly secretAccessKey: string;
+  /** Local stacks have no DNS for buckets, and no bucket until something makes one. */
+  readonly createBucket: boolean;
 }
 
 const DEFAULT_PORT = 3100;
@@ -39,6 +59,15 @@ const DEFAULT_AUDIENCE = 'cpeople-api';
 
 /** The realm served by the local Docker stack (infra/docker/docker-compose.yml). */
 const LOCAL_DEV_ISSUER = 'http://localhost:8080/realms/cpeople';
+
+/** The object store in infra/docker/docker-compose.yml. */
+const LOCAL_DEV_STORAGE = {
+  endpoint: 'http://localhost:9000',
+  region: 'us-east-1',
+  bucket: 'cpeople-local',
+  accessKeyId: 'cpeople',
+  secretAccessKey: 'cpeople_dev',
+} as const;
 
 function flag(name: string, env: NodeJS.ProcessEnv): boolean {
   return env[name]?.trim() === 'true';
@@ -91,6 +120,36 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     keycloakIssuer: keycloakIssuer.replace(/\/$/, ''),
     keycloakAudience: env.KEYCLOAK_AUDIENCE?.trim() || DEFAULT_AUDIENCE,
     port,
+    storage: loadStorageConfig(env, localDev),
+  };
+}
+
+function loadStorageConfig(env: NodeJS.ProcessEnv, localDev: boolean): StorageConfig {
+  const endpoint = env.S3_ENDPOINT?.trim();
+  const bucket = env.S3_BUCKET?.trim();
+  const accessKeyId = env.S3_ACCESS_KEY_ID?.trim();
+  const secretAccessKey = env.S3_SECRET_ACCESS_KEY?.trim();
+
+  if (localDev && !endpoint) {
+    return { ...LOCAL_DEV_STORAGE, createBucket: true };
+  }
+
+  if (!endpoint || !bucket || !accessKeyId || !secretAccessKey) {
+    throw new Error(
+      'S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY must all be set. ' +
+        'Employee documents are kept in object storage, and an environment that cannot ' +
+        'reach it would accept uploads and lose them.',
+    );
+  }
+
+  return {
+    endpoint,
+    bucket,
+    accessKeyId,
+    secretAccessKey,
+    region: env.S3_REGION?.trim() || LOCAL_DEV_STORAGE.region,
+    // A deployed bucket is provisioned with the environment, not by the API.
+    createBucket: false,
   };
 }
 
@@ -105,6 +164,7 @@ export class AppConfigService implements AppConfig {
   readonly keycloakIssuer: string;
   readonly keycloakAudience: string;
   readonly port: number;
+  readonly storage: StorageConfig;
 
   constructor(config: AppConfig) {
     this.localDev = config.localDev;
@@ -112,5 +172,6 @@ export class AppConfigService implements AppConfig {
     this.keycloakIssuer = config.keycloakIssuer;
     this.keycloakAudience = config.keycloakAudience;
     this.port = config.port;
+    this.storage = config.storage;
   }
 }
