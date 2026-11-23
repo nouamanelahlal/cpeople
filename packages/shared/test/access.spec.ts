@@ -96,3 +96,17 @@ describe('HR-01 sensitive fields', () => {
     }
   });
 });
+
+describe('HR-01 settings', () => {
+  it('opens the settings screens to HR and administrators, and to nobody else', () => {
+    expect(can('admin', 'settings.view')).toBe(true);
+    expect(can('hr', 'settings.view')).toBe(true);
+    expect(can('manager', 'settings.view')).toBe(false);
+    expect(can('employee', 'settings.view')).toBe(false);
+
+    // Looking at the company and changing it are different things: HR reads the
+    // organisation, an administrator sets it up.
+    expect(can('hr', 'organisation.manage')).toBe(false);
+    expect(can('admin', 'organisation.manage')).toBe(true);
+  });
+});
