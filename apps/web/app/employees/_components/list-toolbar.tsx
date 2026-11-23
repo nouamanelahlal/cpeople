@@ -36,8 +36,17 @@ export function ListToolbar({
         <ViewChip view="contracts-ending" label={t.views.contractsEnding} search={search} />
 
         {isFiltered(search) && (
-          <a href="/employees" className="ms-auto text-[13px] font-semibold">
+          <a href="/employees" className="text-[13px] font-semibold">
             {t.clear}
+          </a>
+        )}
+
+        {list.mayCreate && (
+          <a
+            href="/employees/new"
+            className="ms-auto h-9 rounded-xl bg-blue px-4 py-2 text-[13px] font-semibold text-white no-underline transition-[background-color] duration-200 ease-out hover:bg-blue-hover"
+          >
+            {t.newEmployee}
           </a>
         )}
       </div>

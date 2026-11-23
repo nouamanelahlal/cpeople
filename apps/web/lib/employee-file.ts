@@ -97,6 +97,7 @@ export const TABS = [
   'family',
   'documents',
   'contracts',
+  'onboarding',
   'history',
 ] as const;
 export type Tab = (typeof TABS)[number];
@@ -152,4 +153,28 @@ export interface EmployeeDocuments {
   readonly types: readonly DocumentType[];
   readonly today: string;
   readonly mayUpload: boolean;
+}
+
+/** What has to happen before somebody starts (HR-01 spec 6.8). */
+export interface OnboardingTask {
+  readonly id: string;
+  readonly title: string;
+  readonly ownerRole: 'admin' | 'hr' | 'manager' | 'employee';
+  readonly dueDate: string;
+  readonly daysLeft: number;
+  readonly status: 'todo' | 'done';
+  readonly mandatory: boolean;
+  readonly doneAt?: string;
+  readonly doneBy?: string;
+  readonly mayTick: boolean;
+}
+
+export interface Onboarding {
+  readonly status: 'onboarding' | 'active' | 'left';
+  readonly hireDate: string;
+  readonly today: string;
+  readonly tasks: readonly OnboardingTask[];
+  readonly done: number;
+  readonly total: number;
+  readonly mayActivate: boolean;
 }

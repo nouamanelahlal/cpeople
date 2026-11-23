@@ -8,6 +8,7 @@ import {
   type AuditEvent,
   type EmployeeDocuments,
   type EmployeeFile,
+  type Onboarding,
   type Tab,
 } from '../../../lib/employee-file';
 import { formatter, type Formatter } from '../../../lib/format';
@@ -17,6 +18,7 @@ import { EditChoice, EditField, EditForm, EditGrid, EditSwitch } from './_compon
 import { FileHeader } from './_components/file-header';
 import { FieldList, Masked, Panel, Pill, type Field } from './_components/file-parts';
 import { HistoryList } from './_components/history-list';
+import { OnboardingTab } from './_components/onboarding-tab';
 import { UploadForm } from './_components/upload-form';
 
 const TIME_ZONE = 'Africa/Casablanca';
@@ -83,6 +85,11 @@ export default async function EmployeeFilePage({
       ? await apiGetOrNull<EmployeeDocuments>(`/employees/${id}/documents`)
       : null;
 
+  // What has to happen before this person starts. Only asked for on its own
+  // tab: most files are not being onboarded.
+  const onboarding =
+    tab === 'onboarding' ? await apiGetOrNull<Onboarding>(`/employees/${id}/onboarding`) : null;
+
   const uploading = tab === 'documents' && asking && (documents?.mayUpload ?? false);
   const editing = (mayEdit && asking && editable && tab !== 'documents') || uploading;
 
@@ -133,7 +140,14 @@ export default async function EmployeeFilePage({
       ) : editing ? (
         <EditTab file={file} tab={tab} f={f} />
       ) : (
-        <ReadTab file={file} tab={tab} history={history} documents={documents} f={f} />
+        <ReadTab
+          file={file}
+          tab={tab}
+          history={history}
+          documents={documents}
+          onboarding={onboarding}
+          f={f}
+        />
       )}
     </AppPage>
   );
@@ -148,6 +162,22 @@ function Notice({
   t: Messages;
 }): JSX.Element | null {
   const error = one(query['error']);
+
+  if (one(query['created']) === '1') {
+    return (
+      <p className="m-0 rounded-2xl border border-success-border bg-success-bg px-4 py-3 text-sm text-success-ink">
+        {t.hire.created.replace('{name}', '')}
+      </p>
+    );
+  }
+
+  if (one(query['activated']) === '1') {
+    return (
+      <p className="m-0 rounded-2xl border border-success-border bg-success-bg px-4 py-3 text-sm text-success-ink">
+        {t.onboarding.activateNote}
+      </p>
+    );
+  }
 
   if (one(query['saved']) === '1') {
     return (
@@ -270,12 +300,14 @@ function ReadTab({
   tab,
   history,
   documents,
+  onboarding,
   f,
 }: {
   file: EmployeeFile;
   tab: Tab;
   history: readonly AuditEvent[];
   documents: EmployeeDocuments | null;
+  onboarding: Onboarding | null;
   f: Formatter;
 }): JSX.Element {
   const t = f.t.employeeFile;
@@ -327,6 +359,32 @@ function ReadTab({
       return (
         <Panel title={t.tabs.contracts}>
           <Contracts file={file} f={f} />
+        </Panel>
+      );
+
+    case 'onboarding':
+      return (
+        <Panel
+          title={f.t.onboarding.title}
+          note={
+            onboarding === null
+              ? undefined
+              : f.plain(f.t.onboarding.note, {
+                  name: file.firstName,
+                  date: f.dateMedium(onboarding.hireDate),
+                })
+          }
+        >
+          {onboarding === null ? (
+            <p className="m-0 text-sm text-body">{t.unavailable}</p>
+          ) : (
+            <OnboardingTab
+              data={onboarding}
+              employeeId={file.id}
+              name={`${file.firstName} ${file.lastName}`}
+              f={f}
+            />
+          )}
         </Panel>
       );
 

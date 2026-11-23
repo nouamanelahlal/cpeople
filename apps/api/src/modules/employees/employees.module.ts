@@ -8,11 +8,19 @@ import { DocumentsService } from './documents.service.js';
 import { EmployeeFileService } from './employee-file.service.js';
 import { EmployeesController } from './employees.controller.js';
 import { EmployeesService } from './employees.service.js';
+import { HireService } from './hire.service.js';
+import { OnboardingService } from './onboarding.service.js';
 
 /** The employee file (M03 / HR-01): the list first, the file itself next. */
 @Module({
   imports: [AccessModule, AuditModule, PrismaModule, StorageModule],
   controllers: [EmployeesController, DocumentsController],
-  providers: [EmployeesService, EmployeeFileService, DocumentsService],
+  providers: [
+    EmployeesService,
+    EmployeeFileService,
+    DocumentsService,
+    HireService,
+    OnboardingService,
+  ],
 })
 export class EmployeesModule {}

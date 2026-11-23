@@ -107,6 +107,31 @@ export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
   return (await response.json()) as T;
 }
 
+/** Creates something, as the person reading the page. Never retried. */
+export async function apiPost<T>(path: string, body: unknown): Promise<T> {
+  const session = await getSession();
+  if (!session) {
+    throw new ApiError(401, path, 'nobody is signed in');
+  }
+
+  const response = await fetch(`${API_URL}${path}`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${session.accessToken}`,
+      accept: 'application/json',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(body),
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    throw new ApiError(response.status, path, await response.text().catch(() => ''));
+  }
+
+  return (await response.json()) as T;
+}
+
 /**
  * Sends something that is not JSON, or nothing at all: an upload, a deletion.
  *
