@@ -204,6 +204,30 @@ not be one another test needs to sign in with.
 
 `e2e/support/sign-in.ts` turns the first into a six-digit code the same way an app would.
 
+## Demo mode, for a workshop
+
+A client workshop runs four browser windows side by side, and the code step then means
+four phones and a stopwatch. There is a switch for it, and it changes the realm running
+on this machine — never a file, and never anything but localhost:
+
+```
+pnpm demo:prepare   # before the workshop
+pnpm demo:restore   # the same day, afterwards
+```
+
+`prepare` takes the `mfa-required` composite off `platform-admin`, `hr-admin` and
+`payroll-manager`, and stretches `ssoSessionIdleTimeout` from 30 minutes to four hours so
+no window signs itself out mid-meeting. `restore` puts both back. The flow, the theme and
+the `mfa-required` role itself are untouched: the conditional step is still in the browser
+flow, and it still runs for anyone holding the role.
+
+While demo mode is on, the two end-to-end tests that are *about* the code step skip
+themselves and say why — `twoStepSignInIsOn()` in `e2e/support/sign-in.ts` asks the realm
+rather than assuming. `pnpm demo:check` prints which state the realm is in.
+
+The script refuses to run without `CPEOPLE_LOCAL_DEV=true` or against a Keycloak that is
+not on localhost. Switching off two-step sign-in is a thing you do to a laptop.
+
 ## Deploying this realm
 
 Dev, Test and Prod import `import/` and nothing else — the fake users are not theirs to have —
