@@ -12,7 +12,9 @@ import {
   type Tab,
 } from '../../../lib/employee-file';
 import { formatter, type Formatter } from '../../../lib/format';
+import type { BalanceHistoryRow, BalanceStatement } from '../../../lib/leave';
 import { AppPage, appContext } from '../../_shell/app-page';
+import { AbsencesTab } from './_components/absences-tab';
 import { DocumentsTab } from './_components/documents-tab';
 import { EditChoice, EditField, EditForm, EditGrid, EditSwitch } from './_components/edit-form';
 import { FileHeader } from './_components/file-header';
@@ -70,7 +72,7 @@ export default async function EmployeeFilePage({
   }
 
   const mayEdit = file.can.edit || file.can.editOwnContact;
-  const editable = tab !== 'history' && tab !== 'contracts';
+  const editable = tab !== 'history' && tab !== 'contracts' && tab !== 'absences';
   const asking = one(query['edit']) === '1';
 
   const history =
@@ -89,6 +91,16 @@ export default async function EmployeeFilePage({
   // tab: most files are not being onboarded.
   const onboarding =
     tab === 'onboarding' ? await apiGetOrNull<Onboarding>(`/employees/${id}/onboarding`) : null;
+
+  // The balance and everything that moved it. Two calls, on their own tab,
+  // because a balance costs a calculation per leave type.
+  const [balance, balanceHistory] =
+    tab === 'absences'
+      ? await Promise.all([
+          apiGetOrNull<BalanceStatement>(`/leave/balances/employee/${id}`),
+          apiGetOrNull<BalanceHistoryRow[]>(`/leave/balances/employee/${id}/history`),
+        ])
+      : [null, null];
 
   const uploading = tab === 'documents' && asking && (documents?.mayUpload ?? false);
   const editing = (mayEdit && asking && editable && tab !== 'documents') || uploading;
@@ -143,6 +155,8 @@ export default async function EmployeeFilePage({
         <ReadTab
           file={file}
           tab={tab}
+          balance={balance}
+          balanceHistory={balanceHistory ?? []}
           history={history}
           documents={documents}
           onboarding={onboarding}
@@ -301,6 +315,8 @@ function ReadTab({
   history,
   documents,
   onboarding,
+  balance,
+  balanceHistory,
   f,
 }: {
   file: EmployeeFile;
@@ -308,6 +324,8 @@ function ReadTab({
   history: readonly AuditEvent[];
   documents: EmployeeDocuments | null;
   onboarding: Onboarding | null;
+  balance: BalanceStatement | null;
+  balanceHistory: readonly BalanceHistoryRow[];
   f: Formatter;
 }): JSX.Element {
   const t = f.t.employeeFile;
@@ -385,6 +403,19 @@ function ReadTab({
               f={f}
             />
           )}
+        </Panel>
+      );
+
+    case 'absences':
+      return (
+        <Panel title={t.tabs.absences} note={f.t.leave.balances.note}>
+          <AbsencesTab
+            statement={balance}
+            history={balanceHistory}
+            employeeId={file.id}
+            mayAdjust={file.can.edit}
+            f={f}
+          />
         </Panel>
       );
 

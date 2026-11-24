@@ -65,6 +65,10 @@ name. Each extra step is a day or two of waiting for the employee.
 | **Where it is set** | Settings → Leave → **Types**, one switch per type. |
 | **Still open** | Whether length should also trigger it — for example, any absence over ten working days. The system does not look at length today; adding it is a rule, not a rebuild. |
 
+> **Confirmed by ConSAP on 23 November 2026:** unpaid and exceptional leave need
+> N+2. It stays a per-type switch all the same, so SMG can change it at the
+> workshop without waiting for a release.
+
 ---
 
 ## 3. The working week, and weekend work
@@ -101,6 +105,10 @@ means a payroll that has been approved can still change underneath it.
 | **Default** | 30 days for sick leave, 0 days for everything else — annual leave is asked for in advance or not at all. |
 | **Where it is set** | Settings → Leave → **Rules**, `maxBackdateDays`, per type and effective-dated. |
 | **Still open** | Whether anything may be backdated into a payroll month that is already locked. Today nothing stops it, because payroll locking is HR-03's. **This needs an answer before the two modules meet.** |
+
+> **Confirmed by ConSAP on 23 November 2026:** sick leave may be dated back
+> 30 days; everything else, not at all. Effective-dated per type, so a different
+> answer from SMG is a new rule row rather than a change to the code.
 
 ---
 
@@ -189,6 +197,117 @@ out, lost, or carried to a final payslip?
 
 ---
 
+## 11. An approver who is away
+
+**Question.** When the person who should approve a request is on leave
+themselves — or has left — who decides?
+
+**Why it matters.** Requests stop. A manager away for a fortnight in August is
+exactly when their team books time off, and a request nobody can approve is a
+request the employee cannot plan around.
+
+| | |
+|---|---|
+| **Default** | Nothing automatic. HR can decide any request in place of the line manager; it is recorded as an **HR decision with a reason** and shown on the request, so stepping in is visible rather than invisible. Where a request has nobody to approve it at all — the general manager's own leave, or an employee with no manager on file — it goes to HR from the start. |
+| **Where it is set** | Settings → Leave → **Policy**, for the address HR notices are sent to. The override itself is not a setting: it is who HR are. |
+| **Still open** | Whether SMG wants real **delegation** — "while I am away, Mouad approves for me", with a start and an end date — or whether HR stepping in is enough. Delegation is deliberately **not built**: it is a week of work and a new way for a request to reach the wrong person, and we would rather hear the answer first. |
+
+---
+
+## 12. Who HR notices go to
+
+**Question.** Which address should requests with no line manager be sent to?
+
+| | |
+|---|---|
+| **Default** | One address per company, seeded as the demo's HR account. A team address rather than a person, so that it survives somebody leaving. |
+| **Where it is set** | Settings → Leave → **Policy**. |
+| **Still open** | Whether more than one person should be told, and whether a request sitting unanswered for a few days should chase somebody. Nothing chases anybody today. |
+
+---
+
+## 13. When a holiday or a rule changes under a request
+
+**Question.** Who should be told, and who decides, when a change to the calendar
+or to a rule moves the number of days an existing request costs?
+
+**Why it matters.** This is the one place where an administrator editing a
+setting could quietly change what somebody is paid.
+
+| | |
+|---|---|
+| **Default** | Requests still waiting for a decision are **counted again at once**, and the person who asked and the person deciding are both told — the request shows what it was and what it has become. Requests that are already **approved are not touched**: they keep what was agreed and appear on HR's **"to review"** list with both numbers, and the balance only moves when HR accepts the difference, which is audited. |
+| **Where it is set** | Not a setting — it is how the flow works. Leave → **To review** (HR only). |
+| **Still open** | Nothing in the flow itself. What happens to a **closed payroll month** is settled below. |
+
+> **Default, to be confirmed by the payroll expert** (chosen by ConSAP on
+> 24 November 2026): **a closed payroll month is never reopened.** When a change
+> to leave falls inside one, the difference is written down as a **correction
+> record** against the next open month, carrying the employee, the original
+> month, the leave type, the day difference, whether the days are paid, a link
+> back to the request and the reason. The payroll engine reads these when it
+> arrives (M10).
+>
+> A request straddling a closed December and an open January is split: the
+> December days become a correction, the January days simply change.
+>
+> **What this needs from the expert:** whether a correction should be paid in
+> the next month at the next month's rate, or at the rate of the month it came
+> from; and whether an unpaid-leave correction behaves the same way as a paid
+> one. Both change the payslip and neither changes this record.
+>
+> Built as `leave_correction`, with a minimal `payroll_period` table
+> (month, open or locked) seeded with October 2026 locked and November 2026
+> open. **HR-03 takes that table over** and gives it the rest of what a payroll
+> period is.
+
+---
+
+## 14. "The holidays for this year are finished"
+
+**Question.** Who says that a year's public holiday list is complete, and by
+when each year?
+
+**Why it matters.** The moveable religious holidays are announced each year, so
+a list can be entirely correct in March and still be missing three days. Until
+somebody says a year is finished, every request falling in it is counted on an
+incomplete calendar.
+
+| | |
+|---|---|
+| **Default** | A per-year switch, off until an administrator turns it on. While it is off, every request touching that year warns the requester, the approver **and** HR that the day count may still change. 2026 is seeded as complete and 2027 is not, which is what the demo shows. |
+| **Where it is set** | Settings → Leave → **Public holidays** → "Holidays complete for {year}". |
+| **Still open** | Who at SMG owns this each year, and whether we should refuse to approve leave in a year that is not finished rather than only warning. Today it only warns. |
+
+---
+
+## 15. What happens to days left at the end of the year
+
+**Question.** For each leave type: does everything left carry into the new year,
+does some of it, or is it lost? And how long do carried days last?
+
+**Why it matters.** It is the one rule that can quietly take days away from
+everybody at once, on a date nobody is watching.
+
+| | |
+|---|---|
+| **Default** | Annual leave carries **up to the limit on its rule** (18 days today, itself a demo value), and carried days **run out six months into the new year**. Every other type carries nothing. All of it is demo data, marked "to be confirmed" on the Rules tab. |
+| **Where it is set** | Settings → Leave → **Rules**, per type and effective-dated: `carryOverMode` (everything / up to a limit / nothing), `carryOverMaxDays`, `carryOverExpiryMonths`. |
+| **Still open** | The three answers per type, and whether the expiry should be a number of months or a fixed date such as 31 March. A fixed date is a small change; it is not built because the question has not been asked yet. |
+
+**How it runs.** Year end is a batch over the whole company. It is **previewed
+before it is applied** — the preview does the same arithmetic and writes
+nothing — and it can be **run again safely**: one row per person per type per
+year, so a second pass replaces a figure rather than adding to it. A corrected
+rule or a late adjustment is fixed by running it again.
+
+> **Note for the build:** it runs inside the request that asks for it today,
+> which is fine for a few hundred people. When Redis and BullMQ arrive it
+> becomes a queued job; the shape — a run row, a preview, an idempotent apply —
+> is already what a worker would want.
+
+---
+
 ## Later, not now
 
 Noted so it is not forgotten, and deliberately out of HR-02:
@@ -201,5 +320,6 @@ Noted so it is not forgotten, and deliberately out of HR-02:
   in once, in one language, and shown to everybody — the seeded list is in
   English and reads as English on a French screen.
 - **Compensating rest and weekend premiums** — attendance and payroll, M10/M11.
-- **Carry-over expiry dates** — the rules hold a carry-over limit but not a date
-  by which carried days must be used.
+- **Attendance-driven accrual** — leave is earned per month worked today, with
+  the period itself a setting (monthly, quarterly, annual). Whether unpaid
+  absence should interrupt accrual is a question for M10.

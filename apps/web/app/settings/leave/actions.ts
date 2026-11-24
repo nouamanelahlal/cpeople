@@ -98,6 +98,21 @@ export async function confirmHolidayYear(formData: FormData): Promise<void> {
   back('holidays', { confirmed: '1', year });
 }
 
+/**
+ * "The holidays for this year are finished" (HR-02 spec, point 3).
+ *
+ * A different statement from confirming the rows that are already there: the
+ * moveable religious holidays are announced each year, so a list can be correct
+ * and still be missing three days.
+ */
+export async function setHolidayYearComplete(formData: FormData): Promise<void> {
+  const year = String(formData.get('year') ?? '');
+  const complete = formData.get('complete') !== null;
+
+  await send(() => apiPost(`/leave/settings/holidays/complete/${year}`, { complete }), 'holidays');
+  back('holidays', { saved: '1', year });
+}
+
 export async function saveLeavePolicy(formData: FormData): Promise<void> {
   const body = {
     teamOffWarningPercent: whole(formData.get('teamOffWarningPercent')) ?? 33,

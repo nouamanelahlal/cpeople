@@ -14,10 +14,12 @@
     "migrate:deploy": "cross-env CPEOPLE_LOCAL_DEV=true prisma migrate deploy && pnpm run local-role",
     "migrate:reset": "cross-env CPEOPLE_LOCAL_DEV=true prisma migrate reset && pnpm run local-role",
     "seed": "pnpm run build && cross-env CPEOPLE_LOCAL_DEV=true node dist/seed.js",
+    "seed:built": "cross-env CPEOPLE_LOCAL_DEV=true node dist/seed.js",
     "test": "prisma generate && cross-env CPEOPLE_LOCAL_DEV=true vitest run",
     "local-role": "cross-env CPEOPLE_LOCAL_DEV=true node scripts/local-dev-role.mjs"
   },
   "dependencies": {
+    "@cpeople/shared": "workspace:^",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1"
   },

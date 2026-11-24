@@ -123,6 +123,12 @@ export class LeavePolicyDto {
 
   @ApiPropertyOptional()
   note?: string;
+
+  @ApiPropertyOptional({
+    example: 'rh@smg.ma',
+    description: 'Where a request with nobody to approve it is sent',
+  })
+  hrEmail?: string;
 }
 
 /** Everything the leave set-up screen draws, in one answer. */
@@ -141,6 +147,14 @@ export class LeaveSettingsDto {
 
   @ApiProperty({ example: 2026 })
   year!: number;
+
+  @ApiProperty({
+    description: 'Whether somebody has said this year’s holiday list is finished',
+  })
+  yearComplete!: boolean;
+
+  @ApiProperty({ example: [2026], description: 'Years marked finished' })
+  completeYears!: number[];
 
   @ApiProperty({ type: LeavePolicyDto })
   policy!: LeavePolicyDto;
@@ -248,4 +262,7 @@ export class LeavePolicyEditDto {
 
   @ApiPropertyOptional({ example: '01-01' })
   leaveYearStart?: string;
+
+  @ApiPropertyOptional({ example: 'rh@smg.ma' })
+  hrEmail?: string;
 }

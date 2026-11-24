@@ -75,6 +75,18 @@ export class LeaveSettingsController {
     return this.settings.confirmYear(Number.parseInt(year, 10));
   }
 
+  @Post('holidays/complete/:year')
+  @ApiOperation({
+    summary: 'Marks a year’s holidays as finished, or reopens it (HR-02 spec, point 3)',
+  })
+  @ApiOkResponse({ type: LeaveSettingsDto })
+  setYearComplete(
+    @Param('year') year: string,
+    @Body() body: { complete?: boolean },
+  ): Promise<LeaveSettingsDto> {
+    return this.settings.setHolidayYearComplete(Number.parseInt(year, 10), body.complete !== false);
+  }
+
   @Patch('policy')
   @ApiOperation({ summary: 'The company-wide leave decisions' })
   @ApiOkResponse({ type: LeaveSettingsDto })

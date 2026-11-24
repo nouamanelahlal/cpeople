@@ -20,6 +20,7 @@
     "@nestjs/platform-express": "^12.5.1",
     "@nestjs/swagger": "^12.1.2",
     "jose": "^6.2.18",
+    "nodemailer": "^10.6.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
@@ -31,6 +32,7 @@
     "@types/express": "^5.0.0",
     "@types/multer": "^2.3.0",
     "@types/node": "^24.19.2",
+    "@types/nodemailer": "^8.0.2",
     "cross-env": "^10.1.0",
     "typescript": "~6.0.3",
     "unplugin-swc": "^2.0.0",

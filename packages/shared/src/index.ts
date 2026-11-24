@@ -20,6 +20,7 @@ export {
 } from './documents.js';
 export type { DocumentState } from './documents.js';
 export {
+  daysByMonth,
   formatLeaveDays,
   halfDayAllowed,
   leaveDays,
@@ -28,6 +29,31 @@ export {
   weekday,
 } from './leave-days.js';
 export type { DayBasis, DayPart, LeaveCalendar, LeaveDay, LeaveSpan } from './leave-days.js';
+export {
+  afterFirstApproval,
+  approvalChain,
+  awaiting,
+  BLOCKING_STATUSES,
+  CLOSED_STATUSES,
+  isBlocking,
+  isPending,
+  occupiedHalves,
+  PENDING_STATUSES,
+  spansClash,
+  yearsOf,
+} from './leave-approval.js';
+export type { ApprovalChain, LeaveStatus } from './leave-approval.js';
+export {
+  ACCRUAL_PERIODS,
+  accruedDays,
+  balance,
+  carryOver,
+  periodsEarned,
+  round as roundDays,
+  toAccrualPeriod,
+  wholeMonthsBetween,
+} from './leave-balance.js';
+export type { AccrualPeriod, Balance, BalanceInput } from './leave-balance.js';
 export { CURRENCY, DEFAULT_LOCALE, LOCALES, intlLocale, toLocale } from './locale.js';
 export { frenchNumberWords } from './number-words-fr.js';
 export type { Locale } from './locale.js';

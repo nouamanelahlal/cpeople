@@ -98,6 +98,7 @@ export const TABS = [
   'documents',
   'contracts',
   'onboarding',
+  'absences',
   'history',
 ] as const;
 export type Tab = (typeof TABS)[number];

@@ -142,3 +142,32 @@ export function weekday(date: string): number {
 function isPlainDate(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
+
+/**
+ * The days of a request, split by the month they fall in (M09 / M10).
+ *
+ * Payroll is paid a month at a time, so leave that runs from 28 December to
+ * 4 January is not "five days in January": it is some days in one payroll month
+ * and some in another, and the split has to come from the same per-day detail
+ * that produced the total. Counting it any other way is how a payslip and a
+ * leave screen come to disagree.
+ *
+ * Keyed "2026-12", because a payroll month has no day.
+ */
+export function daysByMonth(days: readonly LeaveDay[]): Record<string, number> {
+  const months: Record<string, number> = {};
+
+  for (const day of days) {
+    if (day.days === 0) continue;
+
+    const month = day.date.slice(0, 7);
+    months[month] = (months[month] ?? 0) + day.days;
+  }
+
+  // Halves only, per month, for the same reason the total is.
+  for (const month of Object.keys(months)) {
+    months[month] = Math.round((months[month] as number) * 2) / 2;
+  }
+
+  return months;
+}

@@ -76,6 +76,11 @@ describe('M02 the realm must be configured before the API starts', () => {
     S3_ACCESS_KEY_ID: 'key',
     S3_SECRET_ACCESS_KEY: 'secret',
     GOTENBERG_URL: 'https://documents.cpeople.ma',
+    // Notices about leave have to be able to leave the building: an approval
+    // nobody was told about is a request still sitting in somebody's inbox.
+    MAIL_HOST: 'smtp.cpeople.ma',
+    MAIL_FROM: 'CPeople <no-reply@cpeople.ma>',
+    APP_URL: 'https://app.cpeople.ma',
   };
 
   it('refuses to start in a deployed environment with no issuer', () => {

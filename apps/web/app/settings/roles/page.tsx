@@ -168,6 +168,24 @@ function matrix(t: Messages): { label: string; note?: string; answer: (role: Rol
             ? 'team'
             : 'no',
     },
+    { label: rows.leaveAsk, answer: (role) => yesNo(role, 'leave.request.own') },
+    {
+      label: rows.leaveApprove,
+      answer: (role) =>
+        can(role, 'leave.manage.all') ? 'all' : can(role, 'leave.approve') ? 'team' : 'no',
+    },
+    { label: rows.leaveAll, answer: (role) => yesNo(role, 'leave.manage.all') },
+    {
+      label: rows.leaveBalances,
+      answer: (role) =>
+        can(role, 'employee.list.all')
+          ? 'all'
+          : can(role, 'employee.list.team')
+            ? 'team'
+            : can(role, 'leave.request.own')
+              ? 'own'
+              : 'no',
+    },
     {
       label: rows.organisation,
       answer: (role) =>

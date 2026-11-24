@@ -3,6 +3,7 @@ import type { Prisma } from '@cpeople/db';
 import { CurrentUserService, type CurrentUser } from '../../common/access/current-user.service.js';
 import { AuditService, type AuditDiffEntry } from '../../common/audit/audit.service.js';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
+import { LeaveReviewService } from './leave-review.service.js';
 import { demoToday, plainDate } from '../../common/time/clock.js';
 import type {
   HolidayCreateDto,
@@ -39,6 +40,7 @@ export class LeaveSettingsService {
     private readonly prisma: PrismaService,
     private readonly users: CurrentUserService,
     private readonly audit: AuditService,
+    private readonly review: LeaveReviewService,
   ) {}
 
   async read(year?: number): Promise<LeaveSettingsDto> {
@@ -52,7 +54,7 @@ export class LeaveSettingsService {
     const asked = Number.isFinite(year) ? Number(year) : Number(today.slice(0, 4));
 
     return this.prisma.forTenant(user.tenantId, async (tx) => {
-      const [types, workWeeks, holidays, allHolidays, policy] = await Promise.all([
+      const [types, workWeeks, holidays, allHolidays, policy, completeYears] = await Promise.all([
         tx.leaveType.findMany({
           orderBy: { sortOrder: 'asc' },
           include: { rules: { orderBy: { effectiveFrom: 'desc' } } },
@@ -72,6 +74,7 @@ export class LeaveSettingsService {
         }),
         tx.publicHoliday.findMany({ select: { date: true } }),
         tx.leaveSettings.findFirst(),
+        tx.publicHolidayYear.findMany({ where: { complete: true }, select: { year: true } }),
       ]);
 
       // One row per site: the one in force today, which is the newest that has
@@ -125,10 +128,13 @@ export class LeaveSettingsService {
           ...new Set(allHolidays.map((holiday) => Number(plainDate(holiday.date).slice(0, 4)))),
         ].sort(),
         year: asked,
+        yearComplete: completeYears.some((row) => row.year === asked),
+        completeYears: completeYears.map((row) => row.year).sort(),
         policy: {
           teamOffWarningPercent: policy?.teamOffWarningPercent ?? DEFAULT_POLICY.teamOffWarningPercent,
           leaveYearStart: policy?.leaveYearStart ?? DEFAULT_POLICY.leaveYearStart,
           ...(policy?.note ? { note: policy.note } : {}),
+          ...(policy?.hrEmail ? { hrEmail: policy.hrEmail } : {}),
         },
         today,
         mayManage: this.users.may(user, 'leave.settings.manage'),
@@ -266,6 +272,12 @@ export class LeaveSettingsService {
       });
     });
 
+    // A rule, a working week or a holiday has moved under the requests already
+    // on file. The pending ones are counted again here and their people told;
+    // the approved ones are left exactly as agreed and appear on HR's "to
+    // review" list instead (HR-02 spec, point 2).
+    await this.review.recalculatePending(user);
+
     return this.read();
   }
 
@@ -328,6 +340,12 @@ export class LeaveSettingsService {
       });
     });
 
+    // A rule, a working week or a holiday has moved under the requests already
+    // on file. The pending ones are counted again here and their people told;
+    // the approved ones are left exactly as agreed and appear on HR's "to
+    // review" list instead (HR-02 spec, point 2).
+    await this.review.recalculatePending(user);
+
     return this.read();
   }
 
@@ -368,6 +386,12 @@ export class LeaveSettingsService {
       });
     });
 
+    // A rule, a working week or a holiday has moved under the requests already
+    // on file. The pending ones are counted again here and their people told;
+    // the approved ones are left exactly as agreed and appear on HR's "to
+    // review" list instead (HR-02 spec, point 2).
+    await this.review.recalculatePending(user);
+
     return this.read(Number(on.slice(0, 4)));
   }
 
@@ -392,6 +416,12 @@ export class LeaveSettingsService {
         diff: [{ field: 'date', from: plainDate(holiday.date), to: '' }],
       });
     });
+
+    // A rule, a working week or a holiday has moved under the requests already
+    // on file. The pending ones are counted again here and their people told;
+    // the approved ones are left exactly as agreed and appear on HR's "to
+    // review" list instead (HR-02 spec, point 2).
+    await this.review.recalculatePending(user);
 
     return this.read(year);
   }
@@ -428,6 +458,60 @@ export class LeaveSettingsService {
     return this.read(year);
   }
 
+  /**
+   * "The holidays for this year are finished" (HR-02 spec, point 3).
+   *
+   * A different statement from confirming the rows that are there. Several
+   * Moroccan holidays move with the lunar calendar and are announced each year,
+   * so a list can be entirely correct and still be missing three days nobody has
+   * been told about yet. Until an administrator says a year is complete, every
+   * request falling in it warns the requester, the approver and HR that the
+   * count may still move.
+   */
+  async setHolidayYearComplete(year: number, complete: boolean): Promise<LeaveSettingsDto> {
+    const user = await this.#mayManage();
+
+    if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+      throw new BadRequestException('That is not a year.');
+    }
+
+    await this.prisma.forTenant(user.tenantId, async (tx) => {
+      const tenant = await tx.tenant.findFirstOrThrow({ select: { countryCode: true } });
+
+      await tx.publicHolidayYear.upsert({
+        where: {
+          tenantId_countryCode_year: {
+            tenantId: user.tenantId,
+            countryCode: tenant.countryCode,
+            year,
+          },
+        },
+        create: {
+          tenantId: user.tenantId,
+          countryCode: tenant.countryCode,
+          year,
+          complete,
+          ...(complete ? { completedAt: new Date(), completedBy: user.name } : {}),
+        },
+        update: {
+          complete,
+          ...(complete
+            ? { completedAt: new Date(), completedBy: user.name }
+            : { completedAt: null, completedBy: null }),
+        },
+      });
+
+      await this.audit.record(tx, user, {
+        action: complete ? 'leave.holidayYearComplete' : 'leave.holidayYearReopened',
+        entity: 'publicHolidayYear',
+        summary: String(year),
+        diff: [{ field: 'complete', from: String(!complete), to: String(complete) }],
+      });
+    });
+
+    return this.read(year);
+  }
+
   /** The company-wide decisions: the warning threshold and the leave year. */
   async setPolicy(body: LeavePolicyEditDto): Promise<LeaveSettingsDto> {
     const user = await this.#mayManage();
@@ -446,14 +530,17 @@ export class LeaveSettingsService {
         throw new BadRequestException('The leave year starts on a day and a month, as MM-DD.');
       }
 
+      const hrEmail = body.hrEmail === undefined ? before?.hrEmail ?? null : body.hrEmail.trim() || null;
+
       await tx.leaveSettings.upsert({
         where: { tenantId: user.tenantId },
         create: {
           tenantId: user.tenantId,
           teamOffWarningPercent: percent,
           leaveYearStart: yearStart,
+          hrEmail,
         },
-        update: { teamOffWarningPercent: percent, leaveYearStart: yearStart },
+        update: { teamOffWarningPercent: percent, leaveYearStart: yearStart, hrEmail },
       });
 
       await this.audit.record(tx, user, {
