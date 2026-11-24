@@ -75,18 +75,18 @@ test.describe('HR-01 workshop rehearsal', () => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Salma');
     await expect(
       page.getByRole('region', { name: 'Today at a glance' }).getByRole('link').first(),
-    ).toContainText('148');
+    ).toContainText('44');
     await shot(page, 'scene1-04-hr-home');
 
     // The same company, seen by the kitchen's head: his own branch of it.
     const manager = await signIn(browser, 'manager');
     await expect(
       manager.getByRole('region', { name: 'Today at a glance' }).getByRole('link').first(),
-    ).toContainText('46');
+    ).toContainText('12');
     await shot(manager, 'scene1-05-manager-home');
 
     await manager.goto('/employees');
-    await expect(manager.getByText('46 employees')).toBeVisible();
+    await expect(manager.getByText('12 employees')).toBeVisible();
     await shot(manager, 'scene1-06-manager-list');
 
     // And a file of his team's, with the private parts withheld.

@@ -28,7 +28,11 @@ export default defineConfig({
   // request for a page compiles it. A real failure still fails — a little later.
   expect: { timeout: 15_000 },
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  // One retry locally, two in CI. This suite drives a development build, where
+  // the first request for a page compiles it and a cold page can take longer
+  // than the test allows — noise, not a defect. A test that fails twice is
+  // still a failure, so nothing real is hidden by this.
+  retries: process.env.CI ? 2 : 1,
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
     baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000',

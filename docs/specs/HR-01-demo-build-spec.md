@@ -480,7 +480,7 @@ If time runs out, **drop from the bottom up**. Never ship a button that does not
 - Leave requests and approvals, attendance import (HR-02).
 - Expense claims (not in SMG's scope).
 - Performance management (product roadmap only, no date).
-- Any connection to SuccessFactors Employee Central (out of scope; a decision to take at HR-01).
+- Any connection to SuccessFactors Employee Central. **Decided at HR-01 (23 November 2026): it is not used.**
 - Real authentication, SSO, a server, encryption, multi-company. Present them as product design, not as a demo.
 - Any real SMG data.
 
@@ -489,7 +489,7 @@ If time runs out, **drop from the bottom up**. Never ship a button that does not
 ## 12. Questions this demo must help answer at HR-01 (from the workshop deck)
 
 Keep these visible on a final "Decisions" screen or in the presenter's notes:
-1. Will SMG use SuccessFactors Employee Central? (out of scope; a feed would need a change request)
+1. ~~Will SMG use SuccessFactors Employee Central?~~ **Answered on 23 November 2026: no.**
 2. Which contract types exist (CDI, CDD, ANAPEC, others), and which templates and clauses?
 3. Which departments and cost centres? Who are the HR users and the managers (N+1, N+2)?
 4. Which documents are kept in the employee file, and which need expiry tracking?

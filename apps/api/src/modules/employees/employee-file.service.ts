@@ -10,6 +10,7 @@ import { CurrentUserService, type CurrentUser } from '../../common/access/curren
 import { visibleEmployeeIds } from '../../common/access/visible-employees.js';
 import { AuditService, type AuditDiffEntry } from '../../common/audit/audit.service.js';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
+import { TenantSettingsService } from '../../common/settings/tenant-settings.service.js';
 import { demoToday, plainDate } from '../../common/time/clock.js';
 import type {
   AuditEventDto,
@@ -55,6 +56,7 @@ export class EmployeeFileService {
     private readonly prisma: PrismaService,
     private readonly users: CurrentUserService,
     private readonly audit: AuditService,
+    private readonly settings: TenantSettingsService,
   ) {}
 
   async file(id: string): Promise<EmployeeFileDto> {
@@ -88,6 +90,13 @@ export class EmployeeFileService {
       const seeSensitive = this.users.maySeeSensitive(user, id);
       const ownFile = user.employeeId === id;
 
+      // Pay is the one sensitive field with a setting of its own: an employee
+      // reading their own file sees it only if SMG has switched it on, and when
+      // it is off the figure is not sent at all (HR-01 open point 2). Everything
+      // else sensitive follows the ordinary rule.
+      const settings = await this.settings.read(tx);
+      const seeSalary = seeSensitive && this.settings.maySeeSalary(user, id, settings);
+
       const contracts: ContractSummaryDto[] = row.contracts.map((contract) => ({
         id: contract.id,
         type: contract.contractType,
@@ -96,7 +105,7 @@ export class EmployeeFileService {
         ...(contract.endDate ? { endDate: plainDate(contract.endDate) } : {}),
         ...(contract.trialEndDate ? { trialEndDate: plainDate(contract.trialEndDate) } : {}),
         // The money on a contract is the same secret as the money on the file.
-        ...(seeSensitive
+        ...(seeSalary
           ? { salaryMinor: contract.salaryMinor, salaryCurrency: contract.salaryCurrency }
           : {}),
       }));
@@ -136,8 +145,9 @@ export class EmployeeFileService {
                 birthDate: plainDate(row.birthDate),
                 nationalId: row.nationalId,
                 ...(row.address ? { address: row.address } : {}),
-                baseSalaryMinor: row.baseSalaryMinor,
-                salaryCurrency: row.salaryCurrency,
+                ...(seeSalary
+                  ? { baseSalaryMinor: row.baseSalaryMinor, salaryCurrency: row.salaryCurrency }
+                  : {}),
                 ...(row.socialSecurityNumber
                   ? { socialSecurityNumber: row.socialSecurityNumber }
                   : {}),
@@ -152,7 +162,11 @@ export class EmployeeFileService {
               },
             }
           : {}),
-        masked: seeSensitive ? [] : [...SENSITIVE_FIELDS],
+        masked: seeSensitive
+          ? seeSalary
+            ? []
+            : ['baseSalaryMinor', 'salary']
+          : [...SENSITIVE_FIELDS],
         contracts,
         documentCount: row._count.documents,
         today,

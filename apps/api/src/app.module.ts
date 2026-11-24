@@ -2,6 +2,7 @@ import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/c
 import { AuthModule } from './common/auth/auth.module.js';
 import { ConfigModule } from './common/config/config.module.js';
 import { PrismaModule } from './common/prisma/prisma.module.js';
+import { SettingsModule } from './common/settings/settings.module.js';
 import { TenantMiddleware } from './common/tenant/tenant.middleware.js';
 import { TenantModule } from './common/tenant/tenant.module.js';
 import { AdministrationModule } from './modules/administration/administration.module.js';
@@ -21,6 +22,7 @@ import { TimeAbsenceModule } from './modules/time-absence/time-absence.module.js
     AuthModule,
     TenantModule,
     PrismaModule,
+    SettingsModule,
     HealthModule,
     AdministrationModule,
     ContractsModule,

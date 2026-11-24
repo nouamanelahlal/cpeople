@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import type { TenantClient } from '@cpeople/db';
 import {
+  addDays,
   balance as computeBalance,
   BLOCKING_STATUSES,
   PENDING_STATUSES,
@@ -383,8 +384,15 @@ export class LeaveBalanceService {
       accrualPerMonth: rule?.accrualPerMonth === null ? null : Number(rule?.accrualPerMonth ?? 0) || null,
       entitlementDays: rule?.entitlementDays === null ? null : Number(rule?.entitlementDays ?? 0) || null,
       accrualPeriod: input.accrualPeriod,
-      // Somebody hired in September has not earned a January entitlement.
-      accrueFrom: input.hireDate,
+      // Where the days are earned from. Two things can move it later than the
+      // start of the leave year, and both have to: somebody hired in September
+      // has not earned a January entitlement, and an opening balance "as at
+      // 1 November" already contains everything earned up to that day — accruing
+      // the whole year on top of it would pay for the same months twice.
+      accrueFrom: later(
+        input.hireDate,
+        opening ? addDays(plainDate(opening.balanceAt), 1) : year.from,
+      ),
       taken,
       pending,
       adjusted: adjustments.reduce((sum, row) => sum + Number(row.days), 0),
@@ -434,4 +442,9 @@ function round(value: number): number {
 
 function signed(value: number): string {
   return value > 0 ? `+${value}` : String(value);
+}
+
+/** The later of two plain dates. */
+function later(a: string, b: string): string {
+  return a > b ? a : b;
 }

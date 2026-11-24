@@ -35,11 +35,17 @@ export class SensitiveEmployeeDto {
   @ApiPropertyOptional({ example: '12 rue des Orangers, Casablanca' })
   address?: string;
 
-  @ApiProperty({ example: 650_000, description: 'Integer minor units (rule 4)' })
-  baseSalaryMinor!: number;
+  @ApiPropertyOptional({
+    example: 650_000,
+    description:
+      'Integer minor units (rule 4). Absent where the reader may not see pay: an ' +
+      'employee reading their own file sees it only while the company has the ' +
+      'setting on (HR-01 open point 2).',
+  })
+  baseSalaryMinor?: number;
 
-  @ApiProperty({ example: 'MAD' })
-  salaryCurrency!: string;
+  @ApiPropertyOptional({ example: 'MAD' })
+  salaryCurrency?: string;
 
   @ApiPropertyOptional({ example: '123456789', description: 'Morocco: the CNSS number' })
   socialSecurityNumber?: string;

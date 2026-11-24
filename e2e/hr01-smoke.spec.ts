@@ -41,21 +41,21 @@ test.describe('HR-01 demo smoke test', () => {
   // person within a second, and three of these share the authenticator step.
   test.describe.configure({ mode: 'serial' });
 
-  // 1. The demo's opening figures, as at the demo clock's 23 November 2026.
-  test('1 · home shows the seeded company: 148 people, 12 fixed terms, 5 documents expiring', async ({
+  // 1. The demo's opening figures, as at the demo clock's 24 November 2026.
+  test('1 · home shows the seeded company: 44 people, 6 fixed terms, 5 documents expiring', async ({
     browser,
   }) => {
     const page = await open(browser, 'hr');
 
-    await expect(page.getByText('Monday, 23 November 2026', { exact: false })).toBeVisible();
+    await expect(page.getByText('Tuesday, 24 November 2026', { exact: false })).toBeVisible();
 
     const glance = page.getByRole('region', { name: 'Today at a glance' });
-    await expect(glance.getByRole('link').first()).toContainText('148');
+    await expect(glance.getByRole('link').first()).toContainText('44');
     await expect(glance.getByRole('link').nth(3)).toContainText('5');
 
     // The fixed terms are counted beside the departments they are spread over.
     await expect(
-      page.getByText('148 employees, 12 on fixed-term contracts'),
+      page.getByText('44 employees, 6 on fixed-term contracts'),
     ).toBeVisible();
 
     // And the five documents are the five the list of what is waiting is made of.
@@ -103,9 +103,9 @@ test.describe('HR-01 demo smoke test', () => {
   }) => {
     const manager = await open(browser, 'manager');
     const headcount = manager.getByRole('region', { name: 'Today at a glance' }).getByRole('link').first();
-    // Rachid Kettani's branch is the kitchen: 46 of the 148, himself included.
-    await expect(headcount).toContainText('46');
-    await expect(headcount).not.toContainText('148');
+    // Rachid Kettani's branch is the kitchen: 12 of the 44, himself included.
+    await expect(headcount).toContainText('12');
+    await expect(headcount).not.toContainText('44');
     await manager.context().close();
 
     const employee = await open(browser, 'employee');
@@ -120,7 +120,7 @@ test.describe('HR-01 demo smoke test', () => {
     const page = await open(browser, 'hr', PHONE);
 
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    await expect(page.getByText('148 employees, 12 on fixed-term contracts')).toBeVisible();
+    await expect(page.getByText('44 employees, 6 on fixed-term contracts')).toBeVisible();
     // Nothing has pushed the page sideways, with the menu shut or open.
     const across = async () =>
       page.evaluate(

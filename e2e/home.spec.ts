@@ -31,9 +31,9 @@ const PHONE = { width: 390, height: 844 };
  * three times a day, so the local-dev clock cookie pins it (see lib/clock.ts). The
  * timezone is pinned with it, because "good morning" is about where the reader is.
  */
-const MORNING = '2026-11-23T09:40:00+01:00';
-const AFTERNOON = '2026-11-23T14:10:00+01:00';
-const EVENING = '2026-11-23T19:40:00+01:00';
+const MORNING = '2026-11-24T09:40:00+01:00';
+const AFTERNOON = '2026-11-24T14:10:00+01:00';
+const EVENING = '2026-11-24T19:40:00+01:00';
 
 /**
  * Signed in once, for the whole file.
@@ -96,7 +96,7 @@ test.describe('NEW home dashboard', () => {
       `Good morning, ${user.name.split(' ')[0]}`,
     );
     await expect(
-      page.getByText('Monday, 23 November 2026. November payroll is in review.'),
+      page.getByText('Tuesday, 24 November 2026. November payroll is in review.'),
     ).toBeVisible();
 
     // Their own name and role, from the token rather than from the sample data.
@@ -108,7 +108,7 @@ test.describe('NEW home dashboard', () => {
     // see: a payroll manager sees the company.
     const glance = page.getByRole('region', { name: 'Today at a glance' });
     await expect(glance.getByRole('link')).toHaveCount(4);
-    await expect(glance.getByRole('link').first()).toContainText('148');
+    await expect(glance.getByRole('link').first()).toContainText('44');
     await expect(glance.getByRole('link').nth(3)).toContainText('5');
 
     // And what is waiting is real: each row opens the file it belongs to.
@@ -120,7 +120,7 @@ test.describe('NEW home dashboard', () => {
     await expect(page.getByRole('heading', { name: 'November 2026 payroll' })).toBeVisible();
     await expect(page.getByText('MAD', { exact: false }).first()).toBeVisible();
     await expect(page.getByText('1,284,650.00')).toBeVisible();
-    await expect(page.getByText('Pay date in 7 days, on 30 November')).toBeVisible();
+    await expect(page.getByText('Pay date in 6 days, on 30 November')).toBeVisible();
 
     // Every panel the design asks for.
     await expect(page.getByRole('heading', { name: 'Waiting for you' })).toBeVisible();
@@ -171,7 +171,7 @@ test.describe('NEW home dashboard', () => {
     // month elides after "de".
     await expect(page.getByRole('heading', { name: 'Paie de novembre 2026' })).toBeVisible();
     await expect(page.getByText(/1\s?284\s?650,00/)).toBeVisible();
-    await expect(page.getByText('lundi 23 novembre 2026.', { exact: false })).toBeVisible();
+    await expect(page.getByText('mardi 24 novembre 2026.', { exact: false })).toBeVisible();
     await expect(page.getByText("Paie d'octobre", { exact: false })).toBeVisible();
     await expect(page.getByText('du 16 au 20 nov.').first()).toBeVisible();
   });

@@ -68,6 +68,7 @@ interface Labels {
   endRequired: string;
   trialNote: string;
   numberNote: string;
+  numberHint: string;
   addDependent: string;
   removeDependent: string;
   noDependents: string;
@@ -371,7 +372,7 @@ export function HireWizard({ options, t }: { options: Options; t: Labels }): JSX
             />
           </Field>
 
-          <Field label={t.fields.employeeNumber!}>
+          <Field label={t.fields.employeeNumber!} note={t.numberHint}>
             <input
               type="text"
               value={options.nextEmployeeNumber}

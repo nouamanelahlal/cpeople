@@ -76,11 +76,11 @@ test.describe('M09 leave balances', () => {
     // a trial run is that all of them come back at once.
     const file = [
       'employee_number,leave_type,days,balance_at,note',
-      'SMG-0003,ANNUAL,4,2025-12-31,Corrected opening balance',
-      'SMG-9999,ANNUAL,4,2025-12-31,Nobody has that number',
-      'SMG-0004,HOLIDAYS,4,2025-12-31,No such leave type',
-      'SMG-0005,ANNUAL,four,2025-12-31,Not a number',
-      'SMG-0006,ANNUAL,4,31/12/2025,Not a date',
+      '1003,ANNUAL,4,2026-10-31,Corrected opening balance',
+      '9999,ANNUAL,4,2026-10-31,Nobody has that number',
+      '1004,HOLIDAYS,4,2026-10-31,No such leave type',
+      '1005,ANNUAL,four,2026-10-31,Not a number',
+      '1006,ANNUAL,4,31/12/2025,Not a date',
     ].join('\n');
 
     await page.getByLabel('Paste the file here').fill(file);
@@ -109,7 +109,7 @@ test.describe('M09 leave balances', () => {
 
     const file = [
       'employee_number,leave_type,days,balance_at,note',
-      'SMG-0003,ANNUAL,9,2025-12-31,Corrected opening balance',
+      '1003,ANNUAL,9,2026-10-31,Corrected opening balance',
     ].join('\n');
 
     await page.getByLabel('Paste the file here').fill(file);

@@ -5,11 +5,12 @@ import { PrismaModule } from '../../common/prisma/prisma.module.js';
 import { AuditController } from './audit.controller.js';
 import { AuditReadService } from './audit.service.js';
 import { MeController } from './me.controller.js';
+import { SelfServiceController } from './self-service.controller.js';
 
 /** Who is signed in, and what the company has done (M20 / HR-01 section 6.11). */
 @Module({
   imports: [AccessModule, AuditModule, PrismaModule],
-  controllers: [MeController, AuditController],
+  controllers: [MeController, AuditController, SelfServiceController],
   providers: [AuditReadService],
 })
 export class AdministrationModule {}

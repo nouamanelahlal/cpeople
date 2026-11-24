@@ -66,6 +66,7 @@ model Tenant {
   balanceAdjustments LeaveBalanceAdjustment[]
   carryOvers         LeaveCarryOver[]
   carryOverRuns      LeaveCarryOverRun[]
+  settings           TenantSettings?
 
   @@map("tenant")
 }
@@ -1217,4 +1218,37 @@ model LeaveCarryOverRun {
   @@index([tenantId])
   @@index([tenantId, fromYear])
   @@map("leave_carry_over_run")
+}
+
+/// The company's own settings, outside leave (HR-02 build spec §1 and §7.1).
+///
+/// One row per tenant. Every field here is a decision SMG takes and changes
+/// themselves, which is why none of them is a constant in the code.
+model TenantSettings {
+  id       String @id @default(uuid(7)) @db.Uuid
+  tenantId String @unique @map("tenant_id") @db.Uuid
+
+  /// What an employee number must look like. Decision 2 of the HR-01 minutes
+  /// makes it the biometric device id, and the format is still open (open
+  /// point 4), so this is a **warning only**: a number that does not match is
+  /// flagged and still accepted.
+  employeeNumberPattern String @default("^\\d{1,10}$") @map("employee_number_pattern")
+
+  /// Whether an employee may see their own base salary (HR-01 open point 2).
+  /// When off, the API does not send it — it is not merely hidden on screen.
+  employeesSeeSalary Boolean @default(false) @map("employees_see_salary")
+
+  /// Whether colleagues' absences show which kind of leave they are.
+  showLeaveTypeToColleagues Boolean @default(false) @map("show_leave_type_to_colleagues")
+
+  /// Whether an employee may correct their own contact details.
+  employeesEditContact Boolean @default(true) @map("employees_edit_contact")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@map("tenant_settings")
 }

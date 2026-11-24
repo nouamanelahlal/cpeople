@@ -10,7 +10,7 @@ import { execFileSync } from 'node:child_process';
  *    whose token carries no tenant.
  *  - the demo data is re-seeded. The HR-01 tests hire people, sign contracts,
  *    renew fixed terms and upload documents — they are tests of a demo, and a
- *    demo is meant to be reset. Starting every run from the same 148 people is
+ *    demo is meant to be reset. Starting every run from the same 44 people is
  *    what lets them assert figures instead of observing them, and it is the
  *    spec's own first smoke-test step ("Reset demo data").
  */
