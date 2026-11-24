@@ -29,4 +29,33 @@ export interface HomeSummary {
   readonly contractsEnding: number;
   readonly departments: readonly { readonly code: string; readonly name: string; readonly count: number }[];
   readonly waiting: readonly HomeTask[];
+  /** Who is off this week, live from the leave requests (M09 / HR-04). */
+  readonly away: AwayThisWeek;
+  /** Leave requests waiting for this reader to act. */
+  readonly leaveRequests: number;
+  readonly leaveRequestsTab: 'approvals' | 'all';
+}
+
+export interface AwayDay {
+  readonly date: string;
+  readonly away: number;
+  readonly holiday: boolean;
+  readonly holidayName?: string;
+}
+
+export interface AwayPerson {
+  readonly id: string;
+  readonly name: string;
+  readonly department: string;
+  /** Absent unless the company lets colleagues see which kind of leave it is. */
+  readonly leaveTypeCode?: string;
+  readonly from: string;
+  readonly to: string;
+}
+
+export interface AwayThisWeek {
+  readonly days: readonly AwayDay[];
+  readonly people: readonly AwayPerson[];
+  readonly total: number;
+  readonly workingToday: number;
 }

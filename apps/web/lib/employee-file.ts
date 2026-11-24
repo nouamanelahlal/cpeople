@@ -18,7 +18,8 @@ export interface SensitiveEmployee {
   readonly birthDate: string;
   readonly nationalId: string;
   readonly address?: string;
-  readonly baseSalaryMinor: number;
+  /** Absent where the reader may not be told what somebody is paid. */
+  readonly baseSalaryMinor?: number;
   readonly salaryCurrency: string;
   readonly socialSecurityNumber?: string;
   readonly bankName?: string;

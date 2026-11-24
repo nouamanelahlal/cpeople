@@ -11,6 +11,8 @@ import {
   type LeaveRequest,
   type BalanceList,
   type BalanceStatement,
+  type CalendarCell,
+  type CalendarMonth,
   type LeaveReviewItem,
   type LeaveTab,
 } from '../../lib/leave';
@@ -77,6 +79,16 @@ export default async function LeavePage({
       : null;
 
   // Somebody's own balance, beside their own leave. One call, their own figures.
+  const calendar =
+    tab === 'calendar'
+      ? await apiGetOrNull<CalendarMonth>(
+          `/leave/calendar?${new URLSearchParams({
+            ...(one(query['month']) ? { month: one(query['month']) as string } : {}),
+            ...(department ? { department } : {}),
+          })}`,
+        )
+      : null;
+
   const mine =
     tab === 'mine' && list.mayRequest
       ? await apiGetOrNull<BalanceStatement>('/leave/balances/me')
@@ -122,6 +134,8 @@ export default async function LeavePage({
 
         {tab === 'review' ? (
           <Review items={review} f={f} />
+        ) : tab === 'calendar' ? (
+          <Calendar month={calendar} department={department} f={f} />
         ) : tab === 'balances' ? (
           <Balances list={balances} search={search} department={department} f={f} />
         ) : (
@@ -496,6 +510,7 @@ function Balances({
                   t.columns.opening,
                   t.columns.carried,
                   t.columns.accrued,
+                  t.columns.seniority,
                   t.columns.taken,
                   t.columns.pending,
                   t.columns.adjusted,
@@ -532,12 +547,22 @@ function Balances({
                           {statement.employee.number} · {statement.employee.department}
                         </span>
                       )}
+                      {/* Said where it is true: a right somebody has earned but
+                          cannot take yet is the question HR is asked about. */}
+                      {line.balance.usableFrom !== undefined && (
+                        <span className="block text-xs font-normal text-warning-ink">
+                          {f.plain(t.usableFrom, {
+                            date: f.dateMedium(line.balance.usableFrom),
+                          })}
+                        </span>
+                      )}
                     </th>
 
                     <td className="py-3 pe-4 text-body">{leaveTypeName(line.leaveType, f.t)}</td>
                     <Figure value={line.balance.opening} f={f} />
                     <Figure value={line.balance.carried} f={f} />
                     <Figure value={line.balance.accrued} f={f} />
+                    <Figure value={line.balance.seniority} f={f} />
                     <Figure value={line.balance.taken} f={f} />
                     <Figure value={line.balance.pending} f={f} />
                     <Figure value={line.balance.adjusted} f={f} signed />
@@ -577,6 +602,194 @@ function Figure({
 const QUIET = 'quiet-button h-11 border-button-border px-4 text-[13px] font-semibold text-navy';
 const QUIET_SMALL =
   'quiet-button h-9 border-button-border px-3 text-[13px] font-semibold text-navy no-underline';
+
+/**
+ * The month, as a grid (HR-02 build spec §4.3).
+ *
+ * One row per person, one column per day. Three things are drawn, and each one
+ * is drawn so that it survives being printed in black and white or read by
+ * somebody who cannot tell the colours apart:
+ *
+ *  - an **absence** is a letter — the leave type's initial, or a dot where the
+ *    reader is not being told which kind it is;
+ *  - a **pending** request is hatched rather than solid, because a plan is not
+ *    a fact;
+ *  - **rest days and public holidays** are shaded, because nobody being in on a
+ *    Sunday is not an absence.
+ */
+function Calendar({
+  month,
+  department,
+  f,
+}: {
+  month: CalendarMonth | null;
+  department: string;
+  f: Formatter;
+}): JSX.Element {
+  const t = f.t.leave.calendar;
+
+  if (month === null) {
+    return <p className="m-0 py-6 text-sm text-body">{f.t.leave.errors.unavailable}</p>;
+  }
+
+  return (
+    <section className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-lg font-semibold text-navy">{t.title}</h2>
+        <p className="m-0 max-w-prose text-[13px] text-body">
+          {month.showsType ? t.note : t.noteHidden}
+        </p>
+      </div>
+
+      <form method="get" action="/leave" className="flex flex-wrap items-end gap-3">
+        <input type="hidden" name="tab" value="calendar" />
+
+        <label className="flex flex-col gap-1.5">
+          <span className="text-xs font-semibold uppercase tracking-[0.04em] text-muted">
+            {t.month}
+          </span>
+          <input
+            type="month"
+            name="month"
+            defaultValue={month.month}
+            className="h-11 rounded-xl border border-field-border bg-white px-3.5 text-sm text-navy"
+          />
+        </label>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="text-xs font-semibold uppercase tracking-[0.04em] text-muted">
+            {f.t.leave.balances.department}
+          </span>
+          <select
+            name="department"
+            defaultValue={department}
+            className="h-11 rounded-xl border border-field-border bg-white px-3.5 text-sm text-navy"
+          >
+            <option value="">{f.t.leave.balances.anyDepartment}</option>
+            {month.departments.map((row) => (
+              <option key={row.code} value={row.code}>
+                {row.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <button
+          type="submit"
+          className="quiet-button h-11 border-button-border px-4 text-[13px] font-semibold text-navy"
+        >
+          {f.t.leave.balances.apply}
+        </button>
+      </form>
+
+      {month.rows.length === 0 ? (
+        <p className="m-0 py-6 text-sm text-body">{t.empty}</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <caption className="sr-only">{t.title}</caption>
+            <thead>
+              <tr>
+                <th
+                  scope="col"
+                  className="sticky start-0 z-10 bg-white pb-2.5 pe-4 text-start text-xs font-semibold uppercase tracking-[0.04em] text-muted"
+                >
+                  {f.t.leave.balances.columns.employee}
+                </th>
+                {month.days.map((day) => (
+                  <th
+                    key={day.date}
+                    scope="col"
+                    title={day.holiday ?? ''}
+                    className={`num w-7 border-b border-line pb-1.5 text-center text-[11px] font-semibold ${
+                      day.holiday
+                        ? 'bg-blue text-white'
+                        : day.rest
+                          ? 'bg-surface-quiet text-muted'
+                          : day.date === month.today
+                            ? 'bg-tint text-navy'
+                            : 'text-muted'
+                    }`}
+                  >
+                    {Number(day.date.slice(-2))}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+
+            <tbody>
+              {month.rows.map((row) => (
+                <tr key={row.employee.id} className="border-t border-line">
+                  <th
+                    scope="row"
+                    className="sticky start-0 z-10 whitespace-nowrap bg-white py-1.5 pe-4 text-start text-[13px] font-semibold text-navy"
+                  >
+                    {row.employee.name}
+                    <span className="num block text-[11px] font-normal text-muted">
+                      {row.employee.department}
+                    </span>
+                  </th>
+
+                  {month.days.map((day) => {
+                    const cell = row.days[day.date];
+
+                    return (
+                      <td
+                        key={day.date}
+                        title={cellTitle(cell, day, row.employee.name, f)}
+                        className={`h-9 w-7 border-s border-line text-center text-[11px] font-semibold ${
+                          cell
+                            ? cell.pending
+                              ? 'bg-warning-bg text-warning-ink [background-image:repeating-linear-gradient(45deg,transparent,transparent_3px,rgba(0,0,0,0.08)_3px,rgba(0,0,0,0.08)_6px)]'
+                              : 'bg-tint text-navy'
+                            : day.holiday
+                              ? 'bg-blue/10'
+                              : day.rest
+                                ? 'bg-surface-quiet'
+                                : ''
+                        }`}
+                      >
+                        {cell ? (cell.half ? '½' : cell.letter) : ''}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Said in words, because a legend of colours is not a legend. */}
+      <ul className="m-0 flex list-none flex-wrap gap-x-5 gap-y-2 p-0 text-xs text-body">
+        <li>{t.legend.approved}</li>
+        <li>{t.legend.pending}</li>
+        <li>{t.legend.half}</li>
+        <li>{t.legend.holiday}</li>
+        <li>{t.legend.rest}</li>
+      </ul>
+    </section>
+  );
+}
+
+/** What a cell says when somebody hovers it or reads it aloud. */
+function cellTitle(
+  cell: CalendarCell | undefined,
+  day: { date: string; holiday?: string; rest: boolean },
+  name: string,
+  f: Formatter,
+): string {
+  if (cell === undefined) {
+    return day.holiday ?? f.dateMedium(day.date);
+  }
+
+  const t = f.t.leave.calendar;
+  const what = cell.code
+    ? leaveTypeName({ code: cell.code, name: cell.code }, f.t)
+    : t.legend.away;
+
+  return `${name} · ${f.dateMedium(day.date)} · ${what}${cell.pending ? ` (${f.t.leave.status.pending_n1})` : ''}`;
+}
 
 export function Status({ request, f }: { request: LeaveRequest; f: Formatter }): JSX.Element {
   const words = request.mine ? f.t.leave.status : f.t.leave.statusOther;

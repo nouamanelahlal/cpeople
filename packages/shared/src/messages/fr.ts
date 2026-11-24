@@ -143,6 +143,9 @@ export const fr: Messages = {
       onboarding: 'Intégrations',
       onboardingSuffix: 'en cours',
       onboardingNote: '{count} tâches ont dépassé leur date',
+      leaveRequests: 'Demandes de congé',
+      leaveRequestsSuffix: 'en attente',
+      leaveRequestsNote: 'Demandes qui attendent une décision.',
       contractsEnding: 'Contrats qui se terminent',
       contractsEndingSuffix: 'sous {days} jours',
       contractsEndingNote: 'À renouveler ou à clôturer avant l’échéance',
@@ -181,6 +184,8 @@ export const fr: Messages = {
       holiday: 'Férié',
       holidayNote:
         'Aujourd’hui, c’est {holiday}, un jour férié. {count} personnes sont prévues au travail.',
+      empty: 'Personne n’est absent cette semaine.',
+      workingNote: '{count} personnes travaillent aujourd’hui.',
       range: 'du {from} au {to}',
       types: {
         annual: 'Congé annuel',
@@ -490,6 +495,7 @@ export const fr: Messages = {
         leaveBalances: 'Soldes de congés',
         organisation: 'Paramètres de l’organisation',
         templates: 'Modèles et types de documents',
+        selfService: 'Réglages de libre-service',
         data: 'Importer et exporter les données salariés',
         audit: 'Journal d’audit',
         demo: 'Horloge et réinitialisation de la démonstration',
@@ -926,6 +932,7 @@ export const fr: Messages = {
       approvals: 'À approuver',
       all: 'Toutes les demandes',
       review: 'À revoir',
+      calendar: 'Calendrier',
       balances: 'Soldes',
     },
     status: {
@@ -1025,6 +1032,22 @@ export const fr: Messages = {
         unknown: 'Un paramètre a changé',
       },
     },
+    calendar: {
+      title: 'Calendrier des congés',
+      note: 'Qui est absent, jour par jour. Une lettre indique le type de congé ; les hachures indiquent une demande encore en attente de décision.',
+      noteHidden:
+        'Qui est absent, jour par jour. Le type de congé n’est pas affiché : c’est un choix de l’entreprise, dans Réglages → Libre-service.',
+      month: 'Mois',
+      empty: 'Personne à afficher pour ce mois.',
+      legend: {
+        approved: 'Plein : approuvé',
+        pending: 'Hachuré : en attente de décision',
+        half: '½ : une demi-journée',
+        holiday: 'Bleu : jour férié',
+        rest: 'Gris : jour non travaillé',
+        away: 'Absent',
+      },
+    },
     balances: {
       title: 'Soldes',
       note: 'Ce dont chacun dispose, calculé à partir de ce qui a été repris, de ce qui a été acquis et de ce qui a été pris. Aucun chiffre ici n’a été saisi à la main.',
@@ -1042,12 +1065,14 @@ export const fr: Messages = {
         opening: 'Repris',
         carried: 'Reporté',
         accrued: 'Acquis',
+        seniority: 'Ancienneté',
         taken: 'Pris',
         pending: 'En attente',
         adjusted: 'Ajusté',
         movement: 'Jours',
         remaining: 'Restant',
       },
+      usableFrom: 'Utilisable à partir du {date}',
       mine: {
         title: 'Mon solde',
         note: 'Calculé à la date du jour.',

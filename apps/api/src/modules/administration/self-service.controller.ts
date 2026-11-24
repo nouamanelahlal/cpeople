@@ -48,7 +48,7 @@ export class SelfServiceController {
 
     return this.prisma.forTenant(user.tenantId, async (tx) => ({
       ...(await this.settings.read(tx)),
-      mayManage: this.users.may(user, 'settings.templates.manage'),
+      mayManage: this.users.may(user, 'settings.company.manage'),
     }));
   }
 
@@ -58,7 +58,7 @@ export class SelfServiceController {
   async update(@Body() body: SelfServiceSettingsDto): Promise<TenantSettings> {
     const user = await this.users.withEmployee();
 
-    if (!this.users.may(user, 'settings.templates.manage')) {
+    if (!this.users.may(user, 'settings.company.manage')) {
       throw new ForbiddenException({ kind: 'notYours', values: {} });
     }
 

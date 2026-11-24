@@ -137,6 +137,9 @@ export const en = {
       onboarding: 'Onboarding',
       onboardingSuffix: 'starting',
       onboardingNote: '{count} tasks are past their date',
+      leaveRequests: 'Leave requests',
+      leaveRequestsSuffix: 'waiting',
+      leaveRequestsNote: 'Requests waiting for a decision.',
       contractsEnding: 'Fixed terms ending',
       contractsEndingSuffix: 'in {days} days',
       contractsEndingNote: 'Renew or end them before they run out',
@@ -175,6 +178,8 @@ export const en = {
       holiday: 'Holiday',
       holidayNote:
         'Today is {holiday}, a public holiday. {count} people are scheduled to work.',
+      empty: 'Nobody is off this week.',
+      workingNote: '{count} people are working today.',
       range: '{from} to {to}',
       types: {
         annual: 'Annual leave',
@@ -481,6 +486,7 @@ export const en = {
         leaveBalances: 'Leave balances',
         organisation: 'Organisation settings',
         templates: 'Templates and document types',
+        selfService: 'Self-service settings',
         data: 'Import and export employee data',
         audit: 'Audit log',
         demo: 'Demo clock and reset',
@@ -916,6 +922,7 @@ export const en = {
       approvals: 'To approve',
       all: 'All requests',
       review: 'To review',
+      calendar: 'Calendar',
       balances: 'Balances',
     },
     status: {
@@ -1017,6 +1024,22 @@ export const en = {
         unknown: 'A setting changed',
       },
     },
+    calendar: {
+      title: 'Leave calendar',
+      note: 'Who is away, day by day. A letter says which kind of leave; hatching says the request is still waiting for a decision.',
+      noteHidden:
+        'Who is away, day by day. Which kind of leave it is is not shown — that is a decision the company takes in Settings → Self-service.',
+      month: 'Month',
+      empty: 'Nobody to show for this month.',
+      legend: {
+        approved: 'Solid: approved',
+        pending: 'Hatched: waiting for a decision',
+        half: '½ : half a day',
+        holiday: 'Blue: public holiday',
+        rest: 'Grey: nobody works it',
+        away: 'Away',
+      },
+    },
     balances: {
       title: 'Balances',
       note: 'What each person has, worked out from what they brought with them, what they have earned, and what they have taken. Nothing here is a number anybody typed in.',
@@ -1034,12 +1057,14 @@ export const en = {
         opening: 'Brought in',
         carried: 'Carried',
         accrued: 'Earned',
+        seniority: 'Long service',
         taken: 'Taken',
         pending: 'Waiting',
         adjusted: 'Adjusted',
         movement: 'Days',
         remaining: 'Left',
       },
+      usableFrom: 'Usable from {date}',
       mine: {
         title: 'My balance',
         note: 'Worked out as at today.',

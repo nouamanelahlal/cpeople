@@ -698,10 +698,20 @@ model LeaveRule {
   /// How long carried days last into the new year, in months. Null means they
   /// do not expire.
   carryOverExpiryMonths Int?          @map("carry_over_expiry_months")
+
+  /// How many months of service before the right may be taken at all. Days are
+  /// still earned in the meantime; they simply cannot be used yet
+  /// (HR-02 build spec §4.1, a demo value to confirm).
+  usableAfterMonths        Int?     @map("usable_after_months")
+  /// Extra days for long service, and how many completed years earn them.
+  seniorityBonusDays       Decimal? @map("seniority_bonus_days") @db.Decimal(5, 2)
+  seniorityBonusEveryYears Int?     @map("seniority_bonus_every_years")
+  /// The most this right may ever reach in a year, bonus included.
+  capDays                  Decimal? @map("cap_days") @db.Decimal(5, 2)
   /// Days of notice expected before the first day off. A warning, not a refusal.
-  minNoticeDays         Int           @default(0) @map("min_notice_days")
+  minNoticeDays            Int      @default(0) @map("min_notice_days")
   /// How far back a request of this kind may be dated.
-  maxBackdateDays       Int           @default(0) @map("max_backdate_days")
+  maxBackdateDays          Int      @default(0) @map("max_backdate_days")
 
   /// Why this row says what it says: the agreement, the law, or nobody yet.
   note      String?

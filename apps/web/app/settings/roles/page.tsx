@@ -192,6 +192,7 @@ function matrix(t: Messages): { label: string; note?: string; answer: (role: Rol
         can(role, 'organisation.manage') ? 'yes' : can(role, 'organisation.view') ? 'view' : 'no',
     },
     { label: rows.templates, answer: (role) => yesNo(role, 'settings.templates.manage') },
+    { label: rows.selfService, answer: (role) => yesNo(role, 'settings.company.manage') },
     {
       label: rows.data,
       answer: (role) =>

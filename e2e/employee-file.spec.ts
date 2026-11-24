@@ -171,9 +171,12 @@ test.describe('HR-01 employee file', () => {
     await page.getByRole('link', { name: 'Open Karim Alaoui' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Karim Alaoui');
 
-    // Their own file, so their own salary is theirs to see.
+    // Their own file, so the sensitive block is theirs — except the pay figure,
+    // which has a switch of its own and is off until SMG turns it on
+    // (HR-01 open point 2, answered at the HR-02 workshop).
     await tab(page, 'Pay and bank');
-    expect(await page.content()).not.toContain('••••');
+    await expect(page.getByText('532890881')).toBeVisible();
+    await expect(page.getByText('••••').first()).toBeVisible();
 
     // What they may change is their contact details, and that is what the
     // button says.

@@ -44,6 +44,63 @@ export class HomeTaskDto {
   days?: number;
 }
 
+/** One day of the working week, and how many people are off on it. */
+export class AwayDayDto {
+  @ApiProperty({ example: '2026-11-24' })
+  date!: string;
+
+  @ApiProperty({ example: 4 })
+  away!: number;
+
+  @ApiProperty({ description: 'A public holiday nobody is expected to work' })
+  holiday!: boolean;
+
+  @ApiProperty({ required: false, example: 'Independence Day' })
+  holidayName?: string;
+}
+
+/** Somebody who is off, as far as this reader may be told. */
+export class AwayPersonDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ example: 'Leila Fassi' })
+  name!: string;
+
+  @ApiProperty({ example: 'Outlet' })
+  department!: string;
+
+  @ApiProperty({
+    required: false,
+    example: 'ANNUAL',
+    description:
+      'Absent unless the company lets colleagues see which kind of leave it is. ' +
+      'Sick leave is a medical detail (HR-02 build spec §4.3).',
+  })
+  leaveTypeCode?: string;
+
+  @ApiProperty({ example: '2026-11-23' })
+  from!: string;
+
+  @ApiProperty({ example: '2026-11-27' })
+  to!: string;
+}
+
+/** Who is off this week (M09 / HR-04). */
+export class AwayThisWeekDto {
+  @ApiProperty({ type: [AwayDayDto] })
+  days!: AwayDayDto[];
+
+  @ApiProperty({ type: [AwayPersonDto] })
+  people!: AwayPersonDto[];
+
+  @ApiProperty({ example: 4, description: 'How many different people are off at some point' })
+  total!: number;
+
+  @ApiProperty({ example: 40, description: 'People expected to work today' })
+  workingToday!: number;
+}
+
 /**
  * Everything the home screen draws, for the person asking (HR-01 / M03).
  *
@@ -87,4 +144,21 @@ export class HomeSummaryDto {
 
   @ApiProperty({ type: [HomeTaskDto] })
   waiting!: HomeTaskDto[];
+
+  @ApiProperty({ type: AwayThisWeekDto })
+  away!: AwayThisWeekDto;
+
+  @ApiProperty({
+    example: 6,
+    description:
+      'Leave requests waiting for this reader to act: their own inbox, or every ' +
+      'pending request for HR.',
+  })
+  leaveRequests!: number;
+
+  @ApiProperty({
+    enum: ['approvals', 'all'],
+    description: 'Which tab of /leave the figure should open',
+  })
+  leaveRequestsTab!: 'approvals' | 'all';
 }

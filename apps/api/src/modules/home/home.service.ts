@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import type { TenantClient } from '@cpeople/db';
-import { CurrentUserService } from '../../common/access/current-user.service.js';
+import { CurrentUserService, type CurrentUser } from '../../common/access/current-user.service.js';
 import {
   employeeScope,
   visibleEmployeeIds,
 } from '../../common/access/visible-employees.js';
 import { expiringDocumentFilter, orNothing } from '../../common/documents/expiring.js';
 import { PrismaService } from '../../common/prisma/prisma.service.js';
+import { TenantSettingsService } from '../../common/settings/tenant-settings.service.js';
 import { demoToday, plainDate } from '../../common/time/clock.js';
 import type { HomeSummaryDto, HomeTaskDto } from './dto/home.dto.js';
 
@@ -37,6 +38,7 @@ export class HomeService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly users: CurrentUserService,
+    private readonly settings: TenantSettingsService,
   ) {}
 
   async summary(): Promise<HomeSummaryDto> {
@@ -105,7 +107,160 @@ export class HomeService {
         contractsEnding,
         departments,
         waiting: await this.#waiting(tx, employees, today),
+        away: await this.#away(tx, employees, today),
+        leaveRequests: await this.#leaveRequests(tx, user),
+        // The figure opens the list it counted, and that is a different list
+        // for HR than for a manager.
+        leaveRequestsTab: this.users.may(user, 'leave.manage.all') ? 'all' : 'approvals',
       };
+    });
+  }
+
+  /**
+   * Who is off this week (M09 / HR-04, build spec §4.3).
+   *
+   * Monday to Friday of the week containing today, with a count per day and the
+   * people behind it — scoped like everything else, so a manager's week is
+   * their own team's and HR's is the company's.
+   *
+   * Which **kind** of leave somebody is on is a separate question from whether
+   * they are away, and it is answered by a setting: unless SMG has said
+   * colleagues may see it, the type is simply not sent. "Nadia is off" is
+   * roster information; "Nadia is on sick leave" is a medical detail.
+   */
+  async #away(
+    tx: TenantClient,
+    employees: EmployeeFilter,
+    today: string,
+  ): Promise<HomeSummaryDto['away']> {
+    const monday = startOfWeek(today);
+    const friday = addDays(monday, 4);
+
+    const settings = await this.settings.read(tx);
+
+    const [requests, holidays, workingToday] = await Promise.all([
+      tx.leaveRequest.findMany({
+        where: {
+          employee: employees,
+          status: { in: ['approved', 'cancellation_pending'] },
+          startDate: { lte: date(friday) },
+          endDate: { gte: date(monday) },
+        },
+        include: {
+          employee: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              department: { select: { name: true } },
+            },
+          },
+          leaveType: { select: { code: true } },
+          calculations: { orderBy: { createdAt: 'desc' }, take: 1 },
+        },
+        orderBy: { startDate: 'asc' },
+      }),
+      tx.publicHoliday.findMany({
+        where: { date: { gte: date(monday), lte: date(friday) } },
+        select: { date: true, name: true },
+      }),
+      tx.employee.count({ where: employees }),
+    ]);
+
+    const holidayOn = new Map(holidays.map((row) => [plainDate(row.date), row.name]));
+
+    // Who is away on which day, from the stored day detail where there is one:
+    // a request that runs Monday to Friday does not make somebody away on a
+    // Saturday they were never going to work.
+    const onDay = new Map<string, Set<string>>();
+
+    for (const request of requests) {
+      const stored = request.calculations[0];
+      const days = Array.isArray(stored?.days)
+        ? (stored.days as unknown as { date: string; days: number }[])
+        : [];
+
+      for (let day = monday; day <= friday; day = addDays(day, 1)) {
+        const inSpan =
+          plainDate(request.startDate) <= day && day <= plainDate(request.endDate);
+        if (!inSpan) continue;
+
+        const counted = days.length === 0 || days.some((row) => row.date === day && row.days > 0);
+        if (!counted) continue;
+
+        const set = onDay.get(day) ?? new Set<string>();
+        set.add(request.employeeId);
+        onDay.set(day, set);
+      }
+    }
+
+    const days = [];
+    for (let day = monday; day <= friday; day = addDays(day, 1)) {
+      const name = holidayOn.get(day);
+
+      days.push({
+        date: day,
+        away: onDay.get(day)?.size ?? 0,
+        holiday: name !== undefined,
+        ...(name ? { holidayName: name } : {}),
+      });
+    }
+
+    const seen = new Set<string>();
+    const people = [];
+
+    for (const request of requests) {
+      if (seen.has(request.employeeId)) continue;
+      seen.add(request.employeeId);
+
+      people.push({
+        id: request.employee.id,
+        name: `${request.employee.firstName} ${request.employee.lastName}`,
+        department: request.employee.department?.name ?? '',
+        ...(settings.showLeaveTypeToColleagues ? { leaveTypeCode: request.leaveType.code } : {}),
+        from: plainDate(request.startDate),
+        to: plainDate(request.endDate),
+      });
+    }
+
+    return {
+      days,
+      people,
+      total: people.length,
+      // Everybody, less whoever is off today, and nobody at all on a holiday.
+      workingToday: holidayOn.has(today)
+        ? 0
+        : Math.max(workingToday - (onDay.get(today)?.size ?? 0), 0),
+    };
+  }
+
+  /**
+   * Leave requests waiting for this reader to do something.
+   *
+   * Their own inbox — the ones where they are the approver being waited on —
+   * and for HR every request that is still pending, because an unanswered
+   * request is HR's problem whoever it belongs to.
+   */
+  async #leaveRequests(tx: TenantClient, user: CurrentUser): Promise<number> {
+    const hr = this.users.may(user, 'leave.manage.all');
+    const mine = user.employeeId;
+
+    if (hr) {
+      return tx.leaveRequest.count({
+        where: { status: { in: ['pending_n1', 'pending_n2', 'pending_hr'] } },
+      });
+    }
+
+    if (!mine || !this.users.may(user, 'leave.approve')) return 0;
+
+    return tx.leaveRequest.count({
+      where: {
+        OR: [
+          { status: 'pending_n1', n1Id: mine },
+          { status: 'pending_n2', n2Id: mine },
+          { status: 'cancellation_pending', n1Id: mine },
+        ],
+      },
     });
   }
 
@@ -223,4 +378,20 @@ function startOfMonth(iso: string): Date {
 
 function daysBetween(from: string, to: string): number {
   return Math.round((date(to).getTime() - date(from).getTime()) / 86_400_000);
+}
+
+/**
+ * The Monday of the week containing a day.
+ *
+ * The working week the home screen shows is Monday to Friday — the shape of the
+ * card — and which days of it anybody actually works is the site's business,
+ * answered by the leave calculation rather than here.
+ */
+function startOfWeek(iso: string): string {
+  const day = new Date(`${iso}T00:00:00.000Z`);
+  const weekday = day.getUTCDay();
+  // Sunday counts as the end of the week before, not the start of this one.
+  const back = weekday === 0 ? 6 : weekday - 1;
+
+  return addDays(iso, -back);
 }
