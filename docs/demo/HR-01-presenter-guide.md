@@ -501,7 +501,7 @@ Write the answers down during the meeting. These are the ones the project needs.
 
 | # | Decision | Why it matters |
 |---|---|---|
-| 1 | **Will SMG use SuccessFactors Employee Central?** | It is out of scope today. A feed between the two would be a change request, and we would need to know now. |
+| 1 | ~~Will SMG use SuccessFactors Employee Central?~~ **Decided at HR-01 on 23 November 2026: it is not used.** | Settled. Nothing in CPeople refers to it. |
 | 2 | **Which contract types, and whose templates and clauses?** | CDI, CDD, ANAPEC — and the real text. Everything in the demo is sample text tagged "à valider par SMG". |
 | 3 | **Which departments and cost centres? Who are the HR users and the managers (N+1, N+2)?** | Payroll is posted to SAP by cost centre; the mapping screen is empty until SMG gives us the codes. |
 | 4 | **Which documents are kept in the employee file, and which need expiry tracking?** | Drives the "documents expiring" figure and the notice period for each kind. |

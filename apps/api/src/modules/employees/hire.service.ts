@@ -305,16 +305,35 @@ export class HireService {
 }
 
 /** The next number in this company's own series. */
+/**
+ * The next employee number.
+ *
+ * The number is the biometric device id (HR-01 minutes, decision 2), so it
+ * follows the shape of the last one rather than a shape written down here: a
+ * company numbering 1001 upwards gets 1045, and one that still uses a prefix
+ * keeps it. Sorted as a number where they are numbers, because "1009" is after
+ * "999" and sorting them as text says otherwise.
+ */
 async function nextNumber(tx: TenantClient): Promise<string> {
-  const last = await tx.employee.findFirst({
-    orderBy: { employeeNumber: 'desc' },
-    select: { employeeNumber: true },
-  });
+  const rows = await tx.employee.findMany({ select: { employeeNumber: true } });
 
-  const digits = Number.parseInt(last?.employeeNumber.replace(/\D+/g, '') ?? '0', 10);
-  const prefix = last?.employeeNumber.replace(/[\d].*$/, '') ?? 'SMG-';
+  let highest = 0;
+  let prefix = '';
+  let width = 0;
 
-  return `${prefix}${String((Number.isFinite(digits) ? digits : 0) + 1).padStart(4, '0')}`;
+  for (const row of rows) {
+    const digits = row.employeeNumber.replace(/\D+/g, '');
+    const value = Number.parseInt(digits, 10);
+
+    if (!Number.isFinite(value) || value <= highest) continue;
+
+    highest = value;
+    prefix = row.employeeNumber.replace(/\d.*$/, '');
+    width = digits.length;
+  }
+
+  const next = String(highest + 1);
+  return `${prefix}${next.padStart(Math.max(width, next.length), '0')}`;
 }
 
 function plainOrThrow(value: string | undefined, what: string): string {

@@ -71,14 +71,14 @@ test.describe('HR-01 documents and expiry', () => {
       buffer: PDF,
     });
     // Ten days after the demo clock, which is what the spec asks for.
-    await page.getByLabel('Expires on').fill('2026-12-03');
+    await page.getByLabel('Expires on').fill('2026-12-04');
     await page.getByRole('button', { name: 'Add it to the file' }).click();
 
     await expect(page.getByText('Added to the file.', { exact: false })).toBeVisible();
 
     // On the file: the kind, the date, and how long it has left in words.
     const row = page.getByRole('row').filter({ hasText: 'medical-certificate.pdf' }).first();
-    await expect(row).toContainText('3 Dec 2026');
+    await expect(row).toContainText('4 Dec 2026');
     await expect(row).toContainText('Expires in 10 days');
 
     // The bytes come back through the application, not from the API directly.

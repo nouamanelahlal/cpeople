@@ -367,7 +367,7 @@ export const en = {
     fields: {
       firstName: 'First name',
       lastName: 'Last name',
-      employeeNumber: 'Employee number',
+      employeeNumber: 'Employee number (biometric ID)',
       gender: 'Gender',
       birthDate: 'Date of birth',
       nationality: 'Nationality',
@@ -449,6 +449,8 @@ export const en = {
       dataNote: 'Download the template, and import a filled one.',
       leave: 'Leave',
       leaveNote: 'Leave types, rules, the working week and the public holidays.',
+      selfService: 'Self-service',
+      selfServiceNote: 'What employees may see and do about their own file.',
       audit: 'Audit log',
       auditNote: 'Everything that has been done, newest first.',
       demo: 'Demo',
@@ -633,7 +635,7 @@ export const en = {
       contractType: 'Kind of contract',
       contractEnd: 'Ends on',
       trialEnd: 'Trial period ends',
-      employeeNumber: 'Employee number',
+      employeeNumber: 'Employee number (biometric ID)',
     },
     cnssPending: 'Leave empty while affiliation is pending.',
     ribNote: 'A RIB is 24 digits. A shorter one is accepted, with a warning.',
@@ -1272,6 +1274,31 @@ export const en = {
       open: 'Open it in CPeople',
       footer: 'CPeople — you are receiving this because of a leave request you are part of.',
     },
+  },
+  /**
+   * What employees may see and do about their own file (HR-02 build spec §7.1).
+   */
+  selfService: {
+    title: 'Self-service',
+    subtitle: 'What employees may see and do about their own file.',
+    note: 'Each of these is SMG’s decision, and each one is enforced by the server rather than hidden on the screen.',
+    notYours: 'Self-service settings are for HR and administrators.',
+    salary: 'Employees can see their base salary',
+    salaryNote:
+      'When this is off the pay figure is not sent to the employee at all — it is not merely hidden. HR and administrators always see it.',
+    leaveType: 'Colleagues’ absences name the kind of leave',
+    leaveTypeNote:
+      'When this is off the calendar shows that somebody is away and not why. Sick leave is a medical detail.',
+    editContact: 'Employees can correct their own contact details',
+    editContactNote: 'The telephone number and e-mail address on their file. Nothing else.',
+    numberPattern: 'What an employee number must look like',
+    numberPatternNote:
+      'A regular expression. The employee number is the biometric device id, and its format is still open, so this is a warning only: a number that does not match is flagged and still accepted.',
+    save: 'Save the settings',
+    saved: 'Saved. It applies to the next page anybody opens.',
+    failed: 'That could not be saved. Try again in a moment.',
+    numberHint: 'This is the id the attendance devices send.',
+    numberWarning: 'This does not match the format SMG expects ({pattern}). It is accepted all the same.',
   },
   leaveTypes: {
     ANNUAL: 'Annual leave',

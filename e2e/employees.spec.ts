@@ -6,7 +6,7 @@ import { skipWithoutBaseline } from './support/snapshots';
 /**
  * The employee list (HR-01 / HR-02, spec section 6.2).
  *
- * The figures are the seed's: 148 people, 46 of them in the kitchen, five with a
+ * The figures are the seed's: 44 people, 12 of them in the kitchen, five with a
  * document expiring inside thirty days. They are assertions rather than
  * observations — the seed is deterministic, so a change in these numbers is a
  * change in the data, and this is where it gets noticed.
@@ -39,13 +39,13 @@ test.describe('HR-01 employee list', () => {
     const page = await open(browser, 'hr', '/employees');
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Employees');
-    await expect(page.getByText('148 employees')).toBeVisible();
+    await expect(page.getByText('44 employees')).toBeVisible();
 
     const rows = page.getByRole('row');
     // Twenty-five people and the header row.
     await expect(rows).toHaveCount(26);
-    await expect(page.getByText('Showing 1 to 25 of 148')).toBeVisible();
-    await expect(page.getByText('Page 1 of 6')).toBeVisible();
+    await expect(page.getByText('Showing 1 to 25 of 44')).toBeVisible();
+    await expect(page.getByText('Page 1 of 2')).toBeVisible();
 
     // Every column the spec asks for. A column that can be sorted by carries its
     // arrow and how it is sorted in its name, so those are matched by their start.
@@ -63,7 +63,7 @@ test.describe('HR-01 employee list', () => {
     // The next page is a link, so the address says where you are.
     await page.getByRole('link', { name: 'Next page' }).click();
     await expect(page).toHaveURL(/page=2/);
-    await expect(page.getByText('Showing 26 to 50 of 148')).toBeVisible();
+    await expect(page.getByText('Showing 26 to 44 of 44')).toBeVisible();
 
     await page.context().close();
   });
@@ -84,7 +84,7 @@ test.describe('HR-01 employee list', () => {
     // narrowed, and the two agree.
     await expect(page).toHaveURL(/filter=documents-expiring/);
     await expect(page.getByRole('row')).toHaveCount(6);
-    await expect(page.getByText('5 of 148')).toBeVisible();
+    await expect(page.getByText('5 of 44')).toBeVisible();
     await expect(page.getByRole('link', { name: 'Documents expiring' })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -127,7 +127,7 @@ test.describe('HR-01 employee list', () => {
     await search(page, 'zzzz');
     await expect(page.getByText('No one matches these filters.')).toBeVisible();
     await page.getByRole('link', { name: 'Clear the filters' }).first().click();
-    await expect(page.getByText('148 employees')).toBeVisible();
+    await expect(page.getByText('44 employees')).toBeVisible();
 
     await page.context().close();
   });
@@ -137,8 +137,7 @@ test.describe('HR-01 employee list', () => {
 
     await page.getByLabel('Department').selectOption('KIT');
     await expect(page).toHaveURL(/department=KIT/);
-    await expect(page.getByText('46 of 148')).toBeVisible();
-    await expect(page.getByText('Page 1 of 2')).toBeVisible();
+    await expect(page.getByText('12 of 44')).toBeVisible();
 
     // The fixed terms that are running out, soonest first: Omar Chraibi's ends on
     // 30 November, which is the soonest in the company.
@@ -156,8 +155,9 @@ test.describe('HR-01 employee list', () => {
   test('shows each role the files they may see, and nobody else', async ({ browser }) => {
     // A manager: their own branch of the organisation, which is the kitchen.
     const manager = await open(browser, 'manager', '/employees');
-    await expect(manager.getByText('46 employees')).toBeVisible();
-    await expect(manager.getByRole('row')).toHaveCount(26);
+    await expect(manager.getByText('12 employees')).toBeVisible();
+    // Twelve people and the header row: the whole kitchen fits on one page now.
+    await expect(manager.getByRole('row')).toHaveCount(13);
 
     // Searching the rest of the company finds nothing, because it is not theirs
     // to search: the scope is applied in the API, not in the page.
@@ -193,7 +193,7 @@ test.describe('HR-01 employee list', () => {
   test('is usable on a phone', async ({ browser }) => {
     const page = await open(browser, 'hr', '/employees', PHONE);
 
-    await expect(page.getByText('148 employees')).toBeVisible();
+    await expect(page.getByText('44 employees')).toBeVisible();
     await expect(page.getByRole('row')).toHaveCount(26);
 
     // The page itself never scrolls sideways; the table scrolls inside its card.

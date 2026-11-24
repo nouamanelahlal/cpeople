@@ -74,6 +74,7 @@ export default async function NewEmployeePage(): Promise<JSX.Element> {
           endRequired: t.hire.endRequired,
           trialNote: t.hire.trialNote,
           numberNote: t.hire.numberNote,
+          numberHint: t.selfService.numberHint,
           addDependent: t.hire.addDependent,
           removeDependent: t.hire.removeDependent,
           noDependents: t.hire.noDependents,

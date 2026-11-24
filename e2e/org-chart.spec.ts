@@ -5,7 +5,7 @@ import { resetDemoData } from './support/demo-data';
 /**
  * The organisation chart (HR-01 spec 6.9).
  *
- * Two things matter about it: it draws 148 people without falling over, and a
+ * Two things matter about it: it draws the whole company without falling over, and a
  * manager's chart is their own branch rather than the company with holes in it.
  */
 
@@ -30,7 +30,7 @@ test.describe('HR-01 organisation chart', () => {
     const page = await open(browser, 'hr', '/org');
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Organisation chart');
-    await expect(page.getByText('148 people, by who they report to.')).toBeVisible();
+    await expect(page.getByText('44 people, by who they report to.')).toBeVisible();
 
     // One person at the top — the general manager, whoever the seed made them —
     // with the heads of department under them. Only the named cast is fixed, so
@@ -59,7 +59,7 @@ test.describe('HR-01 organisation chart', () => {
     await page.getByLabel('Department').selectOption('KIT');
     await page.getByRole('button', { name: 'Find a person' }).click();
 
-    await expect(page.getByText('46 people, by who they report to.')).toBeVisible();
+    await expect(page.getByText('12 people, by who they report to.')).toBeVisible();
     // Nobody from another department is on it.
     await expect(page.getByRole('link', { name: 'Open Salma Benali' })).toHaveCount(0);
 
@@ -69,7 +69,7 @@ test.describe('HR-01 organisation chart', () => {
   test('a manager’s chart is their own branch, beginning with them', async ({ browser }) => {
     const page = await open(browser, 'manager', '/org');
 
-    await expect(page.getByText('Your branch of the organisation: 46 people.')).toBeVisible();
+    await expect(page.getByText('Your branch of the organisation: 12 people.')).toBeVisible();
 
     // It starts with them, and nobody above them is on it: no general manager,
     // and nobody from another department.

@@ -376,7 +376,7 @@ export const fr: Messages = {
     fields: {
       firstName: 'Prénom',
       lastName: 'Nom',
-      employeeNumber: 'Matricule',
+      employeeNumber: 'Matricule (ID biométrique)',
       gender: 'Genre',
       birthDate: 'Date de naissance',
       nationality: 'Nationalité',
@@ -458,6 +458,8 @@ export const fr: Messages = {
       dataNote: 'Télécharger le modèle et importer un fichier rempli.',
       leave: 'Congés',
       leaveNote: 'Types de congé, règles, semaine de travail et jours fériés.',
+      selfService: 'Libre-service',
+      selfServiceNote: 'Ce que les salariés peuvent voir et faire sur leur propre dossier.',
       audit: 'Journal d’audit',
       auditNote: 'Tout ce qui a été fait, du plus récent au plus ancien.',
       demo: 'Démonstration',
@@ -642,7 +644,7 @@ export const fr: Messages = {
       contractType: 'Type de contrat',
       contractEnd: 'Prend fin le',
       trialEnd: 'Fin de la période d’essai',
-      employeeNumber: 'Matricule',
+      employeeNumber: 'Matricule (ID biométrique)',
     },
     cnssPending: 'À laisser vide tant que l’affiliation est en cours.',
     ribNote: 'Un RIB comporte 24 chiffres. Un RIB plus court est accepté, avec un avertissement.',
@@ -1276,6 +1278,33 @@ export const fr: Messages = {
       open: 'Ouvrir dans CPeople',
       footer: 'CPeople — vous recevez ce message au titre d’une demande de congé qui vous concerne.',
     },
+  },
+  /**
+   * Ce que les salariés peuvent voir et faire sur leur propre dossier
+   * (HR-02 build spec §7.1).
+   */
+  selfService: {
+    title: 'Libre-service',
+    subtitle: 'Ce que les salariés peuvent voir et faire sur leur propre dossier.',
+    note: 'Chacun de ces choix appartient à SMG, et chacun est appliqué par le serveur et non masqué à l’écran.',
+    notYours: 'Les réglages de libre-service sont réservés aux RH et aux administrateurs.',
+    salary: 'Les salariés voient leur salaire de base',
+    salaryNote:
+      'Lorsque c’est désactivé, le montant n’est pas envoyé au salarié : il n’est pas seulement masqué. Les RH et les administrateurs le voient toujours.',
+    leaveType: 'Les absences des collègues indiquent le type de congé',
+    leaveTypeNote:
+      'Lorsque c’est désactivé, le calendrier indique qu’une personne est absente, sans dire pourquoi. Un congé maladie est une donnée médicale.',
+    editContact: 'Les salariés corrigent eux-mêmes leurs coordonnées',
+    editContactNote: 'Le téléphone et l’adresse e-mail de leur dossier. Rien d’autre.',
+    numberPattern: 'Format attendu du matricule',
+    numberPatternNote:
+      'Une expression régulière. Le matricule est l’identifiant du lecteur biométrique et son format n’est pas encore arrêté : c’est donc un simple avertissement, le matricule est accepté quand même.',
+    save: 'Enregistrer les réglages',
+    saved: 'Enregistré. Appliqué dès la page suivante.',
+    failed: 'L’enregistrement a échoué. Réessayez dans un instant.',
+    numberHint: 'C’est l’identifiant envoyé par les pointeuses.',
+    numberWarning:
+      'Ce matricule ne correspond pas au format attendu par SMG ({pattern}). Il est accepté malgré tout.',
   },
   leaveTypes: {
     ANNUAL: 'Congé annuel',

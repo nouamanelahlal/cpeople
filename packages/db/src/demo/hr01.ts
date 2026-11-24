@@ -10,6 +10,13 @@
 // "Reset demo data" meaningful — and what lets a test assert on a given person.
 
 import type { CPeoplePrismaClient } from '../client.js';
+import {
+  CONTRACT_MIX,
+  DEMO_TODAY,
+  DEPARTMENTS as CONFIG_DEPARTMENTS,
+  EMPLOYEE_NUMBER_FROM,
+  SENIORITY,
+} from './config.js';
 import { clearHr02Leave, seedHr02Leave, type LeaveSeedCounts } from './hr02.js';
 import {
   clearHr02Balances,
@@ -27,18 +34,12 @@ import {
  * contracts that end "this week", the documents expiring "in 30 days" and the
  * people starting "next month" are all relative to it.
  */
-export const DEMO_TODAY = '2026-11-23';
+export { DEMO_TODAY };
 
 /** Fixed, so the generator is a function of nothing but this number. */
 const SEED = 0x5c_9e_01;
 
-const DEPARTMENTS = [
-  { code: 'KIT', name: 'Kitchen', headcount: 46, site: 'KITCHEN', costCentre: 'CC-KIT' },
-  { code: 'OUT', name: 'Outlet', headcount: 38, site: 'OUTLET', costCentre: 'CC-OUT' },
-  { code: 'PAS', name: 'Pastry', headcount: 29, site: 'PASTRY', costCentre: 'CC-PAS' },
-  { code: 'ADM', name: 'Administration', headcount: 20, site: 'HEAD', costCentre: 'CC-ADM' },
-  { code: 'WAR', name: 'Warehouse', headcount: 15, site: 'WAREHOUSE', costCentre: 'CC-WAR' },
-] as const;
+const DEPARTMENTS = CONFIG_DEPARTMENTS;
 
 const SITES = [
   { code: 'HEAD', name: 'Head office', city: 'Rabat' },
@@ -93,15 +94,15 @@ const ENGLISH_READERS = new Set(['admin@smg-demo.test', 'manager@smg-demo.test']
 
 /** The people the demo script names, so the screens tell one coherent story. */
 const CAST: readonly CastMember[] = [
-  { number: 'SMG-0001', first: 'Salma', last: 'Benali', gender: 'female', department: 'ADM', role: 'HR manager', email: 'hr@smg-demo.test' },
-  { number: 'SMG-0002', first: 'Rachid', last: 'Kettani', gender: 'male', department: 'KIT', role: 'Head of kitchen', email: 'manager@smg-demo.test' },
-  { number: 'SMG-0003', first: 'Karim', last: 'Alaoui', gender: 'male', department: 'KIT', role: 'Commis de cuisine', email: 'employee@smg-demo.test' },
-  { number: 'SMG-0004', first: 'Leila', last: 'Fassi', gender: 'female', department: 'OUT', role: 'Sales assistant' },
-  { number: 'SMG-0005', first: 'Mehdi', last: 'Idrissi', gender: 'male', department: 'PAS', role: 'Pastry chef' },
-  { number: 'SMG-0006', first: 'Sara', last: 'Amrani', gender: 'female', department: 'ADM', role: 'Accountant' },
-  { number: 'SMG-0007', first: 'Yassine', last: 'Tazi', gender: 'male', department: 'WAR', role: 'Storekeeper' },
-  { number: 'SMG-0008', first: 'Nadia', last: 'Berrada', gender: 'female', department: 'OUT', role: 'Sales assistant' },
-  { number: 'SMG-0009', first: 'Omar', last: 'Chraibi', gender: 'male', department: 'KIT', role: 'Commis de cuisine' },
+  { number: '1001', first: 'Salma', last: 'Benali', gender: 'female', department: 'ADM', role: 'HR manager', email: 'hr@smg-demo.test' },
+  { number: '1002', first: 'Rachid', last: 'Kettani', gender: 'male', department: 'KIT', role: 'Head of kitchen', email: 'manager@smg-demo.test' },
+  { number: '1003', first: 'Karim', last: 'Alaoui', gender: 'male', department: 'KIT', role: 'Commis de cuisine', email: 'employee@smg-demo.test' },
+  { number: '1004', first: 'Leila', last: 'Fassi', gender: 'female', department: 'OUT', role: 'Sales assistant' },
+  { number: '1005', first: 'Mehdi', last: 'Idrissi', gender: 'male', department: 'PAS', role: 'Pastry chef' },
+  { number: '1006', first: 'Sara', last: 'Amrani', gender: 'female', department: 'ADM', role: 'Accountant' },
+  { number: '1007', first: 'Yassine', last: 'Tazi', gender: 'male', department: 'WAR', role: 'Storekeeper' },
+  { number: '1008', first: 'Nadia', last: 'Berrada', gender: 'female', department: 'OUT', role: 'Sales assistant' },
+  { number: '1009', first: 'Omar', last: 'Chraibi', gender: 'male', department: 'KIT', role: 'Commis de cuisine' },
 ];
 
 const DOCUMENT_TYPES = [
@@ -232,7 +233,7 @@ export async function seedHr01Demo(
         title: `${department.name} supervisor`,
         departmentId: departments.get(department.code)!,
         reportsToPositionId: head.id,
-        plannedHeadcount: 2,
+        plannedHeadcount: Math.max(department.supervisors, 1),
       },
     });
     const staff = await prisma.position.create({
@@ -241,8 +242,9 @@ export async function seedHr01Demo(
         code: `POS-${department.code}-STAFF`,
         title: `${department.name} team member`,
         departmentId: departments.get(department.code)!,
-        reportsToPositionId: supervisor.id,
-        plannedHeadcount: department.headcount - 3,
+        // A department with no supervisor of its own reports to its head.
+        reportsToPositionId: department.supervisors > 0 ? supervisor.id : head.id,
+        plannedHeadcount: Math.max(department.headcount - 1 - department.supervisors, 1),
       },
     });
     positions.set(`${department.code}-HEAD`, head.id);
@@ -612,8 +614,13 @@ function plan(random: () => number): PlannedPerson[] {
     };
   };
 
-  // The top of the tree, then each department: a head, two supervisors, and the
-  // rest of the team reporting to them.
+  // The top of the tree, then each department: a head, as many supervisors as
+  // the department actually has, and the rest of the team under them.
+  //
+  // Only the outlet and the kitchen have supervisors — a warehouse of four
+  // people does not — so in the smaller departments the team reports to the
+  // head directly. Everybody has an N+1; everybody below a supervisor has an
+  // N+2 as well.
   const general = person({ department: 'ADM', level: 0, manager: null });
   people.push(general);
 
@@ -621,20 +628,22 @@ function plan(random: () => number): PlannedPerson[] {
     const head = person({ department: department.code, level: 1, manager: general.key });
     people.push(head);
 
-    const supervisors = [0, 1].map(() =>
+    const supervisors = Array.from({ length: department.supervisors }, () =>
       person({ department: department.code, level: 2, manager: head.key }),
     );
     people.push(...supervisors);
 
-    // The head, two supervisors, and the rest of the team — less the general
-    // manager, who is one of Administration's twenty rather than an extra.
-    const team = department.headcount - 3 - (department.code === 'ADM' ? 1 : 0);
+    // The head and the supervisors come out of the headcount, and so does the
+    // general manager, who is one of Administration's six rather than an extra.
+    const team =
+      department.headcount - 1 - supervisors.length - (department.code === 'ADM' ? 1 : 0);
+
     for (let index = 0; index < team; index += 1) {
       people.push(
         person({
           department: department.code,
           level: 3,
-          manager: supervisors[index % supervisors.length]!.key,
+          manager: supervisors.length > 0 ? supervisors[index % supervisors.length]!.key : head.key,
         }),
       );
     }
@@ -664,40 +673,74 @@ function plan(random: () => number): PlannedPerson[] {
 
   // Numbers last, so a named character keeps the number the demo script uses and
   // nobody else can take it.
+  //
+  // The number is the biometric device id (HR-01 minutes, decision 2), so it is
+  // a plain number: 1001 upwards, which is what an attendance file carries.
   const reserved = new Set(people.map((candidate) => candidate.number).filter(Boolean));
-  let next = 1;
+  let next = EMPLOYEE_NUMBER_FROM;
   for (const candidate of people) {
     if (candidate.number === '') {
-      let number = `SMG-${String(next++).padStart(4, '0')}`;
-      while (reserved.has(number)) number = `SMG-${String(next++).padStart(4, '0')}`;
+      let number = String(next++);
+      while (reserved.has(number)) number = String(next++);
       reserved.add(number);
       candidate.number = number;
     }
 
     if (candidate.email === '') {
-      const suffix = candidate.number.slice(4).replace(/^0+/, '');
-      candidate.email = `${slug(candidate.first)}.${slug(candidate.last)}.${suffix}@smg-demo.test`;
+      candidate.email = `${slug(candidate.first)}.${slug(candidate.last)}.${candidate.number}@smg-demo.test`;
     }
   }
 
-  // Twelve fixed terms in all — three of them insertion contracts — taken from
-  // the team members so the managers stay permanent. Omar Chraibi is the
-  // twelfth, and his ends during the demo week, which is what the home screen's
-  // "12 on fixed-term contracts" counts.
-  const fixedTerm = people
-    .filter((candidate) => candidate.level === 3 && !cast.has(candidate.key))
-    .slice(0, 11);
-  for (const [index, candidate] of fixedTerm.entries()) {
-    candidate.contractType = index < 3 ? 'ANAPEC' : 'CDD';
+  // The contract mix SMG gave us: 38 permanent, 4 fixed term, 2 insertion
+  // contracts. The fixed terms come from the team members so that the managers
+  // stay permanent, and Omar Chraibi is one of them — his ends during the demo
+  // week, which is what the home screen counts.
+  const omar = people.find((candidate) => candidate.number === '1009');
+
+  const temporary = people.filter(
+    (candidate) => candidate.level === 3 && !cast.has(candidate.key),
+  );
+
+  const anapec = temporary.slice(0, CONTRACT_MIX.ANAPEC);
+  const fixedTerm = temporary.slice(
+    CONTRACT_MIX.ANAPEC,
+    CONTRACT_MIX.ANAPEC + CONTRACT_MIX.CDD - (omar ? 1 : 0),
+  );
+
+  for (const [index, candidate] of [...anapec, ...fixedTerm].entries()) {
+    candidate.contractType = index < anapec.length ? 'ANAPEC' : 'CDD';
     candidate.hireDate = addDays(DEMO_TODAY, -(200 + index * 11));
     candidate.contractEnd = addDays(candidate.hireDate, 365);
   }
 
-  const omar = people.find((candidate) => candidate.number === 'SMG-0009');
   if (omar) {
     omar.contractType = 'CDD';
     omar.hireDate = addDays(DEMO_TODAY, -358);
     omar.contractEnd = '2026-11-30';
+  }
+
+  // The service history the workshop will look at: somebody with more than ten
+  // years, a few over five, and two who have not been here six months. Annual
+  // leave accrues with seniority, so without this spread the balances screen
+  // has nothing to show.
+  const settled = people.filter(
+    (candidate) => candidate.contractEnd === null && !cast.has(candidate.key),
+  );
+
+  for (let index = 0; index < SENIORITY.overTenYears && index < settled.length; index += 1) {
+    settled[index]!.hireDate = addDays(DEMO_TODAY, -(11 * 365 + index * 40));
+  }
+
+  for (
+    let index = SENIORITY.overTenYears;
+    index < SENIORITY.overTenYears + SENIORITY.overFiveYears && index < settled.length;
+    index += 1
+  ) {
+    settled[index]!.hireDate = addDays(DEMO_TODAY, -(6 * 365 + index * 50));
+  }
+
+  for (const candidate of settled.slice(-SENIORITY.underSixMonths)) {
+    candidate.hireDate = addDays(DEMO_TODAY, -(70 + settled.indexOf(candidate) % 40));
   }
 
   // Two people start next month, half way through their checklist.
@@ -721,19 +764,34 @@ function plan(random: () => number): PlannedPerson[] {
     { type: 'MEDICAL', inDays: -6 },
     { type: 'RESIDENCE', inDays: -40 },
   ];
-  // One per department where possible, so the five are spread across the company
-  // and a manager's count differs from HR's — which is the point of the scope.
-  const perDepartment = DEPARTMENTS.map((department) =>
+  // Spread across the company, one department at a time, so that a manager's
+  // count differs from HR's — which is the point of the scope. Taken from the
+  // team members who are not part of the named cast, since the script talks
+  // about those by name and a surprise expiry would be in the way.
+  //
+  // Round-robin rather than "the fifth person in each department": a warehouse
+  // of four has no fifth person, and a document that silently failed to be
+  // seeded is a figure on the home screen that silently disagrees with the test.
+  const columns = DEPARTMENTS.map((department) =>
     people.filter(
       (candidate) =>
         candidate.department === department.code &&
         candidate.level === 3 &&
-        candidate.status === 'active',
+        candidate.status === 'active' &&
+        !cast.has(candidate.key),
     ),
   );
+
+  const spread: PlannedPerson[] = [];
+  for (let depth = 0; spread.length < expiring.length && depth < 20; depth += 1) {
+    for (const column of columns) {
+      const candidate = column[depth];
+      if (candidate) spread.push(candidate);
+    }
+  }
+
   for (const [index, item] of expiring.entries()) {
-    const column = perDepartment[index % perDepartment.length]!;
-    const candidate = column[Math.floor(index / perDepartment.length) + 4];
+    const candidate = spread[index];
     if (candidate) candidate.expiring = item;
   }
 

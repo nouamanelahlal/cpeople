@@ -73,8 +73,8 @@ test.describe('HR-01 contracts', () => {
     await expect(page.getByText('Generated.', { exact: false })).toBeVisible({ timeout: 60_000 });
 
     // It is a real PDF, filed on the employee, named as the spec asks.
-    const file = await page.getByText(/Contrat_CDD_SMG-\d+_\d{8}\.pdf/).first().textContent();
-    expect(file).toMatch(/Contrat_CDD_SMG-\d+_\d{8}\.pdf/);
+    const file = await page.getByText(/Contrat_CDD_[\w-]+_\d{8}\.pdf/).first().textContent();
+    expect(file).toMatch(/Contrat_CDD_[\w-]+_\d{8}\.pdf/);
 
     const employee = await page.getByRole('link', { name: 'Omar Chraibi' }).getAttribute('href');
     await page.goto(`${employee}?tab=documents`);

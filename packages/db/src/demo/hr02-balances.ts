@@ -18,8 +18,15 @@
 
 import type { CPeoplePrismaClient } from '../client.js';
 
-/** The day the demo's opening balances are true as at. */
-const BALANCE_AT = '2025-12-31';
+/**
+ * The day the demo's opening balances are true as at (HR-02 build spec §3.4).
+ *
+ * Inside the current leave year, deliberately: a company that moves to CPeople
+ * in November brings a balance as at the day before, and everything after it is
+ * earned here. The balance service accrues from the day after this one, so the
+ * same months are never counted twice.
+ */
+const BALANCE_AT = '2026-10-31';
 
 /** The payroll months the demo knows about (HR-03 takes this table over). */
 const PAYROLL_MONTHS = [
@@ -31,14 +38,14 @@ const PAYROLL_MONTHS = [
 /** Adjustments on people the demo script names, so a history has a story. */
 const ADJUSTMENTS = [
   {
-    number: 'SMG-0003',
+    number: '1003',
     code: 'ANNUAL',
     days: -1,
     on: '2026-09-14',
     reason: 'Day taken in August recorded late; agreed with the employee.',
   },
   {
-    number: 'SMG-0008',
+    number: '1008',
     code: 'ANNUAL',
     days: 2,
     on: '2026-10-05',
@@ -158,6 +165,7 @@ export async function clearHr02Balances(
 function openingFor(employeeNumber: string): number {
   const digits = Number(employeeNumber.replace(/\D/g, '')) || 1;
 
-  // Between 0 and 7.5 days, in halves. Nobody arrives with a fortnight owing.
-  return ((digits * 7) % 16) / 2;
+  // Between 0 and 11.5 days, in halves: a year's accrual is 18, and people
+  // arrive in November with most of theirs still to take.
+  return ((digits * 7) % 24) / 2;
 }

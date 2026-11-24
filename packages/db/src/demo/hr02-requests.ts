@@ -32,6 +32,10 @@ interface Plan {
   readonly fromPart?: DayPart;
   readonly toPart?: DayPart;
   readonly reason?: string;
+  /** Said by whoever decided it, where they refused. */
+  readonly decisionReason?: string;
+  /** Whether a certificate is filed against it. */
+  readonly document?: boolean;
   /** Where it has got to, and therefore which rows go with it. */
   readonly outcome:
     | 'pending_n1'
@@ -43,16 +47,49 @@ interface Plan {
 }
 
 const PLANS: readonly Plan[] = [
-  // Karim's own request, waiting on his supervisor. The one the demo opens on.
+  // --- Away during the demo week (24-28 November) -----------------------
+  // Four people, so "Away this week" on the home screen has four names in it
+  // and the calendar has something to draw.
   {
-    who: { number: 'SMG-0003' },
+    who: { number: '1004' },
+    type: 'ANNUAL',
+    from: '2026-11-23',
+    to: '2026-11-27',
+    outcome: 'approved',
+  },
+  {
+    who: { number: '1007' },
+    type: 'ANNUAL',
+    from: '2026-11-24',
+    to: '2026-11-26',
+    outcome: 'approved',
+  },
+  {
+    who: { role: 'kitchenMember' },
+    type: 'ANNUAL',
+    from: '2026-11-25',
+    to: '2026-11-27',
+    outcome: 'approved',
+  },
+  {
+    who: { number: '1005' },
+    type: 'SICK',
+    from: '2026-11-23',
+    to: '2026-11-25',
+    reason: 'Signed off by the doctor until Wednesday.',
+    document: true,
+    outcome: 'approved',
+  },
+
+  // --- Waiting on somebody: six, two of them at N+2 ---------------------
+  {
+    who: { number: '1003' },
     type: 'ANNUAL',
     from: '2026-12-07',
     to: '2026-12-11',
     reason: 'Family trip to Fès.',
     outcome: 'pending_n1',
   },
-  // Waiting on the head of kitchen himself.
   {
     who: { role: 'kitchenSupervisor' },
     type: 'ANNUAL',
@@ -60,51 +97,71 @@ const PLANS: readonly Plan[] = [
     to: '2026-12-18',
     outcome: 'pending_n1',
   },
-  // Unpaid leave needs a second yes, so this one is with the head of kitchen as
-  // N+2 after the supervisor approved it.
   {
-    who: { role: 'kitchenMember' },
+    who: { number: '1008' },
+    type: 'ANNUAL',
+    from: '2026-12-21',
+    to: '2026-12-24',
+    outcome: 'pending_n1',
+  },
+  // Nobody is above the general manager, so this one went to HR instead of
+  // being handed back to the person asking.
+  {
+    who: { role: 'general' },
+    type: 'ANNUAL',
+    from: '2027-01-04',
+    to: '2027-01-08',
+    outcome: 'pending_hr',
+  },
+  // Unpaid leave needs a second yes, so these two sit with the manager's
+  // manager — the head of kitchen — rather than with the supervisor.
+  {
+    who: { number: '1003' },
     type: 'UNPAID',
     from: '2027-01-11',
     to: '2027-01-15',
     reason: 'Unpaid month to finish a diploma.',
     outcome: 'pending_n2',
   },
-  // Nobody is above the general manager, so HR decides.
   {
-    who: { role: 'general' },
-    type: 'ANNUAL',
-    from: '2026-12-21',
-    to: '2026-12-24',
-    outcome: 'pending_hr',
+    who: { number: '1009' },
+    type: 'UNPAID',
+    from: '2027-02-01',
+    to: '2027-02-05',
+    outcome: 'pending_n2',
   },
-  // Crosses into a year whose holidays are not finished: the count may move.
+
+  // --- Decided, so the screens have a history ---------------------------
+  // A refusal, with the reason the employee can read.
   {
-    who: { number: 'SMG-0009' },
+    who: { number: '1004' },
     type: 'ANNUAL',
     from: '2026-12-28',
-    to: '2027-01-04',
-    outcome: 'approved',
+    to: '2027-01-01',
+    reason: 'New Year in Marrakech.',
+    outcome: 'rejected',
+    decisionReason: 'The outlet is at its busiest that week. Please take it in January instead.',
   },
-  // Sick leave: calendar days, dated backwards, with a certificate expected.
+  // Approved, and now asked to be cancelled, which still needs a yes.
   {
-    who: { number: 'SMG-0004' },
-    type: 'SICK',
-    from: '2026-11-16',
-    to: '2026-11-18',
-    outcome: 'approved',
-  },
-  // Approved, and now asked to be cancelled — which still needs a yes.
-  {
-    who: { number: 'SMG-0008' },
+    who: { number: '1008' },
     type: 'ANNUAL',
     from: '2026-12-02',
     to: '2026-12-04',
     outcome: 'cancellation_pending',
   },
+  // Approved, and crossing into a year whose holidays nobody has finished: the
+  // one the "to review" list is demonstrated on.
+  {
+    who: { number: '1009' },
+    type: 'ANNUAL',
+    from: '2026-12-28',
+    to: '2027-01-04',
+    outcome: 'approved',
+  },
   // Settled history, so a balance has something behind it.
   {
-    who: { number: 'SMG-0003' },
+    who: { number: '1003' },
     type: 'ANNUAL',
     from: '2026-07-06',
     to: '2026-07-17',
@@ -112,7 +169,7 @@ const PLANS: readonly Plan[] = [
   },
   // A half-day: an afternoon, which is where the fractions come from.
   {
-    who: { number: 'SMG-0003' },
+    who: { number: '1003' },
     type: 'ANNUAL',
     from: '2026-10-09',
     to: '2026-10-09',
@@ -247,6 +304,20 @@ export async function seedHr02Requests(
       });
     }
 
+    if (plan.outcome === 'rejected') {
+      await prisma.leaveDecision.create({
+        data: {
+          tenantId,
+          requestId: request.id,
+          kind: 'rejected',
+          ...(employee.managerId ? { byEmployeeId: employee.managerId } : {}),
+          byName: employee.managerName ?? 'HR',
+          byRole: 'manager',
+          ...(plan.decisionReason ? { reason: plan.decisionReason } : {}),
+        },
+      });
+    }
+
     if (plan.outcome === 'pending_n2') {
       await prisma.leaveDecision.create({
         data: {
@@ -274,7 +345,9 @@ export async function seedHr02Requests(
     }
 
     requests += 1;
-    if (status.startsWith('pending') || status === 'cancellation_pending') pending += 1;
+    // "Waiting for a decision" is the six the workshop counts. A cancellation
+    // waiting to be agreed is a different question, and is not one of them.
+    if (status.startsWith('pending')) pending += 1;
   }
 
   return { requests, pending };

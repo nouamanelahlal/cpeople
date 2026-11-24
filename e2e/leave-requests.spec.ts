@@ -93,18 +93,25 @@ test.describe('M09 leave requests', () => {
   test('the manager approves, and the approval is counted again and kept', async ({ browser }) => {
     const page = await open(browser, 'manager', '/leave?tab=approvals');
 
-    // Both of them: one as the line manager, one as the second approver.
-    await expect(row(page, 'Mouad Amrani')).toContainText('With the manager');
-    await expect(row(page, 'Karim Alaoui')).toContainText('With the second approver');
+    // Both kinds are in his inbox: one waiting on him as the line manager, one
+    // as the second approver. Found by what they are rather than by name —
+    // the supervisor is whoever the seed's organisation made one.
+    const asManager = page.getByRole('row').filter({ hasText: 'With the manager' }).first();
+    await expect(asManager).toBeVisible();
+    await expect(row(page, 'With the second approver')).toBeVisible();
 
-    await row(page, 'Mouad Amrani').getByRole('link', { name: 'Open' }).click();
+    const who = (await asManager.locator('th').first().textContent()) ?? '';
+
+    await asManager.getByRole('link', { name: 'Open' }).click();
     await page.getByRole('button', { name: 'Approve' }).click();
 
     await expect(page.getByText('Done.')).toBeVisible();
 
-    // The approval wrote its own count, beside the one from when it was sent.
+    // The approval wrote its own count, beside the one from when it was sent,
+    // and the request has left the inbox.
     await page.goto('/leave?tab=approvals');
-    await expect(row(page, 'Mouad Amrani')).toHaveCount(0);
+    const name = (who.match(/^[^0-9]+/)?.[0] ?? who).trim();
+    await expect(page.getByRole('row').filter({ hasText: name })).toHaveCount(0);
 
     await page.context().close();
   });
@@ -180,17 +187,21 @@ test.describe('M09 leave requests', () => {
     await expect(row(page, 'Omar Chraibi')).toContainText('5');
 
     await page.goto('/leave?tab=review');
-    const waiting = page.getByRole('row').filter({ hasText: 'Omar Chraibi' }).first();
+    // By its dates rather than by its owner: the same person has other requests,
+    // and the one this test is about is the one that crosses the year.
+    const waiting = page.getByRole('row').filter({ hasText: '28 Dec 2026' }).first();
     await expect(waiting).toContainText('5');
     await expect(waiting).toContainText('4');
     await expect(waiting).toContainText('Approved, so nothing has moved');
 
     // HR accepts, which is the only thing that moves it.
     await waiting.getByRole('button', { name: 'Accept the new count' }).click();
-    await expect(page.getByRole('row').filter({ hasText: 'Omar Chraibi' })).toHaveCount(0);
+    await expect(page.getByRole('row').filter({ hasText: '28 Dec 2026' })).toHaveCount(0);
 
     await page.goto('/leave?tab=all');
-    await expect(row(page, 'Omar Chraibi')).toContainText('4');
+    await expect(page.getByRole('row').filter({ hasText: '28 Dec 2026' }).first()).toContainText(
+      '4',
+    );
 
     // And it is in the trail, as a change somebody made.
     await page.goto('/settings/audit');
