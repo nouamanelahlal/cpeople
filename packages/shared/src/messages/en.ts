@@ -180,6 +180,7 @@ export const en = {
         'Today is {holiday}, a public holiday. {count} people are scheduled to work.',
       empty: 'Nobody is off this week.',
       workingNote: '{count} people are working today.',
+      people: 'Who is away',
       range: '{from} to {to}',
       types: {
         annual: 'Annual leave',

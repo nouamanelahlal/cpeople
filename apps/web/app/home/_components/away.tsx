@@ -72,7 +72,7 @@ export function Away({
           {away.people.length === 0 ? (
             <p className="m-0 text-sm text-body">{t.empty}</p>
           ) : (
-            <ul className="m-0 flex list-none flex-col gap-3.5 p-0">
+            <ul aria-label={t.people} className="m-0 flex list-none flex-col gap-3.5 p-0">
               {away.people.map((person) => (
                 <li key={person.id} className="flex items-center gap-3">
                   <span

@@ -186,6 +186,7 @@ export const fr: Messages = {
         'Aujourd’hui, c’est {holiday}, un jour férié. {count} personnes sont prévues au travail.',
       empty: 'Personne n’est absent cette semaine.',
       workingNote: '{count} personnes travaillent aujourd’hui.',
+      people: 'Qui est absent',
       range: 'du {from} au {to}',
       types: {
         annual: 'Congé annuel',
