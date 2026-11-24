@@ -77,6 +77,11 @@ async function main(): Promise<void> {
           `${counts.balances.adjustments} adjustments, ` +
           `${counts.balances.payrollMonths} payroll months (October locked, November open)`,
       );
+      console.log(
+        `  HR-02 working time: ${counts.schedules.shifts} shifts, ` +
+          `${counts.schedules.schedules} schedules, ` +
+          `${counts.schedules.assigned} people on a rota — all to be confirmed`,
+      );
     }
   }
 }

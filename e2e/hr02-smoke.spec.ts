@@ -155,7 +155,11 @@ test.describe('HR-02 smoke test', () => {
   test('5 · a request across a holiday and a rest day excludes both', async ({ browser }) => {
     const page = await open(browser, 'employee', '/leave/new');
 
-    // Friday 1 January 2027 is a public holiday; 2 and 3 January are a weekend.
+    // Karim is in the kitchen, whose rota is Monday to Saturday with Sunday as
+    // the rest day. Across 31 December to 5 January that means: Thursday the
+    // 31st counts, Friday the 1st is a public holiday, **Saturday the 2nd
+    // counts** because the kitchen works Saturdays, Sunday the 3rd is his rest
+    // day, and Monday and Tuesday count.
     await page.getByLabel('Type of leave').selectOption({ label: 'Annual leave' });
     await page.getByLabel('First day', { exact: true }).fill('2026-12-31');
     await page.getByLabel('Last day', { exact: true }).fill('2027-01-05');
@@ -163,9 +167,11 @@ test.describe('HR-02 smoke test', () => {
 
     await expect(page.getByText('Sent.')).toBeVisible();
 
-    // Six calendar days, three of which count: 31 December, 4 and 5 January.
+    // Six calendar days, four of which cost him anything: the holiday and the
+    // rest day are both excluded, which is the claim this step makes.
     const counted = page.getByRole('listitem').filter({ hasText: 'When it was sent' });
-    await expect(counted).toContainText('3');
+    await expect(counted).toContainText('4');
+    await expect(counted).toContainText('Mon · Tue · Wed · Thu · Fri · Sat');
     await expect(page.getByText("New Year's Day", { exact: false })).toBeVisible();
 
     await page.context().close();

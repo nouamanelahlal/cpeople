@@ -24,6 +24,11 @@ import {
   type BalanceSeedCounts,
 } from './hr02-balances.js';
 import {
+  clearHr02Schedules,
+  seedHr02Schedules,
+  type ScheduleSeedCounts,
+} from './hr02-schedules.js';
+import {
   clearHr02Requests,
   seedHr02Requests,
   type LeaveRequestSeedCounts,
@@ -146,6 +151,7 @@ export interface DemoSeedResult {
   readonly leave: LeaveSeedCounts;
   readonly leaveRequests: LeaveRequestSeedCounts;
   readonly balances: BalanceSeedCounts;
+  readonly schedules: ScheduleSeedCounts;
 }
 
 /**
@@ -475,6 +481,10 @@ export async function seedHr01Demo(
 
   // Leave requests last: they hang off the people, the sites and the set-up,
   // and they read the line of management rather than inventing one.
+  // Shifts and rotas first: a leave request is counted against the schedule of
+  // whoever asked for it, so the schedules have to exist before the requests.
+  const schedules = await seedHr02Schedules(prisma, tenantId);
+
   const leaveRequests = await seedHr02Requests(prisma, tenantId);
 
   // The balances behind them, and the payroll months a correction would land
@@ -489,6 +499,7 @@ export async function seedHr01Demo(
     leave,
     leaveRequests,
     balances,
+    schedules,
   };
 }
 
@@ -497,6 +508,7 @@ async function clear(prisma: CPeoplePrismaClient, tenantId: string): Promise<voi
   const where = { tenantId };
 
   await prisma.department.updateMany({ where, data: { headEmployeeId: null } });
+  await clearHr02Schedules(prisma, tenantId);
   await clearHr02Balances(prisma, tenantId);
   await clearHr02Requests(prisma, tenantId);
   await prisma.onboardingTask.deleteMany({ where });

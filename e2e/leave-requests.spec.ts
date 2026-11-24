@@ -42,6 +42,22 @@ test.afterAll(({ browserName: _browserName }, testInfo) => {
 test.describe('M09 leave requests', () => {
   test.describe.configure({ mode: 'serial' });
 
+  test('a fresh demo opens with nothing to review', async ({ browser }) => {
+    // The seed writes a day count; the application works one out. If those two
+    // ever disagree, every request in the company lands on HR's list on the
+    // first morning and the demo opens with a screen full of corrections.
+    //
+    // That is exactly what introducing the rotas did, so it is pinned here: the
+    // seed counts against the same schedules the API does.
+    const page = await open(browser, 'hr', '/leave?tab=review');
+
+    await expect(
+      page.getByText('Nothing to review. Every request matches the settings in force.'),
+    ).toBeVisible();
+
+    await page.context().close();
+  });
+
   test('asking for leave keeps the count, and tells the approver without telling them why', async ({
     browser,
   }) => {

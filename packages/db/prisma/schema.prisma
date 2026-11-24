@@ -67,6 +67,11 @@ model Tenant {
   carryOvers         LeaveCarryOver[]
   carryOverRuns      LeaveCarryOverRun[]
   settings           TenantSettings?
+  shiftPatterns      ShiftPattern[]
+  workSchedules      WorkSchedule[]
+  workScheduleDays   WorkScheduleDay[]
+  employeeSchedules  EmployeeSchedule[]
+  shiftAssignments   ShiftAssignment[]
 
   @@map("tenant")
 }
@@ -316,6 +321,8 @@ model Employee {
   leaveOpeningBalances    LeaveOpeningBalance[]
   leaveBalanceAdjustments LeaveBalanceAdjustment[]
   leaveCarryOvers         LeaveCarryOver[]
+  employeeSchedules       EmployeeSchedule[]
+  shiftAssignments        ShiftAssignment[]
 
   @@unique([tenantId, employeeNumber])
   @@unique([tenantId, nationalId])
@@ -1261,4 +1268,146 @@ model TenantSettings {
 
   @@index([tenantId])
   @@map("tenant_settings")
+}
+
+// ---------------------------------------------------------------------------
+// Working time: shifts, schedules and the weekly rest day (M10 / HR-04).
+//
+// The site's working week (`SiteWorkWeek`) says what a site does. These say
+// what a *person* does, which is not the same thing and is the reason the
+// outlet can trade seven days while nobody works seven days.
+//
+// A schedule replaces the site's week **only where one is set**. An employee
+// with no schedule of their own still follows their site, which is what makes
+// this safe to introduce: nothing changes for anybody until somebody says it
+// should.
+// ---------------------------------------------------------------------------
+
+/// One shift: when it starts, when it ends, and how long the break is.
+model ShiftPattern {
+  id       String @id @default(uuid(7)) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  code     String
+  name     String
+
+  /// Local time, "07:00". Not an instant: a shift is a time of day.
+  start String
+  end   String
+
+  breakMinutes    Int     @default(0) @map("break_minutes")
+  /// True where the end is earlier than the start, as a night shift's is. The
+  /// day a shift belongs to is the day it **started**.
+  crossesMidnight Boolean @default(false) @map("crosses_midnight")
+
+  note      String?
+  confirmed Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant           Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  days             WorkScheduleDay[]
+  schedules        EmployeeSchedule[] @relation("DefaultShift")
+  shiftAssignments ShiftAssignment[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("shift_pattern")
+}
+
+/// A pattern of work across a week (HR-02 build spec §3.2).
+model WorkSchedule {
+  id          String  @id @default(uuid(7)) @db.Uuid
+  tenantId    String  @map("tenant_id") @db.Uuid
+  code        String
+  name        String
+  /// What a full week is worth, in hours. A demo value until SMG confirms it.
+  weeklyHours Decimal @map("weekly_hours") @db.Decimal(5, 2)
+
+  note      String?
+  confirmed Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  days      WorkScheduleDay[]
+  employees EmployeeSchedule[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("work_schedule")
+}
+
+/// One day of a schedule: whether it is worked, and on which shift.
+model WorkScheduleDay {
+  id         String @id @default(uuid(7)) @db.Uuid
+  tenantId   String @map("tenant_id") @db.Uuid
+  scheduleId String @map("schedule_id") @db.Uuid
+  /// 0 is Sunday, 6 is Saturday — the same numbering as `SiteWorkWeek`.
+  weekday    Int
+
+  working        Boolean @default(true)
+  shiftPatternId String? @map("shift_pattern_id") @db.Uuid
+
+  tenant   Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  schedule WorkSchedule  @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  shift    ShiftPattern? @relation(fields: [shiftPatternId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, scheduleId, weekday])
+  @@index([tenantId])
+  @@map("work_schedule_day")
+}
+
+/// Which schedule somebody is on, and which day of the week is their rest day.
+///
+/// Effective-dated, like every other parameter that changes (CLAUDE.md rule 3):
+/// a rota that changes in March does not rewrite February.
+model EmployeeSchedule {
+  id         String @id @default(uuid(7)) @db.Uuid
+  tenantId   String @map("tenant_id") @db.Uuid
+  employeeId String @map("employee_id") @db.Uuid
+  scheduleId String @map("schedule_id") @db.Uuid
+
+  /// The one day a week this person does not work. 0 is Sunday. Null means the
+  /// schedule alone decides, which is how an office week works.
+  weeklyRestDay         Int?    @map("weekly_rest_day")
+  /// Where this person's shift differs from the schedule's.
+  defaultShiftPatternId String? @map("default_shift_pattern_id") @db.Uuid
+
+  validFrom DateTime  @map("valid_from") @db.Date
+  validTo   DateTime? @map("valid_to") @db.Date
+
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  employee     Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  schedule     WorkSchedule  @relation(fields: [scheduleId], references: [id], onDelete: Restrict)
+  defaultShift ShiftPattern? @relation("DefaultShift", fields: [defaultShiftPatternId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, employeeId, validFrom])
+  @@index([tenantId])
+  @@index([tenantId, employeeId])
+  @@map("employee_schedule")
+}
+
+/// One day where somebody works a different shift from their usual one.
+model ShiftAssignment {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  employeeId     String   @map("employee_id") @db.Uuid
+  date           DateTime @db.Date
+  shiftPatternId String   @map("shift_pattern_id") @db.Uuid
+
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy String   @map("created_by")
+
+  tenant   Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  employee Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  shift    ShiftPattern @relation(fields: [shiftPatternId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, employeeId, date])
+  @@index([tenantId])
+  @@map("shift_assignment")
 }

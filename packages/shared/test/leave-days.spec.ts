@@ -184,3 +184,57 @@ describe('splitting a request across payroll months', () => {
     expect(daysByMonth(days)).toEqual({});
   });
 });
+
+describe('a rota with a rest day of its own (HR-02 build spec §3.2)', () => {
+  /** The outlet trades Monday to Saturday; this person rests on Sunday. */
+  const OUTLET = {
+    workingDays: [1, 2, 3, 4, 5, 6],
+    holidays: [] as string[],
+    dayBasis: 'working' as const,
+  };
+
+  it('counts two working days for a Saturday-to-Monday request', () => {
+    // The acceptance case from §4.2: Saturday 28, Sunday 29, Monday 30
+    // November 2026, for somebody whose rest day is Sunday.
+    const days = leaveDaysDetail(
+      { from: '2026-11-28', to: '2026-11-30' },
+      { ...OUTLET, weeklyRestDay: 0 },
+    );
+
+    expect(leaveDays({ from: '2026-11-28', to: '2026-11-30' }, { ...OUTLET, weeklyRestDay: 0 })).toBe(2);
+    expect(days.find((day) => day.date === '2026-11-29')?.reason).toBe('weekend');
+  });
+
+  it('takes the rest day out wherever the rota puts it', () => {
+    // The same outlet week, but this person rests on Wednesday.
+    const span = { from: '2026-11-23', to: '2026-11-27' };
+
+    expect(leaveDays(span, { ...OUTLET, weeklyRestDay: 3 })).toBe(4);
+    expect(leaveDays(span, OUTLET)).toBe(5);
+  });
+
+  it('does not take a day out twice', () => {
+    // A rest day that is already outside the working week changes nothing.
+    const span = { from: '2026-11-23', to: '2026-11-29' };
+
+    expect(leaveDays(span, { ...OUTLET, weeklyRestDay: 0 })).toBe(6);
+  });
+
+  it('ignores a rest day on a type counted in calendar days', () => {
+    // Maternity leave runs through everything, rota or no rota.
+    const span = { from: '2026-11-28', to: '2026-11-30' };
+
+    expect(
+      leaveDays(span, { ...OUTLET, weeklyRestDay: 0, dayBasis: 'calendar' }),
+    ).toBe(3);
+  });
+
+  it('leaves the site week alone where nobody has a rota', () => {
+    // Monday to Wednesday: three days the outlet works, and no rest day to
+    // take one of them out.
+    const span = { from: '2026-11-23', to: '2026-11-25' };
+
+    expect(leaveDays(span, { ...OUTLET, weeklyRestDay: null })).toBe(3);
+    expect(leaveDays(span, OUTLET)).toBe(3);
+  });
+});
