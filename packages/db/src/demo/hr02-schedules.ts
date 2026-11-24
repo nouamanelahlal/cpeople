@@ -81,10 +81,28 @@ const OUTLET_REST_DAYS = [0, 1, 2, 3, 0, 1, 2];
 /** The schedules take effect at the start of the demo's year. */
 const VALID_FROM = '2026-01-01';
 
+/**
+ * What an hour of overtime is worth (HR-02 build spec §5.6).
+ *
+ * **Not one of these rates is law.** They are the figures in the spec, seeded so
+ * that the screens have something to show, and every row says it is waiting for
+ * SMG and the payroll expert. The Labour Code article a tooltip may cite is
+ * marked "to confirm" for the same reason.
+ */
+const OVERTIME_BANDS = [
+  { bandCode: 'OT_DAY', dayType: 'working', timeFrom: '06:00', timeTo: '21:00', ratePercent: 25 },
+  { bandCode: 'OT_NIGHT', dayType: 'working', timeFrom: '21:00', timeTo: '06:00', ratePercent: 50 },
+  { bandCode: 'OT_REST_DAY', dayType: 'rest', timeFrom: '06:00', timeTo: '21:00', ratePercent: 50 },
+  { bandCode: 'OT_REST_NIGHT', dayType: 'rest', timeFrom: '21:00', timeTo: '06:00', ratePercent: 100 },
+  { bandCode: 'OT_REST_DAY', dayType: 'holiday', timeFrom: '06:00', timeTo: '21:00', ratePercent: 50 },
+  { bandCode: 'OT_REST_NIGHT', dayType: 'holiday', timeFrom: '21:00', timeTo: '06:00', ratePercent: 100 },
+] as const;
+
 export interface ScheduleSeedCounts {
   readonly shifts: number;
   readonly schedules: number;
   readonly assigned: number;
+  readonly overtimeBands: number;
 }
 
 export async function seedHr02Schedules(
@@ -177,7 +195,45 @@ export async function seedHr02Schedules(
     assigned += 1;
   }
 
-  return { shifts: SHIFTS.length, schedules: SCHEDULES.length, assigned };
+  for (const band of OVERTIME_BANDS) {
+    await prisma.overtimeRule.create({
+      data: {
+        tenantId,
+        bandCode: band.bandCode,
+        dayType: band.dayType,
+        timeFrom: band.timeFrom,
+        timeTo: band.timeTo,
+        ratePercent: band.ratePercent,
+        effectiveFrom: new Date(`${VALID_FROM}T00:00:00Z`),
+        note: DEMO_NOTE,
+        confirmed: false,
+      },
+    });
+  }
+
+  await prisma.overtimeSettings.create({
+    data: {
+      tenantId,
+      // Both thresholds, without counting the same hour twice; rounding up, in
+      // the employee's favour. Every one of these is a question for SMG.
+      thresholdMode: 'both',
+      normalWeeklyHours: 44,
+      normalDailyHours: 8,
+      roundingMinutes: 15,
+      roundingDirection: 'up',
+      latenessToleranceMin: 10,
+      dailyMaxHours: 12,
+      note: DEMO_NOTE,
+      confirmed: false,
+    },
+  });
+
+  return {
+    shifts: SHIFTS.length,
+    schedules: SCHEDULES.length,
+    assigned,
+    overtimeBands: OVERTIME_BANDS.length,
+  };
 }
 
 /** Everything this seeder owns. */
@@ -187,6 +243,13 @@ export async function clearHr02Schedules(
 ): Promise<void> {
   const where = { tenantId };
 
+  await prisma.attendanceException.deleteMany({ where });
+  await prisma.workDay.deleteMany({ where });
+  await prisma.punch.deleteMany({ where });
+  await prisma.attendanceImport.deleteMany({ where });
+  await prisma.employeeNumberAlias.deleteMany({ where });
+  await prisma.overtimeRule.deleteMany({ where });
+  await prisma.overtimeSettings.deleteMany({ where });
   await prisma.shiftAssignment.deleteMany({ where });
   await prisma.employeeSchedule.deleteMany({ where });
   await prisma.workScheduleDay.deleteMany({ where });

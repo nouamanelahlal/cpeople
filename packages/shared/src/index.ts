@@ -56,6 +56,15 @@ export {
   wholeMonthsBetween,
 } from './leave-balance.js';
 export type { AccrualPeriod, Balance, BalanceInput } from './leave-balance.js';
+export {
+  bandAt,
+  overtimeFor,
+  roundMinutes,
+  toMinutes,
+  toTime,
+  weeklyOvertime,
+} from './overtime.js';
+export type { Minutes, OvertimeBand, OvertimeInput, OvertimeResult, WorkedSpan } from './overtime.js';
 export { CURRENCY, DEFAULT_LOCALE, LOCALES, intlLocale, toLocale } from './locale.js';
 export { frenchNumberWords } from './number-words-fr.js';
 export type { Locale } from './locale.js';

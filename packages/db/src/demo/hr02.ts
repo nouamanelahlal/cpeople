@@ -12,6 +12,7 @@
 // SMG HR workshop.
 
 import type { CPeoplePrismaClient } from '../client.js';
+import { EMPLOYEE_NUMBER_PATTERN } from './config.js';
 
 /** What the demo's leave year looks like, until SMG says otherwise. */
 const DEMO_NOTE = 'Demo value, to be confirmed by the payroll expert (HR-02 workshop).';
@@ -197,6 +198,30 @@ export async function seedHr02Leave(
   tenantId: string,
   sites: ReadonlyMap<string, string>,
 ): Promise<LeaveSeedCounts> {
+  // The company switches, written by the seed rather than left for the API to
+  // create on first use.
+  //
+  // Without this a reseed does not put them back: somebody flips "employees can
+  // see their base salary" during a demo — or a test fails halfway through
+  // doing it — and every later demo on this database shows salaries, with no
+  // reset that undoes it. They are settings, so they are seeded like settings.
+  await prisma.tenantSettings.upsert({
+    where: { tenantId },
+    create: {
+      tenantId,
+      employeeNumberPattern: EMPLOYEE_NUMBER_PATTERN,
+      employeesSeeSalary: false,
+      showLeaveTypeToColleagues: false,
+      employeesEditContact: true,
+    },
+    update: {
+      employeeNumberPattern: EMPLOYEE_NUMBER_PATTERN,
+      employeesSeeSalary: false,
+      showLeaveTypeToColleagues: false,
+      employeesEditContact: true,
+    },
+  });
+
   await prisma.leaveSettings.create({
     data: {
       tenantId,

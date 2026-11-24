@@ -224,6 +224,9 @@ the account is in the table at the front of this guide.
 | The browser is on the wrong account | You are in the wrong Chrome window. Check the name at the top right |
 
 **Never** reset the demo data in front of the client, and never open a terminal.
+Afterwards, resetting the demo data restores **all** company switches, salary
+visibility included — so a toggle flipped during the demo does not survive into
+the next one.
 
 **If asked something this build cannot answer:** *"It is not built yet — I would
 rather show you nothing than a screen that pretends. It is on the list, and the

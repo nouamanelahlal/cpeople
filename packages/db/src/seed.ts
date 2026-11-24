@@ -80,7 +80,8 @@ async function main(): Promise<void> {
       console.log(
         `  HR-02 working time: ${counts.schedules.shifts} shifts, ` +
           `${counts.schedules.schedules} schedules, ` +
-          `${counts.schedules.assigned} people on a rota — all to be confirmed`,
+          `${counts.schedules.assigned} people on a rota, ` +
+          `${counts.schedules.overtimeBands} overtime bands — all to be confirmed`,
       );
     }
   }
