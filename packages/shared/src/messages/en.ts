@@ -455,6 +455,8 @@ export const en = {
       dataNote: 'Download the template, and import a filled one.',
       leave: 'Leave',
       leaveNote: 'Leave types, rules, the working week and the public holidays.',
+      attendance: 'Attendance',
+      attendanceNote: 'Where punches come from, and how the device file is read.',
       selfService: 'Self-service',
       selfServiceNote: 'What employees may see and do about their own file.',
       audit: 'Audit log',
@@ -1325,6 +1327,66 @@ export const en = {
     failed: 'That could not be saved. Try again in a moment.',
     numberHint: 'This is the id the attendance devices send.',
     numberWarning: 'This does not match the format SMG expects ({pattern}). It is accepted all the same.',
+  },
+  /** Attendance (M10 / HR-04, build spec §5). */
+  attendance: {
+    title: 'Attendance',
+    subtitle: 'Worked time from the devices, and what to do when it does not add up.',
+    notYours: 'Attendance is for HR and managers.',
+    unavailable: 'Attendance could not be loaded. Try again in a moment.',
+    tabs: {
+      import: 'Import',
+    },
+    import: {
+      title: 'Import a device file',
+      note: 'The daily export from the attendance devices. Nothing is imported yet — this step is about agreeing the format with the provider.',
+      planned:
+        'The import itself arrives in the next step. What is here now is the format, a sample of it, and the specification to send to the provider.',
+      sample: 'Download the sample export',
+      sampleNote:
+        'Generated from this company, so the names and numbers are the ones on these screens. It carries, on purpose, every problem the import has to find.',
+      spec: 'Download the file specification',
+      specNote:
+        'Send this to the device provider (P09, due 15 December). It says what we read, with example rows and the rules that are easy to get wrong.',
+      contains: 'What the sample contains',
+      rows: '{count} punches, {from} to {to}',
+      anomalies: {
+        unknown: '{count} numbers that match nobody: {numbers}',
+        missingOut: '{count} people who badged in and never badged out',
+        duplicates: '{count} double badges within a minute',
+        holiday: '{count} people working on 18 November, a public holiday',
+        night: '{count} punches on the pastry shift, which starts at 04:00',
+        onLeave: '{count} people punching while on approved leave',
+        absent: '{count} person absent for two days with no leave request',
+      },
+    },
+    source: {
+      title: 'Where punches come from',
+      note: 'Every device provider names its columns differently. That is a setting here, not a release.',
+      columns: {
+        field: 'What CPeople needs',
+        column: 'The column in your file',
+      },
+      fields: {
+        employeeNumber: 'Employee number (biometric ID)',
+        timestamp: 'Date and time',
+        direction: 'In or out',
+        deviceId: 'Which reader',
+      },
+      timezone: 'The clock the device writes in',
+      duplicateWindow: 'Two punches this many seconds apart are one punch',
+      save: 'Save the mapping',
+      saved: 'Saved. The next import reads the file this way.',
+      failed: 'That could not be saved. Try again in a moment.',
+      planned: 'Planned',
+      plannedNote:
+        'Switched on when the device provider confirms the interface (P09, 15 December 2026). Until then the daily file is used.',
+      endpoint: 'Address',
+      authentication: 'Authentication',
+      schedule: 'How often',
+      lastSync: 'Last sync',
+      never: 'Never',
+    },
   },
   leaveTypes: {
     ANNUAL: 'Annual leave',

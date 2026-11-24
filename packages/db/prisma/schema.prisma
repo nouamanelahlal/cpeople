@@ -72,6 +72,7 @@ model Tenant {
   workScheduleDays   WorkScheduleDay[]
   employeeSchedules  EmployeeSchedule[]
   shiftAssignments   ShiftAssignment[]
+  attendanceSources  AttendanceSource[]
 
   @@map("tenant")
 }
@@ -1410,4 +1411,62 @@ model ShiftAssignment {
   @@unique([tenantId, employeeId, date])
   @@index([tenantId])
   @@map("shift_assignment")
+}
+
+// ---------------------------------------------------------------------------
+// Attendance: where the punches come from (M10 / HR-04, build spec §5).
+//
+// A source is a device export or, later, a device API. Its **mapping** is the
+// part that matters: every provider names its columns differently, and the
+// answer to that is a setting rather than a release.
+// ---------------------------------------------------------------------------
+
+/// How punches arrive.
+enum AttendanceSourceType {
+  /// A file the device writes, uploaded by hand or dropped on a share.
+  file
+  /// The device maker's own interface. Not built: it waits on P09.
+  api
+
+  @@map("attendance_source_type")
+}
+
+enum AttendanceSourceStatus {
+  active
+  /// Shown on screen, switched off, with the reason — never a fake connection.
+  planned
+
+  @@map("attendance_source_status")
+}
+
+model AttendanceSource {
+  id       String                 @id @default(uuid(7)) @db.Uuid
+  tenantId String                 @map("tenant_id") @db.Uuid
+  name     String
+  type     AttendanceSourceType
+  status   AttendanceSourceStatus @default(active)
+
+  /// Which column of the file is which field, as
+  /// `{ employeeNumber: "employee_number", timestamp: "timestamp", ... }`.
+  /// A provider that names its columns differently is a setting, not a release.
+  mapping Json
+
+  /// The clock the device writes in. A punch at 06:58 is 06:58 *there*.
+  timezone               String @default("Africa/Casablanca")
+  /// Two punches by the same person inside this many seconds are one punch:
+  /// somebody badging twice because the first beep was not heard.
+  duplicateWindowSeconds Int    @default(120) @map("duplicate_window_seconds")
+
+  /// Only for an API source, and only once there is one to describe.
+  endpoint String?
+  note     String?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("attendance_source")
 }

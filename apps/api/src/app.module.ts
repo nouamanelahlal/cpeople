@@ -6,6 +6,7 @@ import { SettingsModule } from './common/settings/settings.module.js';
 import { TenantMiddleware } from './common/tenant/tenant.middleware.js';
 import { TenantModule } from './common/tenant/tenant.module.js';
 import { AdministrationModule } from './modules/administration/administration.module.js';
+import { AttendanceModule } from './modules/attendance/attendance.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { ContractsModule } from './modules/contracts/contracts.module.js';
 import { EmployeesModule } from './modules/employees/employees.module.js';
@@ -25,6 +26,7 @@ import { TimeAbsenceModule } from './modules/time-absence/time-absence.module.js
     SettingsModule,
     HealthModule,
     AdministrationModule,
+    AttendanceModule,
     ContractsModule,
     EmployeesModule,
     HomeModule,

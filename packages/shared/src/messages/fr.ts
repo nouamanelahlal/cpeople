@@ -464,6 +464,8 @@ export const fr: Messages = {
       dataNote: 'Télécharger le modèle et importer un fichier rempli.',
       leave: 'Congés',
       leaveNote: 'Types de congé, règles, semaine de travail et jours fériés.',
+      attendance: 'Pointage',
+      attendanceNote: 'D’où viennent les pointages et comment le fichier des pointeuses est lu.',
       selfService: 'Libre-service',
       selfServiceNote: 'Ce que les salariés peuvent voir et faire sur leur propre dossier.',
       audit: 'Journal d’audit',
@@ -1331,6 +1333,66 @@ export const fr: Messages = {
     numberHint: 'C’est l’identifiant envoyé par les pointeuses.',
     numberWarning:
       'Ce matricule ne correspond pas au format attendu par SMG ({pattern}). Il est accepté malgré tout.',
+  },
+  /** Pointage (M10 / HR-04, build spec §5). */
+  attendance: {
+    title: 'Pointage',
+    subtitle: 'Le temps travaillé relevé par les pointeuses, et quoi faire quand il ne tombe pas juste.',
+    notYours: 'Le pointage est réservé aux RH et aux responsables.',
+    unavailable: 'Le pointage n’a pas pu être chargé. Réessayez dans un instant.',
+    tabs: {
+      import: 'Import',
+    },
+    import: {
+      title: 'Importer un fichier de pointeuse',
+      note: 'L’export quotidien des pointeuses. Rien n’est encore importé : cette étape sert à convenir du format avec le fournisseur.',
+      planned:
+        'L’import lui-même arrive à l’étape suivante. Ce qui est ici, c’est le format, un échantillon et la spécification à envoyer au fournisseur.',
+      sample: 'Télécharger l’échantillon',
+      sampleNote:
+        'Généré à partir de cette entreprise : les noms et les matricules sont ceux de ces écrans. Il contient, volontairement, tous les problèmes que l’import doit détecter.',
+      spec: 'Télécharger la spécification du fichier',
+      specNote:
+        'À envoyer au fournisseur des pointeuses (P09, échéance 15 décembre). Elle indique ce que nous lisons, avec des exemples et les règles faciles à manquer.',
+      contains: 'Ce que contient l’échantillon',
+      rows: '{count} pointages, du {from} au {to}',
+      anomalies: {
+        unknown: '{count} matricules qui ne correspondent à personne : {numbers}',
+        missingOut: '{count} personnes entrées sans jamais sortir',
+        duplicates: '{count} doubles badgeages en moins d’une minute',
+        holiday: '{count} personnes travaillant le 18 novembre, jour férié',
+        night: '{count} pointages sur l’équipe pâtisserie, qui commence à 04:00',
+        onLeave: '{count} personnes qui pointent alors qu’elles sont en congé approuvé',
+        absent: '{count} personne absente deux jours sans demande de congé',
+      },
+    },
+    source: {
+      title: 'D’où viennent les pointages',
+      note: 'Chaque fournisseur nomme ses colonnes différemment. C’est un réglage, pas une livraison.',
+      columns: {
+        field: 'Ce dont CPeople a besoin',
+        column: 'La colonne dans votre fichier',
+      },
+      fields: {
+        employeeNumber: 'Matricule (ID biométrique)',
+        timestamp: 'Date et heure',
+        direction: 'Entrée ou sortie',
+        deviceId: 'Quel lecteur',
+      },
+      timezone: 'L’horloge de la pointeuse',
+      duplicateWindow: 'Deux pointages séparés de moins de ce nombre de secondes n’en font qu’un',
+      save: 'Enregistrer la correspondance',
+      saved: 'Enregistré. Le prochain import lira le fichier ainsi.',
+      failed: 'L’enregistrement a échoué. Réessayez dans un instant.',
+      planned: 'Prévu',
+      plannedNote:
+        'Activé lorsque le fournisseur confirmera l’interface (P09, 15 décembre 2026). D’ici là, le fichier quotidien est utilisé.',
+      endpoint: 'Adresse',
+      authentication: 'Authentification',
+      schedule: 'Fréquence',
+      lastSync: 'Dernière synchronisation',
+      never: 'Jamais',
+    },
   },
   leaveTypes: {
     ANNUAL: 'Congé annuel',
