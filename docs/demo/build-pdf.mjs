@@ -18,7 +18,9 @@ import { dirname, resolve } from 'node:path';
 const here = dirname(fileURLToPath(import.meta.url));
 const GOTENBERG = process.env.GOTENBERG_URL?.trim() || 'http://localhost:3001';
 
-const source = readFileSync(resolve(here, 'HR-01-presenter-guide.md'), 'utf8');
+// Which guide to build. Defaults to HR-01 so `pnpm demo:guide` keeps working.
+const name = process.argv[2] ?? 'HR-01-presenter-guide';
+const source = readFileSync(resolve(here, `${name}.md`), 'utf8');
 const { html, images } = render(source);
 
 const form = new FormData();
@@ -57,7 +59,7 @@ if (!response.ok) {
   process.exit(1);
 }
 
-const out = resolve(here, 'HR-01-presenter-guide.pdf');
+const out = resolve(here, `${name}.pdf`);
 writeFileSync(out, Buffer.from(await response.arrayBuffer()));
 
 console.log(`build-pdf: wrote ${out} (${images.length} screenshots)`);
@@ -150,7 +152,12 @@ function render(markdown) {
     if (heading) {
       closeAll();
       const level = heading[1].length;
-      out.push(`<h${level}>${inline(heading[2])}</h${level}>`);
+      // Every section after the first starts a fresh page, so a presenter can
+      // turn one page per step instead of hunting down a column.
+      const fresh = level === 2 && out.some((piece) => piece.startsWith('<h2'));
+      out.push(
+        `<h${level}${fresh ? ' class="new-page"' : ''}>${inline(heading[2])}</h${level}>`,
+      );
       continue;
     }
 
@@ -244,6 +251,8 @@ function page(body) {
         border-top: 2px solid var(--line);
         break-after: avoid;
       }
+      /* A presenter turns one page per section, so each starts on its own. */
+      h2.new-page { break-before: page; border-top: 0; padding-top: 0; margin-top: 0; }
       h3 { font-size: 12pt; font-weight: 600; margin: 14pt 0 4pt; break-after: avoid; }
       p { margin: 0 0 7pt; }
       a { color: var(--blue); text-decoration: none; }
