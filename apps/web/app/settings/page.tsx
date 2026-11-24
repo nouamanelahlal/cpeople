@@ -36,6 +36,12 @@ export default async function SettingsPage(): Promise<JSX.Element> {
       ready: true,
     },
     {
+      href: '/settings/attendance',
+      title: t.settings.sections.attendance,
+      note: t.settings.sections.attendanceNote,
+      ready: true,
+    },
+    {
       href: '/settings/self-service',
       title: t.settings.sections.selfService,
       note: t.settings.sections.selfServiceNote,
