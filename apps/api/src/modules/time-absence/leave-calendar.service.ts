@@ -37,6 +37,10 @@ export interface LeaveComputation {
   readonly workingDays: number[];
   readonly workWeekId?: string;
   readonly siteName?: string;
+  /** The rota this person is on, where they are on one. */
+  readonly scheduleId?: string;
+  readonly scheduleName?: string;
+  readonly weeklyRestDay?: number;
   readonly leaveRuleId?: string;
   readonly holidayIds: string[];
   /** The holidays that actually fell inside the span, for the screens. */
@@ -80,7 +84,7 @@ export class LeaveCalendarService {
 
     const years = yearsOf({ from: input.span.from, to: input.span.to });
 
-    const [workWeek, rule, holidays, completeYears] = await Promise.all([
+    const [workWeek, rule, holidays, completeYears, schedule] = await Promise.all([
       employee.siteId
         ? tx.siteWorkWeek.findFirst({
             where: { siteId: employee.siteId, effectiveFrom: { lte: date(input.span.from) } },
@@ -106,16 +110,38 @@ export class LeaveCalendarService {
         where: { countryCode: tenant.countryCode, year: { in: years }, complete: true },
         select: { year: true },
       }),
+      // The person's own rota, where they have one. It replaces the site's week
+      // rather than adding to it: an outlet trades six days and nobody works
+      // six days (HR-02 build spec §3.2).
+      tx.employeeSchedule.findFirst({
+        where: {
+          employeeId: input.employeeId,
+          validFrom: { lte: date(input.span.from) },
+          OR: [{ validTo: null }, { validTo: { gte: date(input.span.from) } }],
+        },
+        orderBy: { validFrom: 'desc' },
+        include: {
+          schedule: {
+            select: { id: true, name: true, days: { select: { weekday: true, working: true } } },
+          },
+        },
+      }),
     ]);
 
-    const workingDays = workWeek?.workingDays ?? FALLBACK_WORKING_DAYS;
+    const rota = schedule?.schedule.days.filter((day) => day.working).map((day) => day.weekday);
+
+    const workingDays =
+      rota && rota.length > 0 ? rota : (workWeek?.workingDays ?? FALLBACK_WORKING_DAYS);
     const holidayDates = holidays.map((holiday) => plainDate(holiday.date));
 
-    const days = leaveDaysDetail(input.span, {
+    const calendar = {
       workingDays,
+      weeklyRestDay: schedule?.weeklyRestDay ?? null,
       holidays: holidayDates,
       dayBasis: type.dayBasis,
-    });
+    };
+
+    const days = leaveDaysDetail(input.span, calendar);
 
     // Only the holidays that actually took a day off the count are evidence;
     // a holiday on a Sunday the site does not work changed nothing.
@@ -128,16 +154,21 @@ export class LeaveCalendarService {
     const unconfirmedYears = years.filter((year) => !done.has(year));
 
     return {
-      dayCount: leaveDays(input.span, {
-        workingDays,
-        holidays: holidayDates,
-        dayBasis: type.dayBasis,
-      }),
+      dayCount: leaveDays(input.span, calendar),
       days,
       dayBasis: type.dayBasis,
       workingDays: [...workingDays],
       ...(workWeek ? { workWeekId: workWeek.id } : {}),
       ...(employee.site?.name ? { siteName: employee.site.name } : {}),
+      ...(schedule
+        ? {
+            scheduleId: schedule.schedule.id,
+            scheduleName: schedule.schedule.name,
+            ...(schedule.weeklyRestDay === null
+              ? {}
+              : { weeklyRestDay: schedule.weeklyRestDay }),
+          }
+        : {}),
       ...(rule ? { leaveRuleId: rule.id } : {}),
       holidayIds: used.map((holiday) => holiday.id),
       holidays: used.map((holiday) => ({

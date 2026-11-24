@@ -213,6 +213,18 @@ export async function seedHr02Requests(
       orderBy: { effectiveFrom: 'desc' },
     });
 
+    // The person's own rota where they have one, exactly as the application
+    // counts it: an outlet trades six days and nobody works six days, so a
+    // seed that used the site's week would write day counts the API disagrees
+    // with the moment anybody opens the screen.
+    const rota = await prisma.employeeSchedule.findFirst({
+      where: { tenantId, employeeId: employee.id },
+      orderBy: { validFrom: 'desc' },
+      include: { schedule: { select: { days: { select: { weekday: true, working: true } } } } },
+    });
+
+    const rotaDays = rota?.schedule.days.filter((day) => day.working).map((day) => day.weekday);
+
     const rule = await prisma.leaveRule.findFirst({
       where: { tenantId, leaveTypeId: type.id },
       orderBy: { effectiveFrom: 'desc' },
@@ -227,8 +239,12 @@ export async function seedHr02Requests(
 
     const inSpan = holidays.filter((holiday) => holiday.date >= plan.from && holiday.date <= plan.to);
 
+    const workingDays =
+      rotaDays && rotaDays.length > 0 ? rotaDays : (week?.workingDays ?? [1, 2, 3, 4, 5]);
+
     const days = leaveDaysDetail(span, {
-      workingDays: week?.workingDays ?? [1, 2, 3, 4, 5],
+      workingDays,
+      weeklyRestDay: rota?.weeklyRestDay ?? null,
       holidays: inSpan.map((holiday) => holiday.date),
       dayBasis: type.dayBasis,
     });
@@ -267,7 +283,7 @@ export async function seedHr02Requests(
       ...(rule ? { leaveRuleId: rule.id } : {}),
       ...(week ? { workWeekId: week.id } : {}),
       holidayIds: inSpan.filter((holiday) => applied.has(holiday.date)).map((holiday) => holiday.id),
-      workingDays: week?.workingDays ?? [1, 2, 3, 4, 5],
+      workingDays,
       dayBasis: type.dayBasis,
       // 2026 is marked finished by the seed below; 2027 is not.
       holidaysComplete: plan.from.startsWith('2026') && plan.to.startsWith('2026'),

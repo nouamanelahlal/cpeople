@@ -38,8 +38,22 @@ export interface LeaveSpan {
 }
 
 export interface LeaveCalendar {
-  /** Days this person's site works: 0 is Sunday, 6 is Saturday. */
+  /**
+   * Days this person works: 0 is Sunday, 6 is Saturday.
+   *
+   * The site's working week, unless the person has a schedule of their own —
+   * an outlet trades six days and nobody works six days, so the schedule wins
+   * where there is one (HR-02 build spec §3.2).
+   */
   readonly workingDays: readonly number[];
+  /**
+   * The one day a week this person does not work, where the rota names one.
+   *
+   * Separate from `workingDays` because a rota's rest day moves: two people on
+   * the same outlet schedule can rest on different days, and a request that
+   * spans one of them must not cost that person a day.
+   */
+  readonly weeklyRestDay?: number | null;
   /** Public holidays as plain dates. A Set is faster and reads the same. */
   readonly holidays: ReadonlySet<string> | readonly string[];
   readonly dayBasis: DayBasis;
@@ -91,7 +105,9 @@ export function leaveDaysDetail(span: LeaveSpan, calendar: LeaveCalendar): Leave
         continue;
       }
 
-      if (!working.has(weekday(date))) {
+      // The rota's own rest day comes first: somebody whose week is Monday to
+      // Saturday with Wednesday off does not spend leave on a Wednesday.
+      if (!working.has(weekday(date)) || weekday(date) === calendar.weeklyRestDay) {
         days.push({ date, part: 'full', days: 0, reason: 'weekend' });
         continue;
       }
