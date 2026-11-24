@@ -127,6 +127,10 @@ export interface LeavePreview {
 /** What a balance is made of (M09 / HR-04). */
 export interface BalanceFigures {
   readonly opening: number;
+  readonly seniority: number;
+  readonly seniorityBlocks: number;
+  readonly cappedAt?: number;
+  readonly usableFrom?: string;
   readonly carried: number;
   readonly carriedExpired: number;
   readonly accrued: number;
@@ -215,8 +219,36 @@ export interface CarryOverRun {
   readonly byName: string;
 }
 
+export interface CalendarCell {
+  readonly letter: string;
+  readonly code?: string;
+  readonly pending: boolean;
+  readonly half: boolean;
+  readonly requestId: string;
+}
+
+export interface CalendarRow {
+  readonly employee: { id: string; name: string; number: string; department: string };
+  readonly days: Record<string, CalendarCell>;
+}
+
+export interface CalendarMonth {
+  readonly month: string;
+  readonly days: readonly {
+    date: string;
+    weekday: number;
+    holiday?: string;
+    rest: boolean;
+  }[];
+  readonly rows: readonly CalendarRow[];
+  readonly departments: readonly { code: string; name: string }[];
+  readonly showsType: boolean;
+  readonly today: string;
+  readonly total: number;
+}
+
 /** The tabs, each with its own address so a link can open the right one. */
-export const LEAVE_TABS = ['mine', 'approvals', 'all', 'review', 'balances'] as const;
+export const LEAVE_TABS = ['mine', 'approvals', 'calendar', 'all', 'review', 'balances'] as const;
 export type LeaveTab = (typeof LEAVE_TABS)[number];
 
 export function readLeaveTab(raw: string | string[] | undefined): LeaveTab {

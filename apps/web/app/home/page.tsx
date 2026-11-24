@@ -72,12 +72,6 @@ export default async function HomePage(): Promise<JSX.Element> {
   const gross = data.cost.map((month) => month.grossMinor);
   const charges = data.cost.map((month) => month.chargesMinor);
 
-  const previewHr02 = (
-    <PreviewTag
-      label={f.plain(t.home.preview, { workshop: 'HR-02' })}
-      title={f.plain(t.home.previewTitle, { workshop: t.modules.hr02 })}
-    />
-  );
   const previewHr03 = (
     <PreviewTag
       label={f.plain(t.home.preview, { workshop: 'HR-03' })}
@@ -104,7 +98,7 @@ export default async function HomePage(): Promise<JSX.Element> {
           empty={summary ? t.home.tasks.empty : t.home.tasks.unavailable}
           inboxHref="/employees"
         />
-        <Away data={data} f={f} preview={previewHr02} />
+        <Away away={summary?.away ?? null} today={summary?.today ?? data.run.month} f={f} />
       </div>
 
       <div className="flex flex-wrap gap-6">
@@ -171,13 +165,17 @@ function kpiViews(summary: HomeSummary | null, f: Formatter): KpiView[] {
       href: '/employees',
     },
     {
-      key: 'onboarding',
-      icon: 'onboard',
-      label: t.onboarding,
-      value: summary ? f.count(summary.onboarding) : unknown,
-      suffix: t.onboardingSuffix,
-      note: summary ? f.plain(t.onboardingNote, { count: f.count(summary.onboardingOverdue) }) : '',
-      href: '/onboarding',
+      // Onboarding used to sit here. The leave requests waiting for a decision
+      // are what somebody opening CPeople in the morning needs to act on, and
+      // onboarding is still a page of its own and a tab on every file
+      // (HR-02 build spec §8).
+      key: 'leaveRequests',
+      icon: 'calendar',
+      label: t.leaveRequests,
+      value: summary ? f.count(summary.leaveRequests) : unknown,
+      suffix: t.leaveRequestsSuffix,
+      note: t.leaveRequestsNote,
+      href: summary ? `/leave?tab=${summary.leaveRequestsTab}` : '/leave',
     },
     {
       key: 'contractsEnding',

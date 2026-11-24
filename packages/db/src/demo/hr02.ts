@@ -45,6 +45,13 @@ const LEAVE_TYPES = [
       // (HR-02 open points 1 and 15).
       carryOverMode: 'limited',
       carryOverExpiryMonths: 6,
+      // The annual policy from the HR-02 build spec §4.1: usable after six
+      // months of service, a day and a half more for every completed five
+      // years, and never more than thirty days. Every one of them a demo value.
+      usableAfterMonths: 6,
+      seniorityBonusDays: 1.5,
+      seniorityBonusEveryYears: 5,
+      capDays: 30,
       minNoticeDays: 7,
       maxBackdateDays: 0,
     },
@@ -228,6 +235,10 @@ export async function seedHr02Leave(
       carryOverMaxDays?: number;
       carryOverMode?: 'all' | 'limited' | 'none';
       carryOverExpiryMonths?: number;
+      usableAfterMonths?: number;
+      seniorityBonusDays?: number;
+      seniorityBonusEveryYears?: number;
+      capDays?: number;
       minNoticeDays: number;
       maxBackdateDays: number;
     };
@@ -246,6 +257,16 @@ export async function seedHr02Leave(
         ...(rule.carryOverExpiryMonths === undefined
           ? {}
           : { carryOverExpiryMonths: rule.carryOverExpiryMonths }),
+        ...(rule.usableAfterMonths === undefined
+          ? {}
+          : { usableAfterMonths: rule.usableAfterMonths }),
+        ...(rule.seniorityBonusDays === undefined
+          ? {}
+          : { seniorityBonusDays: rule.seniorityBonusDays }),
+        ...(rule.seniorityBonusEveryYears === undefined
+          ? {}
+          : { seniorityBonusEveryYears: rule.seniorityBonusEveryYears }),
+        ...(rule.capDays === undefined ? {} : { capDays: rule.capDays }),
         minNoticeDays: rule.minNoticeDays,
         maxBackdateDays: rule.maxBackdateDays,
         note: DEMO_NOTE,

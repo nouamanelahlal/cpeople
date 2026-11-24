@@ -4,6 +4,8 @@ import {
   balance,
   carryOver,
   periodsEarned,
+  seniorityBlocks,
+  usableFromDate,
   wholeMonthsBetween,
   type BalanceInput,
 } from '../src/leave-balance.js';
@@ -168,5 +170,81 @@ describe('what carries into the next year', () => {
   it('carries nothing from a balance that is already spent', () => {
     expect(carryOver({ leftOver: 0, mode: 'all' })).toBe(0);
     expect(carryOver({ leftOver: -3, mode: 'all' })).toBe(0);
+  });
+});
+
+describe('long service (HR-02 build spec §4.1)', () => {
+  /** The acceptance case from the spec: hired 3 March 2019, read on 24 November 2026. */
+  const veteran: BalanceInput = {
+    ...BASE,
+    asAt: '2026-11-24',
+    accrueFrom: '2019-03-03',
+    seniorityFrom: '2019-03-03',
+    seniorityBonusDays: 1.5,
+    seniorityBonusEveryYears: 5,
+    capDays: 30,
+  };
+
+  it('counts one completed block after seven years', () => {
+    // Seven years and nearly nine months: one completed block of five, not two.
+    expect(seniorityBlocks(veteran)).toBe(1);
+    expect(balance(veteran).seniority).toBe(1.5);
+  });
+
+  it('counts nothing until a block is complete', () => {
+    expect(seniorityBlocks({ ...veteran, accrueFrom: '2022-06-01', seniorityFrom: '2022-06-01' })).toBe(0);
+  });
+
+  it('counts two blocks after ten years', () => {
+    expect(seniorityBlocks({ ...veteran, seniorityFrom: '2016-01-01' })).toBe(2);
+  });
+
+  it('adds the bonus to what the year gives', () => {
+    const answer = balance(veteran);
+
+    // Ten completed months at 1.5 a day, plus the long-service day and a half.
+    expect(answer.accrued).toBe(15);
+    expect(answer.seniority).toBe(1.5);
+    expect(answer.remaining).toBe(16.5);
+  });
+
+  it('never gives more than the cap, bonus included', () => {
+    // Four blocks would be 6 extra days on top of 16.5, which is over the cap.
+    // Five blocks is 7.5 extra on top of 15, which is over a cap of 18.
+    const answer = balance({ ...veteran, seniorityFrom: '2000-01-01', capDays: 18 });
+
+    expect(answer.cappedAt).toBe(18);
+    expect(answer.remaining).toBe(18);
+  });
+
+  it('does nothing where the rule says nothing', () => {
+    const answer = balance({ ...BASE, seniorityBonusDays: null, seniorityBonusEveryYears: null });
+
+    expect(answer.seniority).toBe(0);
+    expect(answer.seniorityBlocks).toBe(0);
+  });
+});
+
+describe('a right that cannot be used yet', () => {
+  it('names the day it becomes usable', () => {
+    expect(usableFromDate({ ...BASE, accrueFrom: '2026-09-15', usableAfterMonths: 6 })).toBe(
+      '2027-03-15',
+    );
+  });
+
+  it('says so on the balance while the waiting period runs', () => {
+    const answer = balance({ ...BASE, accrueFrom: '2026-09-15', usableAfterMonths: 6 });
+
+    expect(answer.usableFrom).toBe('2027-03-15');
+    // The days are still earned in the meantime: two whole months of them.
+    expect(answer.accrued).toBe(3);
+  });
+
+  it('says nothing once the waiting period is over', () => {
+    expect(balance({ ...BASE, accrueFrom: '2019-03-03', usableAfterMonths: 6 }).usableFrom).toBeUndefined();
+  });
+
+  it('says nothing where the rule has no waiting period', () => {
+    expect(balance({ ...BASE, accrueFrom: '2026-09-15' }).usableFrom).toBeUndefined();
   });
 });

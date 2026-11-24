@@ -49,6 +49,8 @@ export {
   balance,
   carryOver,
   periodsEarned,
+  seniorityBlocks,
+  usableFromDate,
   round as roundDays,
   toAccrualPeriod,
   wholeMonthsBetween,

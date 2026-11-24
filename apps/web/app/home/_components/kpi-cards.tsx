@@ -4,7 +4,7 @@ import { Icon } from '../../_shell/icons';
 
 /** One figure on the home screen, already counted and already worded. */
 export interface KpiView {
-  readonly key: 'headcount' | 'onboarding' | 'contractsEnding' | 'documents';
+  readonly key: 'headcount' | 'leaveRequests' | 'contractsEnding' | 'documents';
   readonly icon: IconName;
   readonly value: string;
   readonly suffix?: string;
@@ -16,7 +16,9 @@ export interface KpiView {
 /** A tint per card, so the four are told apart at a glance and not by reading. */
 const TINTS: Record<KpiView['key'], { card: string; ink: string; wash: string }> = {
   headcount: { card: 'bg-sky-bg', ink: 'text-sky-ink', wash: 'bg-sky-wash' },
-  onboarding: { card: 'bg-leaf-bg', ink: 'text-leaf-ink', wash: 'bg-leaf-wash' },
+  // Same tint, same C mark, same size as the card it replaced: only what it
+  // counts has changed.
+  leaveRequests: { card: 'bg-leaf-bg', ink: 'text-leaf-ink', wash: 'bg-leaf-wash' },
   contractsEnding: { card: 'bg-violet-bg', ink: 'text-violet-ink', wash: 'bg-violet-wash' },
   documents: { card: 'bg-amber-bg', ink: 'text-amber-ink', wash: 'bg-amber-wash' },
 };

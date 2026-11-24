@@ -64,6 +64,7 @@ export class LeaveBalanceService {
         lastName: true,
         employeeNumber: true,
         hireDate: true,
+        seniorityDate: true,
         department: { select: { name: true } },
       },
     });
@@ -87,6 +88,7 @@ export class LeaveBalanceService {
         await this.#line(tx, {
           employeeId: employee.id,
           hireDate: plainDate(employee.hireDate),
+          seniorityDate: plainDate(employee.seniorityDate),
           type,
           year,
           asAt,
@@ -128,7 +130,7 @@ export class LeaveBalanceService {
     const [employee, settings] = await Promise.all([
       tx.employee.findUnique({
         where: { id: input.employeeId },
-        select: { hireDate: true },
+        select: { hireDate: true, seniorityDate: true },
       }),
       tx.leaveSettings.findFirst({ select: { leaveYearStart: true, accrualPeriod: true } }),
     ]);
@@ -138,6 +140,7 @@ export class LeaveBalanceService {
     const line = await this.#line(tx, {
       employeeId: input.employeeId,
       hireDate: plainDate(employee.hireDate),
+      seniorityDate: plainDate(employee.seniorityDate),
       type,
       year: leaveYear(input.onDate, settings?.leaveYearStart ?? '01-01'),
       asAt: input.onDate,
@@ -310,6 +313,7 @@ export class LeaveBalanceService {
     input: {
       employeeId: string;
       hireDate: string;
+      seniorityDate: string;
       type: { id: string; code: string; name: string; tracksBalance: boolean };
       year: { from: string; to: string };
       asAt: string;
@@ -384,6 +388,17 @@ export class LeaveBalanceService {
       accrualPerMonth: rule?.accrualPerMonth === null ? null : Number(rule?.accrualPerMonth ?? 0) || null,
       entitlementDays: rule?.entitlementDays === null ? null : Number(rule?.entitlementDays ?? 0) || null,
       accrualPeriod: input.accrualPeriod,
+      // Long service, and the waiting period before the right may be used
+      // (HR-02 build spec §4.1). Both come off the rule in force, and both are
+      // demo values until SMG says otherwise.
+      seniorityBonusDays:
+        rule?.seniorityBonusDays === null || rule?.seniorityBonusDays === undefined
+          ? null
+          : Number(rule.seniorityBonusDays),
+      seniorityBonusEveryYears: rule?.seniorityBonusEveryYears ?? null,
+      seniorityFrom: input.seniorityDate,
+      capDays: rule?.capDays === null || rule?.capDays === undefined ? null : Number(rule.capDays),
+      usableAfterMonths: rule?.usableAfterMonths ?? null,
       // Where the days are earned from. Two things can move it later than the
       // start of the leave year, and both have to: somebody hired in September
       // has not earned a January entitlement, and an opening balance "as at

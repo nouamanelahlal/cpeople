@@ -507,7 +507,7 @@ function EditTab({ file, tab, f }: { file: EmployeeFile; tab: Tab; f: Formatter 
                 name="baseSalary"
                 label={t.fields.baseSalaryMinor}
                 type="text"
-                defaultValue={(file.sensitive.baseSalaryMinor / 100).toFixed(2)}
+                defaultValue={((file.sensitive.baseSalaryMinor ?? 0) / 100).toFixed(2)}
               />
               <EditField
                 name="socialSecurityNumber"
@@ -606,7 +606,15 @@ function payFields(file: EmployeeFile, f: Formatter): Field[] {
   const s = file.sensitive;
 
   return [
-    secret(t.fields.baseSalaryMinor, s && f.money(s.baseSalaryMinor), s !== undefined),
+    // Pay has a switch of its own: an employee reading their own file sees the
+    // rest of the sensitive block and not the figure, unless the company has
+    // said they may (HR-01 open point 2). The API leaves it out; this masks the
+    // row rather than formatting an absent number.
+    secret(
+      t.fields.baseSalaryMinor,
+      s?.baseSalaryMinor === undefined ? undefined : f.money(s.baseSalaryMinor),
+      s?.baseSalaryMinor !== undefined,
+    ),
     secret(t.fields.socialSecurityNumber, s?.socialSecurityNumber ?? t.none, s !== undefined),
     { label: t.fields.pensionMember, value: file.pensionMember ? t.yes : t.no },
     secret(t.fields.bankName, s?.bankName ?? t.none, s !== undefined),

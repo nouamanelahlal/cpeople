@@ -56,10 +56,33 @@ export interface BalanceInput {
   readonly pending: number;
   /** HR's adjustments, already summed. Signed. */
   readonly adjusted: number;
+
+  /**
+   * Long service: extra days every so many completed years
+   * (HR-02 build spec §4.1). Both are settings on the rule, and both are demo
+   * values until SMG and the payroll expert have said otherwise.
+   */
+  readonly seniorityBonusDays?: number | null;
+  readonly seniorityBonusEveryYears?: number | null;
+  /** The day service started, which is not always the hire date. */
+  readonly seniorityFrom?: string;
+
+  /** The most this right may reach in a year, bonus included. */
+  readonly capDays?: number | null;
+  /** Months of service before the right may be used at all. */
+  readonly usableAfterMonths?: number | null;
 }
 
 export interface Balance {
   readonly opening: number;
+  /** Extra days earned by long service. */
+  readonly seniority: number;
+  /** Completed blocks of service the bonus counts. */
+  readonly seniorityBlocks: number;
+  /** Set where the cap cut the entitlement down. */
+  readonly cappedAt?: number;
+  /** The day this right becomes usable, where it is not usable yet. */
+  readonly usableFrom?: string;
   readonly carried: number;
   /** Carried days that have run out and no longer count. */
   readonly carriedExpired: number;
@@ -83,22 +106,73 @@ export function balance(input: BalanceInput): Balance {
   const expired =
     input.carriedExpiresOn !== undefined && input.asAt > input.carriedExpiresOn ? input.carried : 0;
 
-  const accrued = accruedDays(input);
+  const blocks = seniorityBlocks(input);
+  const seniority = blocks * (input.seniorityBonusDays ?? 0);
+
+  // The cap applies to what the year gives — what is accrued plus the long
+  // service bonus — and not to what somebody has left after taking some of it.
+  const earned = accruedDays(input) + seniority;
+  const capped =
+    input.capDays === null || input.capDays === undefined
+      ? earned
+      : Math.min(earned, input.capDays);
 
   const remaining =
-    input.opening + (input.carried - expired) + accrued + input.adjusted - input.taken - input.pending;
+    input.opening + (input.carried - expired) + capped + input.adjusted - input.taken - input.pending;
+
+  const usableFrom = usableFromDate(input);
 
   return {
     opening: round(input.opening),
+    seniority: round(seniority),
+    seniorityBlocks: blocks,
+    ...(capped < earned ? { cappedAt: round(capped) } : {}),
+    ...(usableFrom !== undefined && input.asAt < usableFrom ? { usableFrom } : {}),
     carried: round(input.carried - expired),
     carriedExpired: round(expired),
-    accrued: round(accrued),
+    accrued: round(capped - seniority),
     taken: round(input.taken),
     pending: round(input.pending),
     adjusted: round(input.adjusted),
     remaining: round(remaining),
     periodsEarned: periodsEarned(input),
   };
+}
+
+/**
+ * Completed blocks of long service.
+ *
+ * "Every five completed years" means exactly that: somebody with four years and
+ * eleven months has none, and somebody with ten years and a day has two. The
+ * service date rather than the hire date, because a transfer or a re-hire can
+ * carry service with it.
+ */
+export function seniorityBlocks(input: BalanceInput): number {
+  const every = input.seniorityBonusEveryYears ?? 0;
+  const from = input.seniorityFrom ?? input.accrueFrom;
+
+  if (every <= 0 || !input.seniorityBonusDays || from === undefined) return 0;
+
+  return Math.floor(wholeMonthsBetween(from, input.asAt) / 12 / every);
+}
+
+/**
+ * The day a right becomes usable.
+ *
+ * Days are earned from the first month; they simply cannot be taken until the
+ * waiting period is up. Returning the date rather than a yes or a no is what
+ * lets a screen say "usable from 3 September" instead of "not yet".
+ */
+export function usableFromDate(input: BalanceInput): string | undefined {
+  const months = input.usableAfterMonths ?? 0;
+  const from = input.accrueFrom;
+
+  if (months <= 0 || from === undefined) return undefined;
+
+  const day = new Date(`${from}T00:00:00.000Z`);
+  day.setUTCMonth(day.getUTCMonth() + months);
+
+  return day.toISOString().slice(0, 10);
 }
 
 /**

@@ -163,7 +163,9 @@ test.describe('NEW home dashboard', () => {
 
     // English: the currency leads, groups with commas.
     await expect(page.getByText('1,284,650.00')).toBeVisible();
-    await expect(page.getByText('16 to 20 Nov').first()).toBeVisible();
+    // Who is away is live now, so the shape of the range is what is checked
+    // rather than one seeded pair of dates.
+    await expect(page.getByText(/^\d{1,2} to \d{1,2} Nov$/).first()).toBeVisible();
 
     await switchToFrench(page);
 
@@ -173,7 +175,7 @@ test.describe('NEW home dashboard', () => {
     await expect(page.getByText(/1\s?284\s?650,00/)).toBeVisible();
     await expect(page.getByText('mardi 24 novembre 2026.', { exact: false })).toBeVisible();
     await expect(page.getByText("Paie d'octobre", { exact: false })).toBeVisible();
-    await expect(page.getByText('du 16 au 20 nov.').first()).toBeVisible();
+    await expect(page.getByText(/^du \d{1,2} au \d{1,2} nov\.$/).first()).toBeVisible();
   });
 
   test('opens the menu on hover, on focus and when it is pinned', async ({ page }) => {

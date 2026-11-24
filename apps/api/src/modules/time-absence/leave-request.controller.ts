@@ -10,6 +10,7 @@ import {
   LeaveReviewItemDto,
 } from './dto/leave-request.dto.js';
 import { LeaveRequestService } from './leave-request.service.js';
+import { LeaveCalendarViewService, type CalendarMonth } from './leave-calendar-view.service.js';
 import { LeaveReviewService } from './leave-review.service.js';
 
 /**
@@ -26,7 +27,20 @@ export class LeaveRequestController {
   constructor(
     private readonly requests: LeaveRequestService,
     private readonly review: LeaveReviewService,
+    private readonly calendar: LeaveCalendarViewService,
   ) {}
+
+  @Get('calendar')
+  @ApiOperation({ summary: 'A month of absences, one row per person (HR-02 §4.3)' })
+  calendarMonth(
+    @Query('month') month?: string,
+    @Query('department') department?: string,
+  ): Promise<CalendarMonth> {
+    return this.calendar.month({
+      ...(month ? { month } : {}),
+      ...(department ? { department } : {}),
+    });
+  }
 
   @Get('requests')
   @ApiOperation({ summary: 'One tab of the leave screen, scoped to the reader' })

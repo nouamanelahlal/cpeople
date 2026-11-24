@@ -10,6 +10,7 @@ import { LeaveCarryOverService } from './leave-carry-over.service.js';
 import { LeaveCorrectionService } from './leave-correction.service.js';
 import { LeaveImportService } from './leave-import.service.js';
 import { LeaveCalendarService } from './leave-calendar.service.js';
+import { LeaveCalendarViewService } from './leave-calendar-view.service.js';
 import { LeaveMailService } from './leave-mail.service.js';
 import { LeaveRequestController } from './leave-request.controller.js';
 import { LeaveRequestService } from './leave-request.service.js';
@@ -32,6 +33,7 @@ import { LeaveSettingsService } from './leave-settings.service.js';
   providers: [
     LeaveSettingsService,
     LeaveCalendarService,
+    LeaveCalendarViewService,
     LeaveBalanceService,
     LeaveMailService,
     LeaveRequestService,

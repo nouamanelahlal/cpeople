@@ -477,6 +477,11 @@ export class LeaveRequestService {
 
     if (user.employeeId && this.users.may(user, 'leave.request.own')) tabs.push('mine');
     if (this.users.may(user, 'leave.approve')) tabs.push('approvals');
+
+    // The month, for anybody with an employee file: an employee sees the team's
+    // absences without being told what kind they are (HR-02 build spec §4.3).
+    if (user.employeeId) tabs.push('calendar');
+
     if (this.users.may(user, 'leave.manage.all')) tabs.push('all', 'review');
 
     // Balances for other people, which is the employee list's scope: HR sees
