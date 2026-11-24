@@ -37,11 +37,9 @@ test.describe('M09 leave calendar', () => {
     const page = await open(browser, 'hr', '/home');
 
     // Four people are off during the demo week, from the seed.
-    const away = page.getByRole('region', { name: 'Away this week' });
+    const away = page.getByRole('list', { name: 'Who is away' });
     await expect(away).toBeVisible();
-
-    const names = await away.getByRole('listitem').allTextContents();
-    expect(names.length).toBeGreaterThanOrEqual(4);
+    await expect(away.getByRole('listitem')).toHaveCount(4);
 
     // And the figure beside it is the requests waiting for a decision: six.
     const kpi = page.getByRole('link').filter({ hasText: 'Leave requests' }).first();
