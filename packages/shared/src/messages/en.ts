@@ -1339,9 +1339,10 @@ export const en = {
     },
     import: {
       title: 'Import a device file',
-      note: 'The daily export from the attendance devices. Nothing is imported yet — this step is about agreeing the format with the provider.',
+      note: 'The daily export from the attendance devices, read in full and checked before anything is written.',
+      open: 'Import a file',
       planned:
-        'The import itself arrives in the next step. What is here now is the format, a sample of it, and the specification to send to the provider.',
+        'The device interface arrives with the provider (P09, 15 December). Until then this is the daily file, and it is read here.',
       sample: 'Download the sample export',
       sampleNote:
         'Generated from this company, so the names and numbers are the ones on these screens. It carries, on purpose, every problem the import has to find.',
@@ -1355,9 +1356,78 @@ export const en = {
         missingOut: '{count} people who badged in and never badged out',
         duplicates: '{count} double badges within a minute',
         holiday: '{count} people working on 18 November, a public holiday',
-        night: '{count} punches on the pastry shift, which starts at 04:00',
+        night: '{count} early starts on the pastry shift, which begins at 04:00',
         onLeave: '{count} people punching while on approved leave',
         absent: '{count} person absent for two days with no leave request',
+      },
+      step1: '1 · Take the format',
+      step1Note:
+        'The sample is generated from this company. The specification is what the device provider needs.',
+      step2: '2 · Try the file',
+      step2Note:
+        'The whole file is read, the days are built and the problems are listed. Nothing is written until you confirm.',
+      step3: '3 · Write it',
+      step3Note:
+        'The punches, the days built from them and the exceptions, all together or not at all.',
+      fileNameLabel: 'What the file is called',
+      file: 'Paste the file',
+      fileNote:
+        'The export as it comes, semicolons and header row included. A first line that names the columns is read; one that does not is reported.',
+      trial: 'Try it',
+      confirm: 'Import it',
+      done: 'Imported. The worked days and their exceptions are in.',
+      read: 'What the file says',
+      counts: {
+        rows: 'Punches',
+        matched: 'Matched',
+        unknown: 'Unmatched',
+        duplicates: 'Double badges',
+        days: 'Days built',
+        period: 'Period',
+      },
+      unknownTitle: '{count} numbers nobody has',
+      unknownNote:
+        'These punches belong to nobody in the company. Where a number looks like somebody — a leading zero, usually — it is named here, but nothing is matched for you: the wrong guess puts one person’s hours on another person’s payslip.',
+      noMatch: 'Nothing like it',
+      problems: '{count} lines that could not be read',
+      exceptionsTitle: '{count} days that need somebody',
+      manualKept: '{count} days in this period were corrected by hand and will be kept.',
+      columns: {
+        line: 'Line',
+        problem: 'Problem',
+        number: 'Number in the file',
+        punches: 'Punches',
+        looksLike: 'Looks like',
+      },
+      reasons: {
+        notATime: 'The date and time could not be read',
+        noNumber: 'No employee number on the line',
+        noColumns: 'The first line does not name the columns we need',
+      },
+      errors: {
+        failed: 'That could not be imported. Try again in a moment.',
+        importEmpty: 'There was nothing to import in that file.',
+        importGone: 'That trial is no longer there. Try the file again.',
+        importDone: 'That file has already been imported.',
+        importChanged:
+          'That file is not the one that was checked. Try it again before importing.',
+        notYours: 'Importing attendance is for HR.',
+      },
+    },
+    /** What a day needs somebody to look at, and why (build spec §5.2). */
+    exceptions: {
+      codes: {
+        UNKNOWN_EMPLOYEE: 'A number nobody in the company has',
+        MISSING_IN: 'Badged out with no badge in',
+        MISSING_OUT: 'Badged in and never badged out',
+        DUPLICATE: 'The same badge twice within the minute',
+        NO_SCHEDULE: 'At work on a day with no shift',
+        ABSENT_NO_LEAVE: 'Absent with no leave request',
+        WORKED_ON_LEAVE: 'At work while on approved leave',
+        WORKED_REST_DAY: 'At work on their rest day',
+        WORKED_HOLIDAY: 'At work on a public holiday',
+        OVER_DAILY_MAX: 'Longer than a day is allowed to be',
+        OVER_WEEKLY_MAX: 'Longer than a week is allowed to be',
       },
     },
     source: {

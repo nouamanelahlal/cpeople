@@ -68,7 +68,7 @@ The existing day-count function (`leave-days.ts`) must take the employee's sched
 - `AttendanceSource { name, type: file|api, status: active|planned, mapping (JSON), timezone "Africa/Casablanca", duplicateWindowSeconds (default 120) }`
 - `AttendanceImport { fileKey (S3), fileName, sourceId, periodFrom, periodTo, rows, matched, unknown, duplicates, status: previewed|committed|replaced }`
 - `Punch { importId?, employeeNumber, employeeId?, at, direction: in|out|unknown, deviceId?, source: device|manual, reason? }` – insert-only. A manual correction is a new row, never an edit.
-- `EmployeeNumberAlias { alias, employeeId }` (e.g. `0107` → employee 107)
+- `EmployeeNumberAlias { alias, employeeId }` (e.g. `01009` → employee 1009)
 - `WorkDay { employeeId, date, scheduledMin, workedMin, breakMin, lateMin, earlyLeaveMin, overtime (JSON by band code), status: ok|exception|fixed|approved, exceptions[], leaveRequestId?, source: device|manual|mixed, calcVersion }` – rebuilt from punches; keep the rule versions used, as `LeaveCalculation` does.
 - `AttendanceException { workDayId?, punchId?, code, status: open|fixed|ignored, resolution?, resolvedBy/At, comment }`
   Codes: `UNKNOWN_EMPLOYEE, MISSING_IN, MISSING_OUT, DUPLICATE, NO_SCHEDULE, ABSENT_NO_LEAVE, WORKED_ON_LEAVE, WORKED_REST_DAY, WORKED_HOLIDAY, OVER_DAILY_MAX, OVER_WEEKLY_MAX`
@@ -141,7 +141,7 @@ employee_number;timestamp;direction;device_id
 
 ### 5.2 Sample export (downloadable from the import tab)
 `Sample_Attendance_Export_2026-11.csv`, generated from the seed, with exactly:
-- 3 **unknown numbers**: `9001`, `9002`, `0107` (leading-zero variant of an existing number, to discuss the format)
+- 3 **unknown numbers**: `9001`, `9002`, `01009` (leading-zero variant of an existing number, to discuss the format)
 - 4 **missing OUT**; 2 **duplicates** within 1 minute
 - **30 employees working on 18 Nov** (public holiday) across Outlet, Kitchen, Pastry
 - night work on the Pastry early shift (04:00–06:00)
@@ -257,7 +257,7 @@ If time runs short, the order of what to keep for the demo is: leave flow (1–2
 4. Reject with comment → pending released, comment visible to the employee.
 5. Request across a holiday and a rest day → both excluded.
 6. Import the sample → 3 unknown, 4 missing OUT, 2 duplicates removed, 30 holiday work days on 18 Nov, 2 worked-on-leave, 1 absent without leave (2 days).
-7. Map `0107` → alias → re-match → exception gone; alias in the audit log.
+7. Map `01009` → alias → re-match → exception gone; alias in the audit log.
 8. Add a missing OUT with a reason → day rebuilt, bands shown.
 9. Bulk entry for Kitchen, one week → WorkDays with source `manual`.
 10. Change the night rate (new rule row) → rebuild → new rate applied; chip shows "changed today".

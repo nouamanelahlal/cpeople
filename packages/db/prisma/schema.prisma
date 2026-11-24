@@ -34,45 +34,52 @@ model Tenant {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  companies          Company[]
-  sites              Site[]
-  costCentres        CostCentre[]
-  departments        Department[]
-  positions          Position[]
-  employees          Employee[]
-  dependents         Dependent[]
-  contractTypes      ContractType[]
-  contractTemplates  ContractTemplate[]
-  contractClauses    ContractClause[]
-  contracts          Contract[]
-  documentTypes      DocumentType[]
-  documents          EmployeeDocument[]
-  checklistTemplates ChecklistTemplate[]
-  checklistItems     ChecklistItemTemplate[]
-  onboardingTasks    OnboardingTask[]
-  auditEvents        AuditEvent[]
-  publicHolidays     PublicHoliday[]
-  leaveTypes         LeaveType[]
-  leaveRules         LeaveRule[]
-  siteWorkWeeks      SiteWorkWeek[]
-  leaveSettings      LeaveSettings?
-  leaveRequests      LeaveRequest[]
-  leaveCalculations  LeaveCalculation[]
-  leaveDecisions     LeaveDecision[]
-  publicHolidayYears PublicHolidayYear[]
-  payrollPeriods     PayrollPeriod[]
-  leaveCorrections   LeaveCorrection[]
-  openingBalances    LeaveOpeningBalance[]
-  balanceAdjustments LeaveBalanceAdjustment[]
-  carryOvers         LeaveCarryOver[]
-  carryOverRuns      LeaveCarryOverRun[]
-  settings           TenantSettings?
-  shiftPatterns      ShiftPattern[]
-  workSchedules      WorkSchedule[]
-  workScheduleDays   WorkScheduleDay[]
-  employeeSchedules  EmployeeSchedule[]
-  shiftAssignments   ShiftAssignment[]
-  attendanceSources  AttendanceSource[]
+  companies            Company[]
+  sites                Site[]
+  costCentres          CostCentre[]
+  departments          Department[]
+  positions            Position[]
+  employees            Employee[]
+  dependents           Dependent[]
+  contractTypes        ContractType[]
+  contractTemplates    ContractTemplate[]
+  contractClauses      ContractClause[]
+  contracts            Contract[]
+  documentTypes        DocumentType[]
+  documents            EmployeeDocument[]
+  checklistTemplates   ChecklistTemplate[]
+  checklistItems       ChecklistItemTemplate[]
+  onboardingTasks      OnboardingTask[]
+  auditEvents          AuditEvent[]
+  publicHolidays       PublicHoliday[]
+  leaveTypes           LeaveType[]
+  leaveRules           LeaveRule[]
+  siteWorkWeeks        SiteWorkWeek[]
+  leaveSettings        LeaveSettings?
+  leaveRequests        LeaveRequest[]
+  leaveCalculations    LeaveCalculation[]
+  leaveDecisions       LeaveDecision[]
+  publicHolidayYears   PublicHolidayYear[]
+  payrollPeriods       PayrollPeriod[]
+  leaveCorrections     LeaveCorrection[]
+  openingBalances      LeaveOpeningBalance[]
+  balanceAdjustments   LeaveBalanceAdjustment[]
+  carryOvers           LeaveCarryOver[]
+  carryOverRuns        LeaveCarryOverRun[]
+  settings             TenantSettings?
+  shiftPatterns        ShiftPattern[]
+  workSchedules        WorkSchedule[]
+  workScheduleDays     WorkScheduleDay[]
+  employeeSchedules    EmployeeSchedule[]
+  shiftAssignments     ShiftAssignment[]
+  attendanceSources    AttendanceSource[]
+  attendanceImports    AttendanceImport[]
+  punches              Punch[]
+  employeeAliases      EmployeeNumberAlias[]
+  workDays             WorkDay[]
+  attendanceExceptions AttendanceException[]
+  overtimeRules        OvertimeRule[]
+  overtimeSettings     OvertimeSettings?
 
   @@map("tenant")
 }
@@ -324,6 +331,9 @@ model Employee {
   leaveCarryOvers         LeaveCarryOver[]
   employeeSchedules       EmployeeSchedule[]
   shiftAssignments        ShiftAssignment[]
+  punches                 Punch[]
+  employeeNumberAlias     EmployeeNumberAlias[]
+  workDays                WorkDay[]
 
   @@unique([tenantId, employeeNumber])
   @@unique([tenantId, nationalId])
@@ -1464,9 +1474,310 @@ model AttendanceSource {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  attendanceImports AttendanceImport[]
 
   @@unique([tenantId, name])
   @@index([tenantId])
   @@map("attendance_source")
+}
+
+// ---------------------------------------------------------------------------
+// Attendance: the punches, the days built from them, and what went wrong
+// (M10 / HR-04, build spec §5.3 to §5.6).
+//
+// Two rules shape all of it, and both are the same rule the leave calculations
+// follow:
+//
+//  - **a punch is evidence and is never edited.** A correction is a new punch
+//    with a reason, so that "who changed this, and when" always has an answer.
+//  - **a work day is derived and may be rebuilt.** It keeps the version of the
+//    rules it was built with, so a day built last month can be explained even
+//    after the overtime bands change.
+// ---------------------------------------------------------------------------
+
+enum PunchDirection {
+  in
+  out
+  /// The device did not say. Punches are paired in order within the day.
+  unknown
+
+  @@map("punch_direction")
+}
+
+enum PunchSource {
+  device
+  manual
+
+  @@map("punch_source")
+}
+
+enum AttendanceImportStatus {
+  /// Read and checked; nothing written to anybody's days.
+  previewed
+  committed
+  /// Superseded by a later import of the same period.
+  replaced
+
+  @@map("attendance_import_status")
+}
+
+enum WorkDayStatus {
+  ok
+  exception
+  fixed
+  approved
+
+  @@map("work_day_status")
+}
+
+enum WorkDaySource {
+  device
+  manual
+  /// Device punches with a manual correction on top.
+  mixed
+
+  @@map("work_day_source")
+}
+
+enum AttendanceExceptionStatus {
+  open
+  fixed
+  ignored
+
+  @@map("attendance_exception_status")
+}
+
+/// One upload, and what it contained.
+model AttendanceImport {
+  id       String                 @id @default(uuid(7)) @db.Uuid
+  tenantId String                 @map("tenant_id") @db.Uuid
+  sourceId String?                @map("source_id") @db.Uuid
+  status   AttendanceImportStatus @default(previewed)
+
+  /// Where the file itself is kept, so an argument about it can be settled.
+  /// `fileKey` is for object storage; until that is wired the text sits in
+  /// `content`, which is also what lets the confirmation re-read the file the
+  /// trial checked instead of asking for it again.
+  fileKey String? @map("file_key")
+
+  /// The file, and a SHA-256 of it taken when it was read. Both are write-once:
+  /// the runtime role has no UPDATE on either column, so the confirmation's
+  /// hash check cannot be talked out of by the application that runs it.
+  content       String? @db.Text
+  contentSha256 String? @map("content_sha256")
+
+  fileName String @map("file_name")
+
+  /// The span the file covers, read from the punches in it.
+  periodFrom DateTime? @map("period_from") @db.Date
+  periodTo   DateTime? @map("period_to") @db.Date
+
+  rows       Int @default(0)
+  matched    Int @default(0)
+  unknown    Int @default(0)
+  duplicates Int @default(0)
+  daysBuilt  Int @default(0) @map("days_built")
+  exceptions Int @default(0)
+
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  committedAt DateTime? @map("committed_at") @db.Timestamptz(3)
+  createdBy   String    @map("created_by")
+  createdRole String    @map("created_role")
+
+  tenant  Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  source  AttendanceSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  punches Punch[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("attendance_import")
+}
+
+/// One badge at a reader. Insert-only: a correction is another punch.
+model Punch {
+  id       String  @id @default(uuid(7)) @db.Uuid
+  tenantId String  @map("tenant_id") @db.Uuid
+  importId String? @map("import_id") @db.Uuid
+
+  /// As the device wrote it, before anybody matched it to a person.
+  employeeNumber String  @map("employee_number")
+  employeeId     String? @map("employee_id") @db.Uuid
+
+  at        DateTime       @db.Timestamptz(3)
+  direction PunchDirection @default(unknown)
+  deviceId  String?        @map("device_id")
+  source    PunchSource    @default(device)
+
+  /// Why, for a punch somebody added by hand. Required of a manual one.
+  reason    String?
+  /// True where this punch was dropped as a repeat inside the window.
+  duplicate Boolean @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy String?  @map("created_by")
+
+  tenant   Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  import   AttendanceImport? @relation(fields: [importId], references: [id], onDelete: SetNull)
+  employee Employee?         @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, employeeId, at])
+  @@index([tenantId, importId])
+  @@map("punch")
+}
+
+/// A number the device writes that is really somebody we know.
+///
+/// "0107" is the case that matters: a device padding its numbers is not a
+/// different person, and saying so once should be enough.
+model EmployeeNumberAlias {
+  id         String @id @default(uuid(7)) @db.Uuid
+  tenantId   String @map("tenant_id") @db.Uuid
+  alias      String
+  employeeId String @map("employee_id") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy String   @map("created_by")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, alias])
+  @@index([tenantId])
+  @@map("employee_number_alias")
+}
+
+/// One person, one day, built from the punches (build spec §5.3).
+model WorkDay {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  employeeId String   @map("employee_id") @db.Uuid
+  date       DateTime @db.Date
+
+  scheduledMin  Int @default(0) @map("scheduled_min")
+  workedMin     Int @default(0) @map("worked_min")
+  breakMin      Int @default(0) @map("break_min")
+  lateMin       Int @default(0) @map("late_min")
+  earlyLeaveMin Int @default(0) @map("early_leave_min")
+
+  /// Minutes per overtime band, as `{ "OT_DAY": 120, "OT_NIGHT": 60 }`.
+  overtime Json
+
+  status WorkDayStatus @default(ok)
+  source WorkDaySource @default(device)
+
+  /// The leave request that explains the absence, where there is one.
+  leaveRequestId String? @map("leave_request_id") @db.Uuid
+
+  /// The rule rows this day was built with, so it can be explained after they
+  /// change — the same promise `LeaveCalculation` makes.
+  calcVersion String   @map("calc_version")
+  builtAt     DateTime @default(now()) @map("built_at") @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant     Tenant                @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  employee   Employee              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  exceptions AttendanceException[]
+
+  @@unique([tenantId, employeeId, date])
+  @@index([tenantId])
+  @@index([tenantId, date])
+  @@index([tenantId, status])
+  @@map("work_day")
+}
+
+/// Something about a day that a person has to look at.
+model AttendanceException {
+  id        String                    @id @default(uuid(7)) @db.Uuid
+  tenantId  String                    @map("tenant_id") @db.Uuid
+  workDayId String?                   @map("work_day_id") @db.Uuid
+  punchId   String?                   @map("punch_id") @db.Uuid
+  /// UNKNOWN_EMPLOYEE, MISSING_IN, MISSING_OUT, DUPLICATE, NO_SCHEDULE,
+  /// ABSENT_NO_LEAVE, WORKED_ON_LEAVE, WORKED_REST_DAY, WORKED_HOLIDAY,
+  /// OVER_DAILY_MAX, OVER_WEEKLY_MAX.
+  code      String
+  status    AttendanceExceptionStatus @default(open)
+
+  /// What the exception is about, where it is not about a day: the number a
+  /// device wrote that matches nobody, for instance.
+  detail String?
+
+  resolution String?
+  comment    String?
+  resolvedBy String?   @map("resolved_by")
+  resolvedAt DateTime? @map("resolved_at") @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  workDay WorkDay? @relation(fields: [workDayId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, status, code])
+  @@map("attendance_exception")
+}
+
+/// What an hour of overtime is worth, from a date (build spec §5.6).
+///
+/// Effective-dated rows like every other parameter (CLAUDE.md rule 3): changing
+/// a rate writes a new row, and days already built keep the version they used
+/// until somebody rebuilds them.
+model OvertimeRule {
+  id       String @id @default(uuid(7)) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  bandCode String @map("band_code")
+  /// working, rest or holiday.
+  dayType  String @map("day_type")
+
+  /// Local times. A band whose end is before its start runs through midnight.
+  timeFrom String @map("time_from")
+  timeTo   String @map("time_to")
+
+  ratePercent Decimal @map("rate_percent") @db.Decimal(6, 2)
+
+  effectiveFrom DateTime  @map("effective_from") @db.Date
+  effectiveTo   DateTime? @map("effective_to") @db.Date
+
+  note      String?
+  confirmed Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tenantId, effectiveFrom])
+  @@map("overtime_rule")
+}
+
+/// The company-wide decisions about working time.
+model OvertimeSettings {
+  id       String @id @default(uuid(7)) @db.Uuid
+  tenantId String @unique @map("tenant_id") @db.Uuid
+
+  /// daily, weekly or both. "Both, without counting the same hour twice" is
+  /// the default, and it is a question for SMG.
+  thresholdMode     String  @default("both") @map("threshold_mode")
+  normalWeeklyHours Decimal @default(44) @map("normal_weekly_hours") @db.Decimal(5, 2)
+  normalDailyHours  Decimal @default(8) @map("normal_daily_hours") @db.Decimal(5, 2)
+
+  roundingMinutes   Int    @default(15) @map("rounding_minutes")
+  /// up, down or nearest. "Up" is in the employee's favour.
+  roundingDirection String @default("up") @map("rounding_direction")
+
+  latenessToleranceMin Int     @default(10) @map("lateness_tolerance_min")
+  dailyMaxHours        Decimal @default(12) @map("daily_max_hours") @db.Decimal(5, 2)
+
+  note      String?
+  confirmed Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@map("overtime_settings")
 }

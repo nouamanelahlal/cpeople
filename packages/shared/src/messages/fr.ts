@@ -1345,9 +1345,10 @@ export const fr: Messages = {
     },
     import: {
       title: 'Importer un fichier de pointeuse',
-      note: 'L’export quotidien des pointeuses. Rien n’est encore importé : cette étape sert à convenir du format avec le fournisseur.',
+      note: 'L’export quotidien des pointeuses, lu en entier et vérifié avant que rien ne soit écrit.',
+      open: 'Importer un fichier',
       planned:
-        'L’import lui-même arrive à l’étape suivante. Ce qui est ici, c’est le format, un échantillon et la spécification à envoyer au fournisseur.',
+        'L’interface avec les pointeuses arrive avec le fournisseur (P09, 15 décembre). D’ici là, c’est le fichier quotidien, et il se lit ici.',
       sample: 'Télécharger l’échantillon',
       sampleNote:
         'Généré à partir de cette entreprise : les noms et les matricules sont ceux de ces écrans. Il contient, volontairement, tous les problèmes que l’import doit détecter.',
@@ -1361,9 +1362,78 @@ export const fr: Messages = {
         missingOut: '{count} personnes entrées sans jamais sortir',
         duplicates: '{count} doubles badgeages en moins d’une minute',
         holiday: '{count} personnes travaillant le 18 novembre, jour férié',
-        night: '{count} pointages sur l’équipe pâtisserie, qui commence à 04:00',
+        night: '{count} prises de poste matinales en pâtisserie, qui commence à 04:00',
         onLeave: '{count} personnes qui pointent alors qu’elles sont en congé approuvé',
         absent: '{count} personne absente deux jours sans demande de congé',
+      },
+      step1: '1 · Prendre le format',
+      step1Note:
+        'L’échantillon est généré à partir de cette entreprise. La spécification est ce dont le fournisseur a besoin.',
+      step2: '2 · Essayer le fichier',
+      step2Note:
+        'Le fichier est lu en entier, les journées sont construites et les problèmes sont listés. Rien n’est écrit avant votre confirmation.',
+      step3: '3 · L’enregistrer',
+      step3Note:
+        'Les pointages, les journées qui en découlent et les anomalies : tout ensemble, ou rien.',
+      fileNameLabel: 'Nom du fichier',
+      file: 'Collez le fichier',
+      fileNote:
+        'L’export tel quel, points-virgules et ligne d’en-tête compris. Une première ligne qui nomme les colonnes est lue ; sinon, c’est signalé.',
+      trial: 'Essayer',
+      confirm: 'Importer',
+      done: 'Importé. Les journées travaillées et leurs anomalies sont enregistrées.',
+      read: 'Ce que dit le fichier',
+      counts: {
+        rows: 'Pointages',
+        matched: 'Rapprochés',
+        unknown: 'Non rapprochés',
+        duplicates: 'Doubles badgeages',
+        days: 'Journées construites',
+        period: 'Période',
+      },
+      unknownTitle: '{count} matricules que personne n’a',
+      unknownNote:
+        'Ces pointages n’appartiennent à personne dans l’entreprise. Quand un matricule ressemble à quelqu’un — un zéro en tête, le plus souvent — il est nommé ici, mais rien n’est rapproché à votre place : une erreur mettrait les heures d’une personne sur le bulletin d’une autre.',
+      noMatch: 'Rien d’approchant',
+      problems: '{count} lignes illisibles',
+      exceptionsTitle: '{count} journées à regarder',
+      manualKept: '{count} journées de cette période ont été corrigées à la main et seront conservées.',
+      columns: {
+        line: 'Ligne',
+        problem: 'Problème',
+        number: 'Matricule dans le fichier',
+        punches: 'Pointages',
+        looksLike: 'Ressemble à',
+      },
+      reasons: {
+        notATime: 'La date et l’heure n’ont pas pu être lues',
+        noNumber: 'Pas de matricule sur la ligne',
+        noColumns: 'La première ligne ne nomme pas les colonnes nécessaires',
+      },
+      errors: {
+        failed: 'L’import n’a pas abouti. Réessayez dans un instant.',
+        importEmpty: 'Ce fichier ne contenait rien à importer.',
+        importGone: 'Cet essai n’existe plus. Réessayez le fichier.',
+        importDone: 'Ce fichier a déjà été importé.',
+        importChanged:
+          'Ce fichier n’est pas celui qui a été vérifié. Réessayez-le avant d’importer.',
+        notYours: 'L’import des pointages est réservé aux RH.',
+      },
+    },
+    /** Ce qu’une journée demande à quelqu’un, et pourquoi (spec §5.2). */
+    exceptions: {
+      codes: {
+        UNKNOWN_EMPLOYEE: 'Un matricule que personne n’a dans l’entreprise',
+        MISSING_IN: 'Sortie sans entrée',
+        MISSING_OUT: 'Entrée sans jamais sortir',
+        DUPLICATE: 'Le même badgeage deux fois en moins d’une minute',
+        NO_SCHEDULE: 'Au travail un jour sans vacation',
+        ABSENT_NO_LEAVE: 'Absent sans demande de congé',
+        WORKED_ON_LEAVE: 'Au travail pendant un congé approuvé',
+        WORKED_REST_DAY: 'Au travail son jour de repos',
+        WORKED_HOLIDAY: 'Au travail un jour férié',
+        OVER_DAILY_MAX: 'Plus long qu’une journée ne peut l’être',
+        OVER_WEEKLY_MAX: 'Plus long qu’une semaine ne peut l’être',
       },
     },
     source: {

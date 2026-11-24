@@ -1,4 +1,4 @@
-import { Body, Controller, ForbiddenException, Get, Param, Patch } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Param, Patch, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUserService } from '../../common/access/current-user.service.js';
 import {
@@ -6,6 +6,7 @@ import {
   type SourceMapping,
   type SourceView,
 } from './attendance-source.service.js';
+import { AttendanceImportService, type ImportReport } from './attendance-import.service.js';
 import { FileSpecService } from './file-spec.service.js';
 import { SampleExportService, type SampleSummary } from './sample-export.service.js';
 
@@ -25,7 +26,28 @@ export class AttendanceController {
     private readonly sources: AttendanceSourceService,
     private readonly sample: SampleExportService,
     private readonly spec: FileSpecService,
+    private readonly imports: AttendanceImportService,
   ) {}
+
+  @Post('imports/preview')
+  @ApiOperation({ summary: 'Reads a device file and says what would happen. Writes nothing.' })
+  preview(@Body() body: { fileName?: string; content?: string }): Promise<ImportReport> {
+    return this.imports.preview(body.fileName ?? 'attendance.csv', body.content ?? '');
+  }
+
+  @Get('imports/:id')
+  @ApiOperation({ summary: 'A trial already run, read again by its id' })
+  report(@Param('id') id: string): Promise<ImportReport> {
+    return this.imports.report(id);
+  }
+
+  @Post('imports/:id/commit')
+  @ApiOperation({
+    summary: 'Writes the punches and the days built from them, from the file the trial read',
+  })
+  commit(@Param('id') id: string): Promise<ImportReport> {
+    return this.imports.commit(id);
+  }
 
   @Get('sources')
   @ApiOperation({ summary: 'Where punches come from, and how the file is read' })

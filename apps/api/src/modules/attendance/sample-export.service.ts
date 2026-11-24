@@ -20,12 +20,13 @@ import { plainDate } from '../../common/time/clock.js';
  * screen's job is to find them and the workshop's job is to watch it happen:
  *
  *   - three **unknown numbers**: 9001 and 9002, which belong to nobody, and
- *     0107 — a real number with a leading zero, which is the format question
- *     SMG still has to answer (HR-01 open point 4);
+ *     one real number carrying a leading zero (1009 sent as 01009), which is
+ *     the employee-number format question SMG still has to answer (HR-01
+ *     open point 4);
  *   - four **missing OUT** punches: somebody who badged in and went home;
  *   - two **duplicates** a few seconds apart: the first beep was not heard;
  *   - **thirty people working on 18 November**, a public holiday;
- *   - **night work** on the pastry shift, which starts at four in the morning;
+ *   - **early starts** on the pastry shift, which begins at four in the morning;
  *   - **two people punching while on approved leave**;
  *   - **one person absent for two days** with no leave request behind it.
  */
@@ -54,7 +55,7 @@ export interface SampleSummary {
 const FROM = '2026-11-02';
 const TO = '2026-11-23';
 
-/** The public holiday inside that window, which thirty people will work. */
+/** The holiday thirty people work on purpose. Others in the window are quiet. */
 const HOLIDAY = '2026-11-18';
 
 /** Sites that have a device. The head office signs people in at a desk. */
@@ -102,6 +103,20 @@ export class SampleExportService {
       select: { employeeId: true, startDate: true, endDate: true },
     });
 
+    // **Every** public holiday in the window, not the one this file is built
+    // around. November 2026 has two — Green March Day and Independence Day —
+    // and a sample that sent the whole company to work on the first of them
+    // would be found by the import and contradict its own summary. The company
+    // is off on all of them; the deliberate anomaly is the thirty who are not.
+    const holidays = new Set(
+      (
+        await tx.publicHoliday.findMany({
+          where: { date: { gte: day(FROM), lte: day(TO) } },
+          select: { date: true },
+        })
+      ).map((row) => plainDate(row.date)),
+    );
+
     const onLeave = (employeeId: string, date: string): boolean =>
       leave.some(
         (row) =>
@@ -132,7 +147,7 @@ export class SampleExportService {
 
     for (let date = FROM; date <= TO; date = next(date)) {
       const weekday = new Date(`${date}T00:00:00.000Z`).getUTCDay();
-      const holiday = date === HOLIDAY;
+      const holiday = holidays.has(date);
 
       for (const person of people) {
         const rota = person.employeeSchedules[0];
@@ -141,9 +156,11 @@ export class SampleExportService {
 
         if (!works || resting) continue;
 
-        // The holiday: most of the company is off, and thirty people are not.
+        // A holiday: the company is off. Thirty people work Independence Day,
+        // which is the anomaly this file is carrying on purpose; on any other
+        // holiday nobody badges at all.
         if (holiday) {
-          if (holidayWorkers >= 30) continue;
+          if (date !== HOLIDAY || holidayWorkers >= 30) continue;
           holidayWorkers += 1;
         }
 
@@ -185,11 +202,17 @@ export class SampleExportService {
         });
 
         // Two people badge twice within a minute: the first beep was not heard.
+        //
+        // The second badge is placed a few seconds after the **first one they
+        // actually made**, not a few seconds after the shift starts — those are
+        // minutes apart once the arrival noise is applied, and a pair minutes
+        // apart is not a duplicate by any reading. The import and this file
+        // have to mean the same thing by the word.
         if (duplicates < 2 && date === '2026-11-05' && rows.length % 7 === 0) {
           duplicates += 1;
           rows.push({
             employeeNumber: person.employeeNumber,
-            at: shiftTime(date, start, 1),
+            at: secondsLater(inAt, 9),
             direction: 'IN',
             deviceId: device,
           });
@@ -254,6 +277,15 @@ function shiftTime(date: string, time: string, minutes: number): string {
   const seconds = (Math.abs(minutes) * 7) % 60;
 
   return `${date} ${pad(at.getUTCHours())}:${pad(at.getUTCMinutes())}:${pad(seconds)}`;
+}
+
+/** The same stamp, a few seconds on. Keeps the file's own format. */
+function secondsLater(stamp: string, seconds: number): string {
+  const [date, time] = stamp.split(' ') as [string, string];
+  const at = new Date(`${date}T${time}Z`);
+  at.setUTCSeconds(at.getUTCSeconds() + seconds);
+
+  return `${at.toISOString().slice(0, 10)} ${at.toISOString().slice(11, 19)}`;
 }
 
 function next(iso: string): string {

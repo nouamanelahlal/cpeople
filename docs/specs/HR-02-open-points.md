@@ -308,6 +308,62 @@ rule or a late adjustment is fixed by running it again.
 
 ---
 
+## 16. How long imported attendance files are kept
+
+**Question.** An imported device file is kept whole, as the evidence behind the
+worked days built from it. For how long? And the punches themselves — do they
+stay for the life of the employment, or are they cleared after a period?
+
+**Why it matters.** A punch file is personal data: it says where somebody was
+and when, every day, by the minute. **Law 09-08** requires personal data to be
+kept no longer than the purpose needs, and the purpose here is payroll and the
+ability to answer a dispute about it. "Indefinitely, because storage is cheap"
+is not an answer the law accepts, and it is the answer every system gives by
+default unless somebody sets a period.
+
+| | |
+|---|---|
+| **Default** | **None set.** Files and punches are kept indefinitely today. This is a gap, not a decision. |
+| **Where it would be set** | A retention period per tenant, with a job that clears files past it and leaves the worked days — the days are the payroll record and have their own retention; the raw file is the evidence behind them. |
+| **Still open** | The period, for both the file and the punches. The usual anchor is the payroll retention period, since that is what the evidence supports; SMG and whoever advises them on 09-08 decide. Whether a CNDP declaration covers this processing is part of the same question. |
+
+> **Note for the build:** nothing deletes attendance data today, so no data is
+> at risk of being lost while this is open. The work is a retention setting and
+> a job, and it is small — but it cannot be designed before the period is known.
+
+---
+
+## 17. Night hours that are not overtime
+
+**Question.** Do **scheduled** hours worked at night carry a premium at SMG —
+the pastry shift's 04:00 to 06:00, for instance — whether by law or by internal
+policy? Today those hours are ordinary pay.
+
+**Why it matters.** The pastry shift starts at four in the morning, every day,
+by design. Those two hours are not overtime: they are that job's normal day,
+and the engine deliberately treats them as ordinary time so that starting early
+is never mistaken for working late. Whether they are *paid differently* is a
+separate question, and nobody has answered it. If they should be, every pastry
+payslip since go-live would be wrong.
+
+| | |
+|---|---|
+| **Default** | **No premium.** Scheduled night hours are paid as ordinary hours. Overtime bands apply only to hours beyond the normal day. |
+| **Where it is set** | Settings → Attendance → overtime bands (`overtime_rule`), effective-dated per band. |
+| **Still open** | Whether the premium exists, at what rate, and between which hours. For the payroll expert as much as for SMG: if it is a legal minimum rather than company policy, the answer is not SMG's to give. |
+
+> **Note for the build — this one is not a settings change.** The rules table
+> holds `bandCode`, `dayType`, `timeFrom`, `timeTo`, `ratePercent`, and nothing
+> that says *which* hours a band applies to. The engine gives the first
+> `normalMinutes` of work to ordinary pay and only then starts matching bands,
+> so a row covering 21:00–06:00 can never touch a scheduled hour however it is
+> worded. Saying yes therefore needs a column — `appliesTo: overtime | all`, or
+> a separate premium table — plus a change in `packages/shared/src/overtime.ts`
+> and a new case in its tests. Small, but real: it is a **day's work, not a
+> switch**, and it is better known now than discovered in the first payroll run.
+
+---
+
 ## Later, not now
 
 Noted so it is not forgotten, and deliberately out of HR-02:
@@ -319,7 +375,28 @@ Noted so it is not forgotten, and deliberately out of HR-02:
   its own piece of work. **Public holiday names belong with them**: they are typed
   in once, in one language, and shown to everybody — the seeded list is in
   English and reads as English on a French screen.
+- **One spreadsheet library.** Workbooks are written with **exceljs**
+  (approved 24 November 2026), and every xlsx export — the attendance file
+  specification, the decisions board, the payroll variables — uses it. The HR-01
+  employee data template is **not built yet**; when it is, it uses exceljs too.
+  There is no second library to migrate today, and there should never be one.
 - **Compensating rest and weekend premiums** — attendance and payroll, M10/M11.
 - **Attendance-driven accrual** — leave is earned per month worked today, with
   the period itself a setting (monthly, quarterly, annual). Whether unpaid
   absence should interrupt accrual is a question for M10.
+- **The attendance import runs in the request, not in a job.** The build spec
+  asks for BullMQ (§5.3). It is written as a worker would want it — an import
+  row carrying its own status, its counts and the file it read — but the work
+  happens while the button is held: a month for forty-four people is fourteen
+  hundred punches and seven hundred days, written in a handful of statements.
+  **Trigger: production, or more than about 200 employees in a tenant,
+  whichever comes first.** `TODO(M18)` in `attendance-import.service.ts`.
+- **The imported file is kept in the database, not in object storage.** The
+  import row carries the text of the file it read and a SHA-256 of it, taken
+  when it was read. Both columns are write-once — the runtime role has no
+  `UPDATE` on either — and the confirmation re-hashes the bytes before it
+  builds anything, so what is written is what was shown, and "the device never
+  said that" has an answer. `file_key` is already in the table for the move to
+  RustFS/S3. **Trigger: production, or more than about 200 employees in a
+  tenant, whichever comes first** — the same gate as the job queue, and the two
+  are best done together.

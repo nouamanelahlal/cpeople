@@ -438,3 +438,53 @@ describe('M21 withTenant protects an owner connection too', () => {
     expect(await pooledOwner.company.count()).toBeGreaterThanOrEqual(2);
   });
 });
+
+describe('M21 what is written once stays written', () => {
+  // Several tables in this schema are evidence rather than state: an audit
+  // event, a leave calculation, a decision, a balance adjustment, a correction,
+  // a punch. The application is not trusted to leave them alone — the runtime
+  // role simply has no UPDATE or DELETE on them, so a bug cannot rewrite
+  // history and neither can anybody who finds a way to run SQL as the API.
+  //
+  // This walks them rather than testing one, so that a migration which grants
+  // the privilege back fails here instead of quietly in production.
+  const insertOnly = [
+    'audit_event',
+    'leave_calculation',
+    'leave_decision',
+    'leave_balance_adjustment',
+    'leave_correction',
+    'punch',
+  ] as const;
+
+  it.each(insertOnly)('%s cannot be updated or deleted by the runtime role', async (table) => {
+    const [row] = await owner.$queryRawUnsafe<{ can_update: boolean; can_delete: boolean }[]>(
+      `select has_table_privilege($1, $2, 'UPDATE') as can_update,
+              has_table_privilege($1, $2, 'DELETE') as can_delete`,
+      APP_DB_ROLE,
+      table,
+    );
+
+    expect(row?.can_update, `${table}: the runtime role must not UPDATE`).toBe(false);
+    expect(row?.can_delete, `${table}: the runtime role must not DELETE`).toBe(false);
+  });
+
+  // The imported file is the same kind of promise, kept one column at a time:
+  // an import row's status and counts move as it is committed, but the bytes it
+  // read and the hash taken of them never change. That is what makes the hash
+  // check at commit worth doing.
+  it('an imported file and its hash cannot be rewritten, while its status still can', async () => {
+    const [row] = await owner.$queryRawUnsafe<
+      { content: boolean; hash: boolean; status: boolean }[]
+    >(
+      `select has_column_privilege($1, 'attendance_import', 'content', 'UPDATE') as content,
+              has_column_privilege($1, 'attendance_import', 'content_sha256', 'UPDATE') as hash,
+              has_column_privilege($1, 'attendance_import', 'status', 'UPDATE') as status`,
+      APP_DB_ROLE,
+    );
+
+    expect(row?.content, 'the imported file must not be updatable').toBe(false);
+    expect(row?.hash, 'the hash of the imported file must not be updatable').toBe(false);
+    expect(row?.status, 'an import must still be able to change status').toBe(true);
+  });
+});

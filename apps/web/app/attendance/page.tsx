@@ -65,7 +65,10 @@ export default async function AttendancePage(): Promise<JSX.Element> {
         </p>
 
         <div className="flex flex-wrap gap-3">
-          <a href="/attendance/sample.csv" className={PRIMARY}>
+          <a href="/attendance/import" className={PRIMARY}>
+            {t.attendance.import.open}
+          </a>
+          <a href="/attendance/sample.csv" className={QUIET}>
             {t.attendance.import.sample}
           </a>
           <a href="/attendance/specification.xlsx" className={QUIET}>

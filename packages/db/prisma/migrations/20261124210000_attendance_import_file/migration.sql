@@ -1,0 +1,11 @@
+-- The file an import read, kept with the import (M10 / HR-04, build spec §5.3).
+--
+-- Two reasons, and the second is the one that matters. A wizard cannot carry
+-- eighty kilobytes of punches through a query string, so the trial has to leave
+-- the file somewhere before the confirmation can read it back. And an argument
+-- about a worked day — "the device never said that" — is settled by the bytes
+-- that built it, not by a count of them.
+--
+-- `file_key` stays for the day this goes to object storage; until then the text
+-- lives here, which is a few hundred kilobytes a month for a company this size.
+ALTER TABLE "attendance_import" ADD COLUMN "content" text;
