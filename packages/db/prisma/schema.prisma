@@ -60,6 +60,12 @@ model Tenant {
   leaveCalculations  LeaveCalculation[]
   leaveDecisions     LeaveDecision[]
   publicHolidayYears PublicHolidayYear[]
+  payrollPeriods     PayrollPeriod[]
+  leaveCorrections   LeaveCorrection[]
+  openingBalances    LeaveOpeningBalance[]
+  balanceAdjustments LeaveBalanceAdjustment[]
+  carryOvers         LeaveCarryOver[]
+  carryOverRuns      LeaveCarryOverRun[]
 
   @@map("tenant")
 }
@@ -298,13 +304,17 @@ model Employee {
   costCentre CostCentre? @relation(fields: [costCentreId], references: [id], onDelete: Restrict)
   manager    Employee?   @relation("ReportsTo", fields: [managerId], references: [id], onDelete: SetNull)
 
-  reports       Employee[]         @relation("ReportsTo")
-  leaveRequests LeaveRequest[]     @relation("LeaveRequests")
-  heads         Department[]       @relation("DepartmentHead")
-  dependents    Dependent[]
-  contracts     Contract[]
-  documents     EmployeeDocument[]
-  tasks         OnboardingTask[]
+  reports                 Employee[]               @relation("ReportsTo")
+  leaveRequests           LeaveRequest[]           @relation("LeaveRequests")
+  heads                   Department[]             @relation("DepartmentHead")
+  dependents              Dependent[]
+  contracts               Contract[]
+  documents               EmployeeDocument[]
+  tasks                   OnboardingTask[]
+  leaveCorrections        LeaveCorrection[]
+  leaveOpeningBalances    LeaveOpeningBalance[]
+  leaveBalanceAdjustments LeaveBalanceAdjustment[]
+  leaveCarryOvers         LeaveCarryOver[]
 
   @@unique([tenantId, employeeNumber])
   @@unique([tenantId, nationalId])
@@ -647,9 +657,13 @@ model LeaveType {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  tenant   Tenant         @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  rules    LeaveRule[]
-  requests LeaveRequest[]
+  tenant             Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  rules              LeaveRule[]
+  requests           LeaveRequest[]
+  corrections        LeaveCorrection[]
+  openingBalances    LeaveOpeningBalance[]
+  balanceAdjustments LeaveBalanceAdjustment[]
+  carryOvers         LeaveCarryOver[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -671,15 +685,22 @@ model LeaveRule {
   effectiveTo   DateTime? @map("effective_to") @db.Date
 
   /// Days a full year gives. Null where the type has no entitlement of its own.
-  entitlementDays  Decimal? @map("entitlement_days") @db.Decimal(5, 2)
+  entitlementDays       Decimal?      @map("entitlement_days") @db.Decimal(5, 2)
   /// Days earned per month worked, where the right is earned rather than granted.
-  accrualPerMonth  Decimal? @map("accrual_per_month") @db.Decimal(5, 2)
-  /// The most that may be carried into the next leave year.
-  carryOverMaxDays Decimal? @map("carry_over_max_days") @db.Decimal(5, 2)
+  accrualPerMonth       Decimal?      @map("accrual_per_month") @db.Decimal(5, 2)
+  /// The most that may be carried into the next leave year, where the mode is
+  /// `limited`.
+  carryOverMaxDays      Decimal?      @map("carry_over_max_days") @db.Decimal(5, 2)
+  /// What happens to days left at the end of the year: all of them carry, some
+  /// of them carry, or they are lost. A demo value until SMG says otherwise.
+  carryOverMode         CarryOverMode @default(limited) @map("carry_over_mode")
+  /// How long carried days last into the new year, in months. Null means they
+  /// do not expire.
+  carryOverExpiryMonths Int?          @map("carry_over_expiry_months")
   /// Days of notice expected before the first day off. A warning, not a refusal.
-  minNoticeDays    Int      @default(0) @map("min_notice_days")
+  minNoticeDays         Int           @default(0) @map("min_notice_days")
   /// How far back a request of this kind may be dated.
-  maxBackdateDays  Int      @default(0) @map("max_backdate_days")
+  maxBackdateDays       Int           @default(0) @map("max_backdate_days")
 
   /// Why this row says what it says: the agreement, the law, or nobody yet.
   note      String?
@@ -738,6 +759,10 @@ model LeaveSettings {
   /// Where a request with nobody to approve it is sent. A team address rather
   /// than a person, so that it survives somebody leaving (HR-02 open point 11).
   hrEmail               String? @map("hr_email")
+  /// How often leave is earned: "monthly", "quarterly" or "annual". A setting
+  /// rather than a constant, because it is a question for SMG and because the
+  /// answer changes every balance in the company.
+  accrualPeriod         String  @default("monthly") @map("accrual_period")
 
   note      String?
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -864,6 +889,7 @@ model LeaveRequest {
   leaveType    LeaveType          @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict)
   calculations LeaveCalculation[]
   decisions    LeaveDecision[]
+  corrections  LeaveCorrection[]
 
   @@index([tenantId])
   @@index([tenantId, employeeId])
@@ -959,4 +985,236 @@ model PublicHolidayYear {
   @@unique([tenantId, countryCode, year])
   @@index([tenantId])
   @@map("public_holiday_year")
+}
+
+// ---------------------------------------------------------------------------
+// Balances, and the payroll month they eventually land in (M09 / M10, HR-04).
+//
+// The rule that shapes all of it: **a balance is never a number somebody typed.**
+// It is worked out, every time it is asked for, from rows that each say where
+// they came from — an opening balance imported with a date, the days a rule
+// accrues, what has actually been taken, what is waiting for a decision, and
+// HR's adjustments, each of which carries a reason and cannot be edited after
+// the fact. That is what makes a balance explicable a year later, and what
+// stops it quietly disagreeing with payroll.
+// ---------------------------------------------------------------------------
+
+/// Whether a payroll month may still change (HR-02 open point 13).
+///
+/// Placed here, now, because leave needs to know: a change to leave that falls
+/// in a locked month must not reach back into it. HR-03 takes this table over
+/// and gives it the rest of what a payroll period is.
+enum PayrollPeriodStatus {
+  open
+  locked
+
+  @@map("payroll_period_status")
+}
+
+model PayrollPeriod {
+  id       String              @id @default(uuid(7)) @db.Uuid
+  tenantId String              @map("tenant_id") @db.Uuid
+  /// The month itself, as "2026-11". A month, not a date: it has no day.
+  month    String
+  status   PayrollPeriodStatus @default(open)
+
+  lockedAt DateTime? @map("locked_at") @db.Timestamptz(3)
+  lockedBy String?   @map("locked_by")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  corrections LeaveCorrection[]
+
+  @@unique([tenantId, month])
+  @@index([tenantId])
+  @@map("payroll_period")
+}
+
+/// A leave change that belongs to a month nobody may edit any more.
+///
+/// A closed payroll month is never reopened (CLAUDE.md rule 5). When a change
+/// to leave falls in one, the difference is written down here and carried to the
+/// next open month, where payroll will read it. Nothing is corrected in place
+/// and nothing is lost.
+///
+/// **Default, to be confirmed by the payroll expert** (HR-02 open point 13).
+model LeaveCorrection {
+  id          String @id @default(uuid(7)) @db.Uuid
+  tenantId    String @map("tenant_id") @db.Uuid
+  employeeId  String @map("employee_id") @db.Uuid
+  requestId   String @map("request_id") @db.Uuid
+  leaveTypeId String @map("leave_type_id") @db.Uuid
+
+  /// The month the change belonged to, which is closed.
+  originalMonth   String @map("original_month")
+  /// The open month it is carried to, where payroll will pick it up.
+  appliedPeriodId String @map("applied_period_id") @db.Uuid
+
+  /// Signed: positive where the employee took more than was counted.
+  dayDifference Decimal @map("day_difference") @db.Decimal(5, 2)
+  /// Whether these are paid days, which decides what payroll does with them.
+  paid          Boolean
+
+  /// Why, in words, always. Never blank.
+  reason String
+
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy   String   @map("created_by")
+  createdRole String   @map("created_role")
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  employee      Employee      @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  request       LeaveRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  leaveType     LeaveType     @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict)
+  appliedPeriod PayrollPeriod @relation(fields: [appliedPeriodId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tenantId, appliedPeriodId])
+  @@index([tenantId, employeeId])
+  @@map("leave_correction")
+}
+
+/// What somebody had on the day their history with us starts (M09 / HR-04).
+///
+/// Imported, with the date it is a balance *at*: a company moving to CPeople in
+/// February brings a balance as at 31 January, and everything after that is
+/// accrued and taken here. Without the date the number means nothing.
+model LeaveOpeningBalance {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  employeeId  String   @map("employee_id") @db.Uuid
+  leaveTypeId String   @map("leave_type_id") @db.Uuid
+  days        Decimal  @db.Decimal(6, 2)
+  /// The day this balance is true as at.
+  balanceAt   DateTime @map("balance_at") @db.Date
+
+  /// Which import put it here, so a bad file can be found again.
+  importId String? @map("import_id") @db.Uuid
+  note     String?
+
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy   String   @map("created_by")
+  createdRole String   @map("created_role")
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  employee  Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, employeeId, leaveTypeId, balanceAt])
+  @@index([tenantId])
+  @@index([tenantId, employeeId])
+  @@map("leave_opening_balance")
+}
+
+/// HR moving a balance by hand, with a reason (M09 / HR-04).
+///
+/// Insert-only, like the audit log and for the same reason: an adjustment that
+/// could be edited away is not a record of anything. Correcting one is another
+/// adjustment in the other direction, and both stay in the history.
+model LeaveBalanceAdjustment {
+  id          String  @id @default(uuid(7)) @db.Uuid
+  tenantId    String  @map("tenant_id") @db.Uuid
+  employeeId  String  @map("employee_id") @db.Uuid
+  leaveTypeId String  @map("leave_type_id") @db.Uuid
+  /// Signed: days given or days taken away.
+  days        Decimal @db.Decimal(6, 2)
+  /// Mandatory, and shown wherever the adjustment is shown.
+  reason      String
+
+  /// The day it counts from, which decides the leave year it lands in.
+  effectiveOn DateTime @map("effective_on") @db.Date
+
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy   String   @map("created_by")
+  createdRole String   @map("created_role")
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  employee  Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tenantId, employeeId])
+  @@map("leave_balance_adjustment")
+}
+
+/// What a leave type does with days left over at the end of the year.
+enum CarryOverMode {
+  /// Everything left goes into the new year.
+  all
+  /// Up to `carryOverMaxDays`, and no more.
+  limited
+  /// Nothing. What is not taken is lost.
+  none
+
+  @@map("carry_over_mode")
+}
+
+/// One year's carry-over for one person and one type (M09 / HR-04).
+///
+/// Written by the year-end run, one row per person per type per year, which is
+/// what lets the run be repeated safely: a second pass finds the row already
+/// there and replaces its figure rather than adding to it.
+model LeaveCarryOver {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  employeeId  String    @map("employee_id") @db.Uuid
+  leaveTypeId String    @map("leave_type_id") @db.Uuid
+  /// The year the days were earned in, and the one they move into.
+  fromYear    Int       @map("from_year")
+  toYear      Int       @map("to_year")
+  /// What was left before the rule was applied, and what survived it.
+  leftOver    Decimal   @map("left_over") @db.Decimal(6, 2)
+  days        Decimal   @db.Decimal(6, 2)
+  /// After this day the carried days are gone. Null where they do not expire.
+  expiresOn   DateTime? @map("expires_on") @db.Date
+
+  runId     String   @map("run_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  employee  Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType LeaveType         @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict)
+  run       LeaveCarryOverRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, employeeId, leaveTypeId, fromYear])
+  @@index([tenantId])
+  @@index([tenantId, toYear])
+  @@map("leave_carry_over")
+}
+
+enum CarryOverRunStatus {
+  /// Worked out and shown, and nothing written to anybody's balance.
+  preview
+  applied
+
+  @@map("carry_over_run_status")
+}
+
+/// One year-end run, previewed or applied (M09 / HR-04).
+model LeaveCarryOverRun {
+  id       String             @id @default(uuid(7)) @db.Uuid
+  tenantId String             @map("tenant_id") @db.Uuid
+  /// The year being closed.
+  fromYear Int                @map("from_year")
+  status   CarryOverRunStatus @default(preview)
+
+  /// What it did, for the screen that reports it.
+  employees Int     @default(0)
+  carried   Decimal @default(0) @db.Decimal(10, 2)
+  lost      Decimal @default(0) @db.Decimal(10, 2)
+
+  startedAt  DateTime  @default(now()) @map("started_at") @db.Timestamptz(3)
+  finishedAt DateTime? @map("finished_at") @db.Timestamptz(3)
+  byName     String    @map("by_name")
+  byRole     String    @map("by_role")
+
+  tenant     Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  carryOvers LeaveCarryOver[]
+
+  @@index([tenantId])
+  @@index([tenantId, fromYear])
+  @@map("leave_carry_over_run")
 }

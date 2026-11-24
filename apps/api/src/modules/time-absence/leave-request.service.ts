@@ -479,6 +479,16 @@ export class LeaveRequestService {
     if (this.users.may(user, 'leave.approve')) tabs.push('approvals');
     if (this.users.may(user, 'leave.manage.all')) tabs.push('all', 'review');
 
+    // Balances for other people, which is the employee list's scope: HR sees
+    // the company, a manager sees their own branch of it, and anybody else sees
+    // only their own — which is the card on their own tab, not a tab of its own.
+    if (
+      this.users.may(user, 'employee.list.all') ||
+      this.users.may(user, 'employee.list.team')
+    ) {
+      tabs.push('balances');
+    }
+
     return tabs;
   }
 

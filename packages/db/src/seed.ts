@@ -72,6 +72,11 @@ async function main(): Promise<void> {
         `  HR-02 leave requests: ${counts.leaveRequests.requests} requests, ` +
           `${counts.leaveRequests.pending} of them waiting on somebody`,
       );
+      console.log(
+        `  HR-02 balances: ${counts.balances.openingBalances} opening balances, ` +
+          `${counts.balances.adjustments} adjustments, ` +
+          `${counts.balances.payrollMonths} payroll months (October locked, November open)`,
+      );
     }
   }
 }

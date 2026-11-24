@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  daysByMonth,
   formatLeaveDays,
   halfDayAllowed,
   leaveDays,
@@ -143,5 +144,43 @@ describe('HR-02 weekdays', () => {
     expect(weekday('2026-12-07')).toBe(1); // Monday
     expect(weekday('2026-12-12')).toBe(6); // Saturday
     expect(weekday('2026-12-13')).toBe(0); // Sunday
+  });
+});
+
+describe('splitting a request across payroll months', () => {
+  const WORKING = { workingDays: [1, 2, 3, 4, 5], holidays: [], dayBasis: 'working' as const };
+
+  it('keeps each month’s days with that month', () => {
+    // 28 December 2026 (Monday) to 4 January 2027 (Monday): four working days
+    // in December, then Friday the 1st and Monday the 4th in January. New
+    // Year's Day is not in this calendar, which is the point of passing one.
+    const days = leaveDaysDetail({ from: '2026-12-28', to: '2027-01-04' }, WORKING);
+
+    expect(daysByMonth(days)).toEqual({ '2026-12': 4, '2027-01': 2 });
+  });
+
+  it('counts a half-day in the month it falls in', () => {
+    const days = leaveDaysDetail(
+      { from: '2026-12-31', to: '2027-01-01', firstDayPart: 'afternoon' },
+      WORKING,
+    );
+
+    expect(daysByMonth(days)).toEqual({ '2026-12': 0.5, '2027-01': 1 });
+  });
+
+  it('drops a public holiday out of the month it falls in', () => {
+    const days = leaveDaysDetail(
+      { from: '2026-12-28', to: '2027-01-04' },
+      { ...WORKING, holidays: ['2027-01-01'] },
+    );
+
+    expect(daysByMonth(days)).toEqual({ '2026-12': 4, '2027-01': 1 });
+  });
+
+  it('leaves out a month a request only passes over', () => {
+    const days = leaveDaysDetail({ from: '2026-12-05', to: '2026-12-06' }, WORKING);
+
+    // A weekend: nothing is counted, so no month appears at all.
+    expect(daysByMonth(days)).toEqual({});
   });
 });

@@ -238,7 +238,28 @@ setting could quietly change what somebody is paid.
 |---|---|
 | **Default** | Requests still waiting for a decision are **counted again at once**, and the person who asked and the person deciding are both told — the request shows what it was and what it has become. Requests that are already **approved are not touched**: they keep what was agreed and appear on HR's **"to review"** list with both numbers, and the balance only moves when HR accepts the difference, which is audited. |
 | **Where it is set** | Not a setting — it is how the flow works. Leave → **To review** (HR only). |
-| **Still open** | Whether an approved request from a **closed payroll month** should ever be corrected, or whether the difference belongs in the following month instead. That is a payroll question (M10/M11) and the answer changes what "accept" should do. |
+| **Still open** | Nothing in the flow itself. What happens to a **closed payroll month** is settled below. |
+
+> **Default, to be confirmed by the payroll expert** (chosen by ConSAP on
+> 24 November 2026): **a closed payroll month is never reopened.** When a change
+> to leave falls inside one, the difference is written down as a **correction
+> record** against the next open month, carrying the employee, the original
+> month, the leave type, the day difference, whether the days are paid, a link
+> back to the request and the reason. The payroll engine reads these when it
+> arrives (M10).
+>
+> A request straddling a closed December and an open January is split: the
+> December days become a correction, the January days simply change.
+>
+> **What this needs from the expert:** whether a correction should be paid in
+> the next month at the next month's rate, or at the rate of the month it came
+> from; and whether an unpaid-leave correction behaves the same way as a paid
+> one. Both change the payslip and neither changes this record.
+>
+> Built as `leave_correction`, with a minimal `payroll_period` table
+> (month, open or locked) seeded with October 2026 locked and November 2026
+> open. **HR-03 takes that table over** and gives it the rest of what a payroll
+> period is.
 
 ---
 
@@ -260,6 +281,33 @@ incomplete calendar.
 
 ---
 
+## 15. What happens to days left at the end of the year
+
+**Question.** For each leave type: does everything left carry into the new year,
+does some of it, or is it lost? And how long do carried days last?
+
+**Why it matters.** It is the one rule that can quietly take days away from
+everybody at once, on a date nobody is watching.
+
+| | |
+|---|---|
+| **Default** | Annual leave carries **up to the limit on its rule** (18 days today, itself a demo value), and carried days **run out six months into the new year**. Every other type carries nothing. All of it is demo data, marked "to be confirmed" on the Rules tab. |
+| **Where it is set** | Settings → Leave → **Rules**, per type and effective-dated: `carryOverMode` (everything / up to a limit / nothing), `carryOverMaxDays`, `carryOverExpiryMonths`. |
+| **Still open** | The three answers per type, and whether the expiry should be a number of months or a fixed date such as 31 March. A fixed date is a small change; it is not built because the question has not been asked yet. |
+
+**How it runs.** Year end is a batch over the whole company. It is **previewed
+before it is applied** — the preview does the same arithmetic and writes
+nothing — and it can be **run again safely**: one row per person per type per
+year, so a second pass replaces a figure rather than adding to it. A corrected
+rule or a late adjustment is fixed by running it again.
+
+> **Note for the build:** it runs inside the request that asks for it today,
+> which is fine for a few hundred people. When Redis and BullMQ arrive it
+> becomes a queued job; the shape — a run row, a preview, an idempotent apply —
+> is already what a worker would want.
+
+---
+
 ## Later, not now
 
 Noted so it is not forgotten, and deliberately out of HR-02:
@@ -272,5 +320,6 @@ Noted so it is not forgotten, and deliberately out of HR-02:
   in once, in one language, and shown to everybody — the seeded list is in
   English and reads as English on a French screen.
 - **Compensating rest and weekend premiums** — attendance and payroll, M10/M11.
-- **Carry-over expiry dates** — the rules hold a carry-over limit but not a date
-  by which carried days must be used.
+- **Attendance-driven accrual** — leave is earned per month worked today, with
+  the period itself a setting (monthly, quarterly, annual). Whether unpaid
+  absence should interrupt accrual is a question for M10.

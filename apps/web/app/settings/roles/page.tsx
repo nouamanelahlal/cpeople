@@ -176,6 +176,17 @@ function matrix(t: Messages): { label: string; note?: string; answer: (role: Rol
     },
     { label: rows.leaveAll, answer: (role) => yesNo(role, 'leave.manage.all') },
     {
+      label: rows.leaveBalances,
+      answer: (role) =>
+        can(role, 'employee.list.all')
+          ? 'all'
+          : can(role, 'employee.list.team')
+            ? 'team'
+            : can(role, 'leave.request.own')
+              ? 'own'
+              : 'no',
+    },
+    {
       label: rows.organisation,
       answer: (role) =>
         can(role, 'organisation.manage') ? 'yes' : can(role, 'organisation.view') ? 'view' : 'no',

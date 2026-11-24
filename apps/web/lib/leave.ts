@@ -124,8 +124,99 @@ export interface LeavePreview {
   readonly blocked?: { readonly kind: string; readonly values: Record<string, string> };
 }
 
+/** What a balance is made of (M09 / HR-04). */
+export interface BalanceFigures {
+  readonly opening: number;
+  readonly carried: number;
+  readonly carriedExpired: number;
+  readonly accrued: number;
+  readonly taken: number;
+  readonly pending: number;
+  readonly adjusted: number;
+  readonly remaining: number;
+  readonly periodsEarned: number;
+}
+
+export interface BalanceLine {
+  readonly leaveType: { id: string; code: string; name: string; tracksBalance: boolean };
+  readonly entitlementDays?: number;
+  readonly accrualPerMonth?: number;
+  readonly balance: BalanceFigures;
+  readonly year: { from: string; to: string };
+  readonly carriedExpiresOn?: string;
+}
+
+export interface BalanceStatement {
+  readonly employee: { id: string; name: string; number: string; department: string };
+  readonly lines: readonly BalanceLine[];
+}
+
+export interface BalanceList {
+  readonly employees: readonly BalanceStatement[];
+  readonly types: readonly { id: string; code: string; name: string }[];
+  readonly total: number;
+  readonly mayManage: boolean;
+  readonly today: string;
+}
+
+export interface BalanceHistoryRow {
+  readonly id: string;
+  readonly kind: 'opening' | 'carried' | 'adjustment' | 'taken';
+  readonly leaveType: { code: string; name: string };
+  readonly days: number;
+  readonly on: string;
+  readonly reason?: string;
+  readonly by?: string;
+  readonly requestId?: string;
+}
+
+export interface ImportReport {
+  readonly accepted: readonly {
+    line: number;
+    employee: string;
+    employeeNumber: string;
+    leaveType: string;
+    days: number;
+    balanceAt: string;
+  }[];
+  readonly problems: readonly { line: number; kind: string; value: string }[];
+  readonly total: number;
+  readonly applied: boolean;
+}
+
+export interface CarryOverLine {
+  readonly employee: { id: string; name: string; number: string };
+  readonly leaveType: { id: string; code: string; name: string };
+  readonly leftOver: number;
+  readonly days: number;
+  readonly mode: 'all' | 'limited' | 'none';
+  readonly expiresOn?: string;
+}
+
+export interface CarryOverResult {
+  readonly runId: string;
+  readonly fromYear: number;
+  readonly toYear: number;
+  readonly status: 'preview' | 'applied';
+  readonly employees: number;
+  readonly carried: number;
+  readonly lost: number;
+  readonly lines: readonly CarryOverLine[];
+}
+
+export interface CarryOverRun {
+  readonly id: string;
+  readonly fromYear: number;
+  readonly status: 'preview' | 'applied';
+  readonly employees: number;
+  readonly carried: number;
+  readonly lost: number;
+  readonly startedAt: string;
+  readonly byName: string;
+}
+
 /** The tabs, each with its own address so a link can open the right one. */
-export const LEAVE_TABS = ['mine', 'approvals', 'all', 'review'] as const;
+export const LEAVE_TABS = ['mine', 'approvals', 'all', 'review', 'balances'] as const;
 export type LeaveTab = (typeof LEAVE_TABS)[number];
 
 export function readLeaveTab(raw: string | string[] | undefined): LeaveTab {

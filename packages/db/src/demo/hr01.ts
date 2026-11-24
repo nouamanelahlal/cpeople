@@ -12,6 +12,11 @@
 import type { CPeoplePrismaClient } from '../client.js';
 import { clearHr02Leave, seedHr02Leave, type LeaveSeedCounts } from './hr02.js';
 import {
+  clearHr02Balances,
+  seedHr02Balances,
+  type BalanceSeedCounts,
+} from './hr02-balances.js';
+import {
   clearHr02Requests,
   seedHr02Requests,
   type LeaveRequestSeedCounts,
@@ -139,6 +144,7 @@ export interface DemoSeedResult {
   /** The leave set-up seeded with them (M08): types, rules, weeks, holidays. */
   readonly leave: LeaveSeedCounts;
   readonly leaveRequests: LeaveRequestSeedCounts;
+  readonly balances: BalanceSeedCounts;
 }
 
 /**
@@ -469,6 +475,10 @@ export async function seedHr01Demo(
   // and they read the line of management rather than inventing one.
   const leaveRequests = await seedHr02Requests(prisma, tenantId);
 
+  // The balances behind them, and the payroll months a correction would land
+  // in. Last, because they read both the people and the requests.
+  const balances = await seedHr02Balances(prisma, tenantId);
+
   return {
     employees: people.length,
     contracts,
@@ -476,6 +486,7 @@ export async function seedHr01Demo(
     tasks,
     leave,
     leaveRequests,
+    balances,
   };
 }
 
@@ -484,6 +495,7 @@ async function clear(prisma: CPeoplePrismaClient, tenantId: string): Promise<voi
   const where = { tenantId };
 
   await prisma.department.updateMany({ where, data: { headEmployeeId: null } });
+  await clearHr02Balances(prisma, tenantId);
   await clearHr02Requests(prisma, tenantId);
   await prisma.onboardingTask.deleteMany({ where });
   await prisma.employeeDocument.deleteMany({ where });

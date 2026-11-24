@@ -8,6 +8,7 @@ import { demoToday, plainDate } from '../../common/time/clock.js';
 import type { LeaveReviewItemDto } from './dto/leave-request.dto.js';
 import { leaveYear } from './leave-balance.service.js';
 import { date, LeaveCalendarService, type LeaveComputation } from './leave-calendar.service.js';
+import { LeaveCorrectionService } from './leave-correction.service.js';
 import { LeaveMailService } from './leave-mail.service.js';
 import { spanOf } from './leave-request.service.js';
 
@@ -38,6 +39,7 @@ export class LeaveReviewService {
     private readonly audit: AuditService,
     private readonly calendar: LeaveCalendarService,
     private readonly mail: LeaveMailService,
+    private readonly corrections: LeaveCorrectionService,
   ) {}
 
   /**
@@ -134,7 +136,27 @@ export class LeaveReviewService {
         throw new ConflictException({ kind: 'notPending', values: {} });
       }
 
+      // What the request was last counted as, day by day: the evidence the
+      // correction is measured against.
+      const latest = await tx.leaveCalculation.findFirst({
+        where: { requestId: id },
+        orderBy: { createdAt: 'desc' },
+        select: { days: true },
+      });
+
       await this.#write(tx, user, request, computation, 'accepted');
+
+      // Days that fall in a payroll month nobody may edit any more do not move
+      // backwards: they are carried to the next open month as a correction
+      // (HR-02 open point 13).
+      await this.corrections.carry(tx, user, {
+        requestId: id,
+        employeeId: request.employeeId,
+        leaveTypeId: request.leaveTypeId,
+        before: Array.isArray(latest?.days) ? (latest.days as never[]) : [],
+        after: computation.days,
+        reason: `Accepted by HR after a settings change: ${agreed} → ${computation.dayCount} days.`,
+      });
 
       await this.audit.record(tx, user, {
         action: 'leave.request.change_accepted',

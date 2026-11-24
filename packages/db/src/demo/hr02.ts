@@ -40,6 +40,11 @@ const LEAVE_TYPES = [
       entitlementDays: 18,
       accrualPerMonth: 1.5,
       carryOverMaxDays: 18,
+      // What happens to days left at the end of the year, and how long carried
+      // days last. Both demo values: SMG and the payroll expert decide
+      // (HR-02 open points 1 and 15).
+      carryOverMode: 'limited',
+      carryOverExpiryMonths: 6,
       minNoticeDays: 7,
       maxBackdateDays: 0,
     },
@@ -221,6 +226,8 @@ export async function seedHr02Leave(
       entitlementDays?: number;
       accrualPerMonth?: number;
       carryOverMaxDays?: number;
+      carryOverMode?: 'all' | 'limited' | 'none';
+      carryOverExpiryMonths?: number;
       minNoticeDays: number;
       maxBackdateDays: number;
     };
@@ -233,6 +240,12 @@ export async function seedHr02Leave(
         ...(rule.entitlementDays === undefined ? {} : { entitlementDays: rule.entitlementDays }),
         ...(rule.accrualPerMonth === undefined ? {} : { accrualPerMonth: rule.accrualPerMonth }),
         ...(rule.carryOverMaxDays === undefined ? {} : { carryOverMaxDays: rule.carryOverMaxDays }),
+        // Types with nothing to carry say so, rather than leaving the default
+        // to decide for them.
+        carryOverMode: rule.carryOverMode ?? 'none',
+        ...(rule.carryOverExpiryMonths === undefined
+          ? {}
+          : { carryOverExpiryMonths: rule.carryOverExpiryMonths }),
         minNoticeDays: rule.minNoticeDays,
         maxBackdateDays: rule.maxBackdateDays,
         note: DEMO_NOTE,
