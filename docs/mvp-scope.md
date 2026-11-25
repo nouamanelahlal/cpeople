@@ -1,10 +1,16 @@
 # CPeople — SoW conflicts and MVP scope
 
-Version 0.2 · 17 November 2026 · Draft for the ConSAP business developer, Youssef and the ConSAP owner
+Version 0.3 · 26 November 2026 · Draft for the ConSAP business developer, Youssef and the ConSAP owner
 
 **Decisions recorded (17 Nov 2026):**
 1. **CPeople is the official product name.** It replaces "ConSAP HR & Payroll" in the SMG documents.
 2. **Client requirements are fixed scope.** Everything stated as a client requirement stays in the MVP; nothing is cut. Later changes come through change requests, and the plan is adjusted then.
+
+**Decisions recorded (26 Nov 2026), by the project owner:**
+3. **The scope is aligned with the CPeople functional and technical specification v0.1** (`docs/specs/CPeople-functional-technical-spec.md`), which is built from the HR-01 and HR-02 workshop minutes and the HR configuration accelerators v0.2. Where this file and the spec disagree, this file wins for scope and the spec wins for the detailed rules.
+4. **Leave approval follows HR-02 decision 1:** the line manager (N+1), then HR. The second approver is a setting (HR or N+2), so other clients keep N+2.
+5. **CPeople is configured, not coded, per client and per country** (GRP-01): a layered configuration framework (M26) and country localisation templates that ConSAP can configure or import (M27).
+6. **Moved into the MVP:** the salary transfer file (M28, accelerators PP05 and prerequisite P08) and the performance module for SMG's next demo (M29, SMG request). Whether SMG pays for them as change requests or they are absorbed is a commercial decision for the owner; the build does not wait for it.
 
 **Sources:** `ConSAP_SMG_S4HANA_Project_Team_Pack_Internal.pdf` (v1.0, 16 Nov 2026), referred to here as **TP**; `ConSAP_SMG_Area_Guide_HR_Payroll.pdf` (**HRG**); `ConSAP_SMG_Area_Guide_Integration_Migration.pdf` (**IMG**); `ConSAP_SMG_Area_Guide_Finance_Controlling.pdf` (**FIG**); `CLAUDE.md` §4 (architecture).
 **Caveat:** the signed SoW is not in the project. TP section A2 summarises it and is used as the source of truth until the SoW is added.
@@ -24,7 +30,7 @@ TP numbers its A1 and A2 lines but not its part C lines, so the HR, PAY, IMP and
 | HR-01 | Employee record (matricule, ID, CNSS number, job, department, cost centre, hire date, salary, dependents, bank details); onboarding checklist; documents with expiry tracking; organisation chart | TP C1 |
 | HR-02 | Contracts generated from the template of each contract type (CDI, CDD, others) with default clauses, from an HR form | TP C1 |
 | HR-03 | Worked days, overtime (and weekend days, HRG) received from time and attendance devices via API or export file | TP C1, HRG §01 |
-| HR-04 | Leave rights under Moroccan law and the contract; leave types; N+1 then N+2 approval; approved days deducted from the payroll month; public holiday calendar | TP C1, HRG §01 |
+| HR-04 | Leave rights under Moroccan law and the contract; leave types; N+1 then N+2 approval (changed by HR-02 decision 1 to N+1 then HR); approved days deducted from the payroll month; public holiday calendar | TP C1, HRG §01, HR-02 minutes |
 | HR-05 | Moroccan payroll | TP C1 |
 | HR-06 | CNSS declaration data for Damancom and IR data, each month | TP C1 |
 | HR-07 | Payroll journal checked (debit = credit), then posted automatically in S/4HANA by cost centre through the standard journal entry API | TP C1 |
@@ -40,6 +46,9 @@ TP numbers its A1 and A2 lines but not its part C lines, so the HR, PAY, IMP and
 | IMP-05 | Training of the HR team and managers | TP C2 |
 | OPS-01 | Warranty to 30 Jun 2027: P1 "payroll blocked" response in 2 business hours, fix or workaround in 1 business day | TP 01 |
 | GRP-01 | Designed to extend to the Group's other countries | TP C |
+| EXP-01 | Expense claims: employee submits, manager approves, reimbursed through payroll | HRG §02, §07 |
+| PERF-01 | Performance module (goals and annual review) in the next demo version | SMG request to the project owner, Nov 2026 |
+| BANK-01 | Salary transfer file in the format of SMG's bank | HR accelerators v0.2 PP05, prerequisite P08 |
 | DEMO | Everything shown in the 15 Nov demo is a commitment: employee file, leave N+1 / N+2, contracts from templates, biometric attendance, payslips by e-mail, CNSS and accounting posting | HRG §02 |
 | NEW | Not in the requirements: CPeople product decision | n/a |
 
@@ -115,7 +124,7 @@ These do not contradict the architecture, but they add work to K1. **Decision:**
 | M06 | Organisation chart (read-only, from manager links) | Employees | HR-01 |
 | M07 | Contract templates (CDI, CDD, others) and contract generation (PDF) from an HR form | Employees | HR-02, DEMO |
 | M08 | Leave types, Moroccan legal entitlement plus contract rules, public holiday calendar (Morocco pack) | Time & absence | HR-04 |
-| M09 | Leave request by the employee, N+1 then N+2 approval (web), approved days passed to the payroll month | Time & absence | HR-04, DEMO |
+| M09 | Leave request by the employee, N+1 then a configurable second approver — HR for SMG (HR-02 decision 1), N+2 available for other clients (web); approved days passed to the payroll month | Time & absence | HR-04, DEMO |
 | M10 | Attendance import from one device type (API or file): worked days, overtime, weekend days; error report | Time & absence | HR-03, IMP-03, DEMO |
 | M11 | Configurable pay elements (earnings and deductions, tax and CNSS treatment, formula): SMG set incl. commission (manual or file input), weekend premium, transport, meal, CIMR, health insurance | Payroll engine | PAY-01, IMP-01 |
 | M12 | Morocco legislation pack: CNSS, AMO, CIMR, professional expenses, IR, seniority, overtime, leave pay; effective-dated parameter tables, updated for the 2027 finance law | Payroll engine (MA pack) | PAY-02, HR-05 |
@@ -132,13 +141,16 @@ These do not contradict the architecture, but they add work to K1. **Decision:**
 | M23 | UI in English and French | Platform | NEW (SMG deliverables are in English; French for HR users to confirm) |
 | M24 | Country-pack structure: everything Moroccan in the MA pack, nothing in the core | Platform | GRP-01 |
 | M25 | Expense claims: employee submits, manager approves, reimbursed through payroll; rules from the HR workshop | Payroll / self-service | EXP-01 |
+| M26 | Configuration framework: platform → country pack → tenant policy layers; guardrails (locked, floor, ceiling, extend, free); effective-dated, versioned change sets with approval and impact preview; transport from Dev & Test to Prod; ConSAP console and client admin centre | Platform | GRP-01, IMP-01, NEW (spec §4, §6) |
+| M27 | Country localisation templates: a versioned pack format (manifest, fields, holidays, leave, time, wage types, parameter tables, schema, outputs, golden tests); validation and import of a pack or template; status lifecycle (placeholder → template → prototype → validated → released); payroll disabled until a pack is validated; a blank template to start a new country | Platform / country packs | GRP-01, M24, NEW (spec §7) |
+| M28 | Salary transfer file in the bank's format, with control totals and payment status (prepared, sent, confirmed) | Payroll | BANK-01 (spec §13) |
+| M29 | Performance: review cycle, goals, competencies, rating scale, self and manager review (demo scope: goal setting and annual review) | Performance | PERF-01 (spec §14) |
 
 Add to the register: **EXP-01**, expense claims mentioned by SMG; "Expenses" in the HR & Payroll app list (HRG §02, §07).
 
 ### 3.2 Only through a change request (not stated as client requirements)
 | Feature | Why it is outside | Owner |
 |---|---|---|
-| Bank mass-transfer file | A workshop question (HRG §04), not a requirement in TP C | Youssef, if SMG asks |
 | Commission fed automatically from POS or S/4HANA data | New interface, excluded by TP E | Youssef, if SMG asks |
 
 ### 3.3 After the MVP (not in the SMG requirements)
@@ -149,7 +161,7 @@ Add to the register: **EXP-01**, expense claims mentioned by SMG; "Expenses" in 
 | Arabic UI with RTL | NEW |
 | Office 365 / Google sign-in | NEW |
 | Employee self-service portal beyond leave (payslip archive, profile updates) | NEW |
-| Second country pack (UAE candidate) | GRP-01 |
+| Second validated country pack (UAE candidate); M27 already lets ConSAP start one from the template | GRP-01 |
 | Mobile app and app-store icons | NEW |
 
 ---
