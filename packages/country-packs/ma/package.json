@@ -1,0 +1,34 @@
+{
+  "name": "@cpeople/country-pack-ma",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Morocco country pack (M12, M24, M27): fields, holidays, leave types and payroll rules as data, validated by @cpeople/payroll-engine.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./pack.json": "./pack.json"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "validate": "cpeople-pack-validate pack.json"
+  },
+  "dependencies": {
+    "@cpeople/payroll-engine": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.1"
+  },
+  "files": [
+    "dist",
+    "pack.json"
+  ]
+}
