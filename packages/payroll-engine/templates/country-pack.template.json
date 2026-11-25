@@ -1,0 +1,39 @@
+{
+  "format": "cpeople-country-pack/1",
+  "manifest": {
+    "country": "XX",
+    "name": { "en": "Country name", "fr": "Nom du pays" },
+    "version": "2027.0.0",
+    "status": "placeholder",
+    "currency": "XXX",
+    "minorUnits": 2,
+    "defaultLanguage": "en",
+    "modules": ["core", "leave"],
+    "lawBasis": [],
+    "owner": "ConSAP — localisation owner to appoint",
+    "notes": "Blank country pack. Copy this file, replace XX/XXX, fill fields, holidays and leave types (status \"placeholder\": HR works, payroll stays off). Add a payroll section only with a local expert, then move to template → prototype → validated (spec §7)."
+  },
+  "fields": [
+    {
+      "key": "NATIONAL_ID",
+      "label": { "en": "National ID", "fr": "Pièce d'identité nationale" },
+      "appliesTo": "employee",
+      "mandatory": true,
+      "sensitive": true,
+      "status": "unverified"
+    }
+  ],
+  "holidays": [
+    { "date": "01-01", "label": { "en": "New Year's Day", "fr": "Jour de l'An" } }
+  ],
+  "leaveTypes": [
+    {
+      "code": "ANNUAL",
+      "label": { "en": "Annual leave", "fr": "Congé annuel" },
+      "category": "annual",
+      "paid": true,
+      "unit": "days",
+      "status": "unverified"
+    }
+  ]
+}

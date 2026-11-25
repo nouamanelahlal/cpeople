@@ -1,0 +1,32 @@
+{
+  "name": "@cpeople/payroll-engine",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Country-neutral payroll calculation core and the country-pack format (M12, M13, M24, M27). No rates, no country rules.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "cpeople-pack-validate": "./dist/cli/validate-pack.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.1"
+  },
+  "files": [
+    "dist",
+    "templates"
+  ]
+}
