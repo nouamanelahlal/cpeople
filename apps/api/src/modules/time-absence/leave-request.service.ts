@@ -763,10 +763,12 @@ export class LeaveRequestService {
       where: { id: request.leaveTypeId },
       select: { requiresSecondApproval: true },
     });
+    const settings = await tx.leaveSettings.findFirst({ select: { secondApprover: true } });
 
     return afterFirstApproval({
       requiresSecondApproval: type.requiresSecondApproval,
       n2Id: request.n2Id,
+      secondApprover: settings?.secondApprover ?? 'manager_of_manager',
     }) as LeaveRequestStatus;
   }
 
@@ -1147,7 +1149,14 @@ function decisionKind(input: {
   approve: boolean;
   override: boolean;
   status: LeaveRequestStatus;
-}): 'approved_n1' | 'approved_n2' | 'rejected' | 'cancellation_approved' | 'cancellation_rejected' | 'hr_override' {
+}):
+  | 'approved_n1'
+  | 'approved_n2'
+  | 'approved_hr'
+  | 'rejected'
+  | 'cancellation_approved'
+  | 'cancellation_rejected'
+  | 'hr_override' {
   if (input.override) return 'hr_override';
 
   if (input.cancelling) {
@@ -1155,6 +1164,8 @@ function decisionKind(input: {
   }
 
   if (!input.approve) return 'rejected';
+
+  if (input.status === 'pending_hr') return 'approved_hr';
 
   return input.status === 'pending_n2' ? 'approved_n2' : 'approved_n1';
 }

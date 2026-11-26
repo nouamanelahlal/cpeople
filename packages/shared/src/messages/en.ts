@@ -905,6 +905,13 @@ export const en = {
       percent: '%',
       yearStart: 'The leave year starts on',
       yearStartNote: 'As a day and a month: it repeats every year.',
+      secondApprover: 'After the line manager, the second approval goes to',
+      secondApproverNote:
+        'For the leave types marked as needing a second approval. Whoever is chosen, a request with nobody above the requester goes to HR.',
+      secondApproverOptions: {
+        manager_of_manager: 'The manager’s manager (N+2)',
+        hr: 'HR',
+      },
       save: 'Save the policy',
       saved: 'Saved.',
     },
@@ -1209,6 +1216,7 @@ export const en = {
         submitted: 'Asked for',
         approved_n1: 'Approved by the manager',
         approved_n2: 'Approved by the second approver',
+        approved_hr: 'Approved by HR',
         rejected: 'Refused',
         withdrawn: 'Taken back',
         cancellation_requested: 'Cancellation asked for',

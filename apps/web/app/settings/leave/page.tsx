@@ -767,6 +767,19 @@ function Policy({ settings, f }: { settings: LeaveSettings; f: Formatter }): JSX
               className={INPUT}
             />
           </Field>
+
+          <Field id="secondApprover" label={t.secondApprover} note={t.secondApproverNote}>
+            <select
+              id="secondApprover"
+              name="secondApprover"
+              defaultValue={settings.policy.secondApprover}
+              disabled={!settings.mayManage}
+              className={INPUT}
+            >
+              <option value="hr">{t.secondApproverOptions.hr}</option>
+              <option value="manager_of_manager">{t.secondApproverOptions.manager_of_manager}</option>
+            </select>
+          </Field>
         </div>
 
         {settings.mayManage && (

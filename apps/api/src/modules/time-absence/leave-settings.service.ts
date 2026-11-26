@@ -15,7 +15,12 @@ import type {
 } from './dto/leave-settings.dto.js';
 
 /** What the screen falls back to when a tenant has no settings row yet. */
-const DEFAULT_POLICY = { teamOffWarningPercent: 33, leaveYearStart: '01-01' };
+const DEFAULT_POLICY = {
+  teamOffWarningPercent: 33,
+  leaveYearStart: '01-01',
+  secondApprover: 'manager_of_manager' as const,
+};
+const SECOND_APPROVERS = ['manager_of_manager', 'hr'] as const;
 
 /**
  * Leave set-up: the types, what each is worth, the working week, the calendar
@@ -133,6 +138,7 @@ export class LeaveSettingsService {
         policy: {
           teamOffWarningPercent: policy?.teamOffWarningPercent ?? DEFAULT_POLICY.teamOffWarningPercent,
           leaveYearStart: policy?.leaveYearStart ?? DEFAULT_POLICY.leaveYearStart,
+          secondApprover: policy?.secondApprover ?? DEFAULT_POLICY.secondApprover,
           ...(policy?.note ? { note: policy.note } : {}),
           ...(policy?.hrEmail ? { hrEmail: policy.hrEmail } : {}),
         },
@@ -532,6 +538,12 @@ export class LeaveSettingsService {
 
       const hrEmail = body.hrEmail === undefined ? before?.hrEmail ?? null : body.hrEmail.trim() || null;
 
+      const secondApprover = body.secondApprover ?? before?.secondApprover ?? DEFAULT_POLICY.secondApprover;
+
+      if (!(SECOND_APPROVERS as readonly string[]).includes(secondApprover)) {
+        throw new BadRequestException('The second approver is the manager of the manager, or HR.');
+      }
+
       await tx.leaveSettings.upsert({
         where: { tenantId: user.tenantId },
         create: {
@@ -539,8 +551,9 @@ export class LeaveSettingsService {
           teamOffWarningPercent: percent,
           leaveYearStart: yearStart,
           hrEmail,
+          secondApprover,
         },
-        update: { teamOffWarningPercent: percent, leaveYearStart: yearStart, hrEmail },
+        update: { teamOffWarningPercent: percent, leaveYearStart: yearStart, hrEmail, secondApprover },
       });
 
       await this.audit.record(tx, user, {
@@ -557,6 +570,11 @@ export class LeaveSettingsService {
             field: 'leaveYearStart',
             from: before?.leaveYearStart ?? DEFAULT_POLICY.leaveYearStart,
             to: yearStart,
+          },
+          {
+            field: 'secondApprover',
+            from: before?.secondApprover ?? DEFAULT_POLICY.secondApprover,
+            to: secondApprover,
           },
         ],
       });

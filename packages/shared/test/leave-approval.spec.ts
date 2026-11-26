@@ -70,6 +70,15 @@ describe('after the first yes', () => {
   it('goes to HR rather than skipping the second yes', () => {
     expect(afterFirstApproval({ requiresSecondApproval: true, n2Id: null })).toBe('pending_hr');
   });
+
+  it('M09 goes to HR after the manager when the company chose HR (HR-02 decision 1)', () => {
+    expect(afterFirstApproval({ requiresSecondApproval: true, n2Id: SALMA, secondApprover: 'hr' })).toBe('pending_hr');
+    expect(afterFirstApproval({ requiresSecondApproval: true, n2Id: SALMA, secondApprover: 'manager_of_manager' })).toBe('pending_n2');
+  });
+
+  it('still approves at once a type that needs no second yes, whoever the second approver is', () => {
+    expect(afterFirstApproval({ requiresSecondApproval: false, n2Id: SALMA, secondApprover: 'hr' })).toBe('approved');
+  });
 });
 
 describe('whose turn it is', () => {

@@ -121,6 +121,13 @@ export class LeavePolicyDto {
   @ApiProperty({ example: '01-01', description: 'The day the leave year starts, as MM-DD' })
   leaveYearStart!: string;
 
+  @ApiProperty({
+    enum: ['manager_of_manager', 'hr'],
+    example: 'hr',
+    description: 'Who approves after the line manager, for the types that need a second yes (M09)',
+  })
+  secondApprover!: 'manager_of_manager' | 'hr';
+
   @ApiPropertyOptional()
   note?: string;
 
@@ -262,6 +269,9 @@ export class LeavePolicyEditDto {
 
   @ApiPropertyOptional({ example: '01-01' })
   leaveYearStart?: string;
+
+  @ApiPropertyOptional({ enum: ['manager_of_manager', 'hr'], example: 'hr' })
+  secondApprover?: 'manager_of_manager' | 'hr';
 
   @ApiPropertyOptional({ example: 'rh@smg.ma' })
   hrEmail?: string;

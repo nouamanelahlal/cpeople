@@ -117,6 +117,9 @@ export async function saveLeavePolicy(formData: FormData): Promise<void> {
   const body = {
     teamOffWarningPercent: whole(formData.get('teamOffWarningPercent')) ?? 33,
     leaveYearStart: String(formData.get('leaveYearStart') ?? '01-01'),
+    ...(formData.get('secondApprover') === 'hr' || formData.get('secondApprover') === 'manager_of_manager'
+      ? { secondApprover: String(formData.get('secondApprover')) }
+      : {}),
   };
 
   await send(() => apiPatch('/leave/settings/policy', body), 'policy');
