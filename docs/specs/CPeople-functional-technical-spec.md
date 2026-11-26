@@ -699,13 +699,13 @@ The annual scale (0 to 40,000 at 0% up to 37% above 180,000) is stored, and the 
 
 ### Golden cases (first four of the test set)
 
-Computed with the steps above and decimal rounding half up per line. G01 matches a published 2026 worked example. They become automated tests in `tests/`, and the expert confirms them before release.
+Computed by the CPeople engine with the steps above and decimal rounding half up per line. G01 matches a published 2026 worked example. G03 uses the annual scale on 12 × the month, ÷ 12; a monthly table with deductions rounded to 1,833.33 gives 0.01 more IR, so the method is to validate. They become automated tests in `tests/`, and the expert confirms them before release.
 
 | Case | Inputs | Gross | CNSS | AMO | Prof. exp. | SNI | IR | Net | Employer contrib. |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | G01 | 10,000 base, no seniority, 3 dependents, full month | 10,000.00 | 268.80 | 226.00 | 2,500.00 | 7,005.20 | 451.56 | 9,053.64 | 1,749.80 |
 | G02 | 4,200 base, 3 years (5%), 0 dependents | 4,410.00 | 197.57 | 99.67 | 1,543.50 | 2,569.26 | 0.00 | 4,112.76 | 930.07 |
-| G03 | 14,000 base, 7 years (10%), 2 dependents | 15,400.00 | 268.80 | 348.04 | 2,916.67 | 11,866.49 | 2,101.28 | 12,681.88 | 2,403.74 |
+| G03 | 14,000 base, 7 years (10%), 2 dependents | 15,400.00 | 268.80 | 348.04 | 2,916.67 | 11,866.49 | 2,101.27 | 12,681.89 | 2,403.74 |
 | G04 | SMIG 3,422.72, no seniority, 0 dependents | 3,422.72 | 153.34 | 77.35 | 1,197.95 | 1,994.08 | 0.00 | 3,192.03 | 721.84 |
 
 The full set needs at least 20 cases: mid-month hire and exit, unpaid leave, overtime in each band, rest-day and holiday work, exempt allowance above its ceiling, CIMR affiliated, 7 dependents (cap), negative balance at exit, retro salary increase, off-cycle bonus in the same month, severance.
