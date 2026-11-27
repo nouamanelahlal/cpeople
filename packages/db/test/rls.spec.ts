@@ -544,3 +544,52 @@ describe('M21 a rate is never edited in place', () => {
     ).rejects.toThrow();
   });
 });
+
+describe('M12 a company rate is never edited in place either', () => {
+  // CIMR and the per-company contributions that follow it are effective-dated
+  // the same way overtime rules are, and for the same reason: changing a rate
+  // in place would rewrite what past payslips were calculated from. A change is
+  // a new row from a date; the row it replaces is closed. That is what makes
+  // these rows their own insert-only history of what the company was charged.
+  const locked = ['code', 'rate_percent', 'effective_from'] as const;
+  const open = ['effective_to', 'confirmed', 'note', 'updated_at'] as const;
+
+  it.each(locked)(
+    'tenant_contribution_rate.%s cannot be updated by the runtime role',
+    async (column) => {
+      const [row] = await owner.$queryRawUnsafe<{ allowed: boolean }[]>(
+        `select has_column_privilege($1, 'tenant_contribution_rate', $2, 'UPDATE') as allowed`,
+        APP_DB_ROLE,
+        column,
+      );
+
+      expect(row?.allowed, `tenant_contribution_rate.${column} must be write-once`).toBe(false);
+    },
+  );
+
+  it.each(open)('tenant_contribution_rate.%s can still be updated', async (column) => {
+    const [row] = await owner.$queryRawUnsafe<{ allowed: boolean }[]>(
+      `select has_column_privilege($1, 'tenant_contribution_rate', $2, 'UPDATE') as allowed`,
+      APP_DB_ROLE,
+      column,
+    );
+
+    expect(row?.allowed, `tenant_contribution_rate.${column} is a legitimate change`).toBe(true);
+  });
+
+  it('refuses an in-place rate change even when the application tries one', async () => {
+    const rate = await owner.tenantContributionRate.findFirst({
+      select: { id: true, tenantId: true },
+    });
+    if (!rate) return;
+
+    await expect(
+      withTenant(runtime, rate.tenantId, (tx) =>
+        tx.tenantContributionRate.update({
+          where: { id: rate.id },
+          data: { ratePercent: 0.99 },
+        }),
+      ),
+    ).rejects.toThrow();
+  });
+});

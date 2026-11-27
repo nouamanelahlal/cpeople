@@ -481,6 +481,22 @@
           "fr": "Majoration, jour de repos la nuit (règle d'heures supplémentaires du client)"
         },
         "default": "0"
+      },
+      {
+        "key": "NIGHT_PREMIUM_HOURS",
+        "label": {
+          "en": "Hours worked inside a premium band that are not overtime",
+          "fr": "Heures travaillées dans une plage à majoration, hors heures supplémentaires"
+        },
+        "default": "0"
+      },
+      {
+        "key": "NIGHT_PREMIUM_RATE",
+        "label": {
+          "en": "Premium rate for those hours (from the tenant's overtime rule)",
+          "fr": "Taux de majoration de ces heures (règle d'heures supplémentaires du client)"
+        },
+        "default": "0"
       }
     ],
     "parameters": [
@@ -895,6 +911,25 @@
         "glKey": "SALARIES"
       },
       {
+        "code": "1240",
+        "label": {
+          "en": "Night premium on scheduled hours",
+          "fr": "Majoration de nuit sur heures planifiées"
+        },
+        "class": "earning",
+        "owner": "pack",
+        "bases": {
+          "GROSS": 1,
+          "SOCIAL": 1,
+          "TAXABLE": 1
+        },
+        "payslip": {
+          "section": "earnings",
+          "order": 34
+        },
+        "glKey": "SALARIES"
+      },
+      {
         "code": "5100",
         "label": {
           "en": "CNSS employee",
@@ -1205,6 +1240,16 @@
         "quantity": "input('OT_REST_NIGHT_HOURS')",
         "rate": "input('OT_REST_NIGHT_PREMIUM')",
         "note": "As above."
+      },
+      {
+        "id": "night_premium_1",
+        "kind": "line",
+        "wageType": "1240",
+        "when": "input('NIGHT_PREMIUM_HOURS') > 0",
+        "amount": "input('MONTHLY_SALARY') * (1 + band('SENIORITY_RATES', input('SERVICE_YEARS'))) / param('PAYROLL_HOURS') * input('NIGHT_PREMIUM_RATE') * input('NIGHT_PREMIUM_HOURS')",
+        "quantity": "input('NIGHT_PREMIUM_HOURS')",
+        "rate": "input('NIGHT_PREMIUM_RATE')",
+        "note": "Scheduled hours inside a premium band (an `all_hours` overtime rule). The hours are already in the monthly salary, so only the premium is paid here — the rate is not 1 + rate. Whether SMG owes such a premium at all is HR-02 open point 17; the rate comes from the tenant's rule, never from this pack."
       },
       {
         "id": "taxable_variables",

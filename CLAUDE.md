@@ -36,7 +36,11 @@ organisation · employees · time-absence · payroll · payslips · declarations
 ## Non-negotiable rules
 1. **Tenant isolation.** Every business table has `tenant_id`, protected by a Postgres RLS policy. Never query without the tenant context set. Add a test for each new table.
 2. **Country boundary.** Nothing Moroccan (CNSS, AMO, CIMR, IR, CIN, Damancom, Moroccan holidays) goes in the core or in `payroll-engine`. It goes in `packages/country-packs/ma`.
-3. **No hard-coded legal values.** Rates, ceilings, tax brackets and deductions are effective-dated parameter rows. **Never write a rate from memory**; leave a `TODO(verify-official-rate)` and a placeholder seed marked as unverified.
+3. **No hard-coded legal values, and two homes for the values there are.**
+   - **Statutory values** — CNSS, AMO, the IR scale, SMIG, ceilings, the family deduction — live in the **versioned country pack** (`packages/country-packs/<cc>/pack.json`), effective-dated. They change only through a reviewed pull request, and a pack is released Dev → Test → Prod **after the payroll expert signs it off**. They are not editable in the app: a rate is law, and law does not change because somebody opened a settings screen.
+   - **Per-company values** — the CIMR rate, health insurance, company pay elements, bonuses — live in **effective-dated tenant tables in the database**, edited in the app by the people who own them.
+   - **Never put a per-company value in the pack.** The pack is one country's law, shared by every tenant in it; a tenant's own figure there would be wrong for everybody else and invisible to the company it belongs to.
+   - **Never write a rate from memory**; leave a `TODO(verify-official-rate)` and a placeholder marked unverified. An unverified value must not calculate in production.
 4. **Money.** Use integer minor units (or a decimal library), never floats. Store the currency with every amount.
 5. **Payroll runs are versioned and audited.** A recalculation creates a new version; a locked period is never edited.
 6. **Sensitive data.** Salary, CIN and RIB are encrypted at field level. No real personal data in the repo, seeds, tests, logs or fixtures. Dev uses fake data only.

@@ -13,6 +13,7 @@
 | 26 Nov 2026 | Configuration framework (M26) and country localisation templates with import (M27) are MVP platform work | Project owner |
 | 26 Nov 2026 | Salary transfer file (M28) and performance module (M29) moved into the MVP; commercial treatment open | Project owner |
 | 26 Nov 2026 | Money in the payroll engine: integer minor units (bigint) with exact decimal rates, half-up rounding per line | NEW (CLAUDE.md rule 4) |
+| 27 Nov 2026 | **Where a value lives:** statutory values (CNSS, AMO, IR scale, SMIG, ceilings, family deduction) live in the versioned country pack, effective-dated, changed only by a reviewed PR and released Dev → Test → Prod after the payroll expert signs off. Per-company values (CIMR rate, health insurance, company pay elements, bonuses) live in effective-dated tenant tables in the database, edited in the app. **A per-company value never goes in the pack.** | Project owner |
 
 ## Open
 - GitHub or GitLab

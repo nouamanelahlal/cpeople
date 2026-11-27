@@ -132,4 +132,36 @@ describe('M27 Morocco pack as data', () => {
       expect(row.source).toMatch(/TODO\(verify-official-rate\)/);
     }
   });
+
+  it('G10 — CIMR at a rate the company agreed, not one the pack knows', () => {
+    // CIMR is a **per-company** rate (CLAUDE.md rule 3): it is agreed between
+    // one employer and the fund, so it is an input and there is no row for it
+    // in this pack. It comes from `tenant_contribution_rate`, effective-dated
+    // per tenant, and six per cent here is this test's figure and nobody's law.
+    //
+    // Both lines are the social base times the rate, so they are worked out by
+    // hand: the social base of a 10,000 salary with no seniority is 10,000
+    // (AMO EE of 226.00 at 0.0226 says so in G01), and 10,000 x 0.06 is 600.00.
+    const r = run({ MONTHLY_SALARY: '10000', CIMR_EE_RATE: '0.06', CIMR_ER_RATE: '0.06' });
+
+    expect(r.status).toBe('calculated');
+    expect(amount(r, '5120')).toBe('600.00');
+    expect(amount(r, '7140')).toBe('600.00');
+
+    // And it reaches what the company pays. Without CIMR the employer side of a
+    // 10,000 salary is 1,749.80 (G01); the employer's six per cent adds exactly
+    // its own 600.00 on top.
+    expect(r.totals.employer).toBe('2349.80');
+  });
+
+  it('G11 — no CIMR line at all when the company does not run it', () => {
+    // Which is SMG today (spec CT05), and is how the demo tenant is seeded: the
+    // rate rows exist at zero rather than being absent, so the answer to "does
+    // this company run CIMR" is a row somebody can read and change, not a gap.
+    const r = run({ MONTHLY_SALARY: '10000', CIMR_EE_RATE: '0', CIMR_ER_RATE: '0' });
+
+    expect(amount(r, '5120')).toBeUndefined();
+    expect(amount(r, '7140')).toBeUndefined();
+    expect(r.totals.employer).toBe('1749.80');
+  });
 });
