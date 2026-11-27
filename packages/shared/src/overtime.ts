@@ -13,8 +13,18 @@
  *
  * The one thing this file does insist on is that **an hour is counted once**.
  * An hour worked at ten at night on a public holiday belongs to exactly one
- * band, and a day that is over both the daily and the weekly threshold does not
- * pay the same hour twice.
+ * overtime band, and a day that is over both the daily and the weekly threshold
+ * does not pay the same hour twice.
+ *
+ * **Premiums are the deliberate exception, and they are kept apart.** A band
+ * marked `all_hours` — a night premium, say — is paid for every minute inside
+ * its window whether those minutes were ordinary or overtime, and it is paid
+ * *on top of* whatever overtime band the same minute already earned. An hour of
+ * overtime at eleven at night can therefore be both `OT_NIGHT` and
+ * `NIGHT_PREMIUM`. They are returned in their own map rather than mixed into
+ * the bands, so that "an hour belongs to one overtime band" stays true, nothing
+ * that sums the bands double-counts, and the premium can be shown and paid as
+ * the separate line it is.
  */
 
 /** Minutes from midnight. 07:30 is 450. */
@@ -28,6 +38,18 @@ export interface OvertimeBand {
   readonly timeFrom: string;
   readonly timeTo: string;
   readonly ratePercent: number;
+  /**
+   * Which minutes the band is paid for.
+   *
+   * `overtime` — the default, and what every band meant before this existed —
+   * pays only minutes beyond the ordinary day. `all_hours` pays every minute in
+   * the window, scheduled ones included, on top of any overtime band for the
+   * same minute.
+   *
+   * Whether SMG owes a premium on scheduled night hours is open (HR-02 open
+   * point 17). The default is no: there is no `all_hours` row in the seed.
+   */
+  readonly appliesTo?: 'overtime' | 'all_hours';
 }
 
 export interface WorkedSpan {
@@ -47,8 +69,16 @@ export interface OvertimeInput {
 export interface OvertimeResult {
   /** Minutes inside the normal day. */
   readonly normal: number;
-  /** Minutes per band, keyed by band code. Only bands with minutes appear. */
+  /** Overtime minutes per band, keyed by band code. Only bands with minutes appear. */
   readonly bands: Record<string, number>;
+  /**
+   * Premium minutes per band, for bands paid on all hours.
+   *
+   * Deliberately not part of `bands`: these minutes are already counted there or
+   * in `normal`, and this says they earn something extra as well. Summing both
+   * maps would count the same minute twice.
+   */
+  readonly premiums: Record<string, number>;
   readonly overtimeTotal: number;
   readonly workedTotal: number;
 }
@@ -77,6 +107,9 @@ export function toTime(minutes: Minutes): string {
  *
  * On a rest day or a public holiday `normalMinutes` is zero, so every minute is
  * overtime and the bands decide what kind.
+ *
+ * Premium bands are worked out separately, over every worked minute, because
+ * they are owed whether or not the minute was overtime.
  */
 export function overtimeFor(input: OvertimeInput): OvertimeResult {
   const spans = [...input.spans]
@@ -84,6 +117,11 @@ export function overtimeFor(input: OvertimeInput): OvertimeResult {
     .sort((a, b) => a.from - b.from);
 
   const workedTotal = spans.reduce((sum, span) => sum + (span.to - span.from), 0);
+
+  // Only bands that pay for overtime take part in the walk below. A band left
+  // without `appliesTo` is an overtime band, which is what every row meant
+  // before premiums existed.
+  const overtimeBands = input.bands.filter((band) => (band.appliesTo ?? 'overtime') === 'overtime');
 
   let ordinaryLeft = Math.max(input.normalMinutes, 0);
   const bands: Record<string, number> = {};
@@ -95,8 +133,8 @@ export function overtimeFor(input: OvertimeInput): OvertimeResult {
     let at = span.from;
 
     while (at < span.to) {
-      const band = bandAt(at, input.dayType, input.bands);
-      const nextEdge = Math.min(span.to, nextBoundary(at, input.dayType, input.bands));
+      const band = bandAt(at, input.dayType, overtimeBands);
+      const nextEdge = Math.min(span.to, nextBoundary(at, input.dayType, overtimeBands));
       const length = nextEdge - at;
 
       if (ordinaryLeft > 0) {
@@ -121,9 +159,45 @@ export function overtimeFor(input: OvertimeInput): OvertimeResult {
   return {
     normal: Math.min(workedTotal, Math.max(input.normalMinutes, 0)),
     bands,
+    premiums: premiumsFor(spans, input.dayType, input.bands),
     overtimeTotal,
     workedTotal,
   };
+}
+
+/**
+ * Minutes owed a premium, per band.
+ *
+ * The same walk as above with the ordinary-hours bookkeeping taken out, which
+ * is the whole difference: a premium does not care whether the minute was
+ * scheduled or over, only when it was worked. A day with no `all_hours` band —
+ * which is every day until SMG says otherwise — returns an empty map and
+ * changes nothing.
+ */
+function premiumsFor(
+  spans: readonly WorkedSpan[],
+  dayType: OvertimeInput['dayType'],
+  allBands: readonly OvertimeBand[],
+): Record<string, number> {
+  const bands = allBands.filter((band) => band.appliesTo === 'all_hours');
+  if (bands.length === 0) return {};
+
+  const premiums: Record<string, number> = {};
+
+  for (const span of spans) {
+    let at = span.from;
+
+    while (at < span.to) {
+      const band = bandAt(at, dayType, bands);
+      const nextEdge = Math.min(span.to, nextBoundary(at, dayType, bands));
+
+      if (band) premiums[band.bandCode] = (premiums[band.bandCode] ?? 0) + (nextEdge - at);
+
+      at = nextEdge;
+    }
+  }
+
+  return premiums;
 }
 
 /**

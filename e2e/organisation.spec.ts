@@ -1,5 +1,6 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { openAs, useEnglish, type DemoRole } from './support/demo-users';
+import { resetDemoData } from './support/demo-data';
 
 /**
  * The organisation, and the cost centres it costs against (HR-01 spec 6.5).
@@ -13,6 +14,27 @@ import { openAs, useEnglish, type DemoRole } from './support/demo-users';
 test.beforeEach(({ browserName: _browserName }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-chromium', 'One browser is enough.');
   testInfo.setTimeout(150_000);
+});
+
+/**
+ * This file **moves a cost centre**, and the test that moves it is the one that
+ * moves it back. That is fine until the day it fails in between — and then the
+ * kitchen is left costing against the wrong centre, in a database every later
+ * run and every demo reads. It happened: a run failed here, and the next run
+ * failed on a different test that was only asserting the seeded value.
+ *
+ * So the data is put back before and after, the way every other file that
+ * changes something does it. A test that fails should cost one red test, not
+ * every red test that follows it.
+ */
+test.beforeAll(({ browserName: _browserName }, testInfo) => {
+  if (testInfo.project.name !== 'desktop-chromium') return;
+  resetDemoData();
+});
+
+test.afterAll(({ browserName: _browserName }, testInfo) => {
+  if (testInfo.project.name !== 'desktop-chromium') return;
+  resetDemoData();
 });
 
 test.describe('HR-01 organisation', () => {

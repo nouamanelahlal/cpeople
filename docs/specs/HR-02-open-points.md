@@ -352,15 +352,17 @@ payslip since go-live would be wrong.
 | **Where it is set** | Settings → Attendance → overtime bands (`overtime_rule`), effective-dated per band. |
 | **Still open** | Whether the premium exists, at what rate, and between which hours. For the payroll expert as much as for SMG: if it is a legal minimum rather than company policy, the answer is not SMG's to give. |
 
-> **Note for the build — this one is not a settings change.** The rules table
-> holds `bandCode`, `dayType`, `timeFrom`, `timeTo`, `ratePercent`, and nothing
-> that says *which* hours a band applies to. The engine gives the first
-> `normalMinutes` of work to ordinary pay and only then starts matching bands,
-> so a row covering 21:00–06:00 can never touch a scheduled hour however it is
-> worded. Saying yes therefore needs a column — `appliesTo: overtime | all`, or
-> a separate premium table — plus a change in `packages/shared/src/overtime.ts`
-> and a new case in its tests. Small, but real: it is a **day's work, not a
-> switch**, and it is better known now than discovered in the first payroll run.
+**If yes, add a row with `appliesTo = all_hours`: a setting, no code change.**
+
+> **How it behaves.** A band marked `all_hours` is paid for every minute inside
+> its window — scheduled minutes included — and it is paid **on top of** any
+> overtime band the same minute already earned, not instead of it. An hour of
+> overtime at eleven at night is therefore both `OT_NIGHT` and `NIGHT_PREMIUM`.
+> The premium minutes are kept in their own column on the day, apart from the
+> overtime ones, because the same minute appears in both and adding the two
+> together would count it twice. Adding the row is an effective-dated change
+> like any other: days rebuilt afterwards record the new rule version, and days
+> already built keep theirs until they are rebuilt.
 
 ---
 
@@ -400,3 +402,39 @@ Noted so it is not forgotten, and deliberately out of HR-02:
   RustFS/S3. **Trigger: production, or more than about 200 employees in a
   tenant, whichever comes first** — the same gate as the job queue, and the two
   are best done together.
+- **The `appliesTo` field has no screen yet.** The column and the engine are
+  built, but `/settings/attendance` has only the `source` tab today — the
+  `overtime` and `schedules` tabs are still to come (build spec §7). Until the
+  overtime tab exists, an `all_hours` band can only be added as a seed or a
+  migration, which is enough to answer open point 17 but is not yet the
+  self-service setting it should be. **The field, its EN/FR labels and its
+  tooltip belong with step 8**, where that tab is built.
+- **The premium has nowhere to show yet.** `work_day.premium` is written on
+  every build, but the day detail that would show a `NIGHT_PREMIUM` line is part
+  of the timesheets in **step 7**, and the payroll variables that would pay it
+  are **step 10**. The figure is stored correctly in the meantime, so neither
+  screen has to go back and recompute anything.
+- **"Confirmed by SMG" has no history row yet.** §7.1 asks that confirming a
+  defaulted row store **who and when, insert-only**. What exists today is the
+  `confirmed` boolean on the row, plus an `audit_event` — itself insert-only —
+  recording who changed a rule and when, including `confirmed` from and to. So
+  the information is captured, but not as the per-row confirmation record §7.1
+  describes, and there is no "Confirmed by SMG" button to write one. **Step 8**,
+  which builds the chips, adds both. Note that `confirmed` is deliberately left
+  updatable on the locked rule tables precisely so that this can work: a
+  confirmation does not change what a rule says, it records that somebody
+  checked it.
+- **`leave_rule` deserves the same database lock as `overtime_rule`.** The
+  application already treats it correctly — a change writes a new row and only
+  closes the previous one — but nothing in the database stops an in-place edit
+  of a rate. Its own small PR, before step 8 builds any editing screen.
+- **Four e2e files change data and change it back by hand.**
+  `organisation.spec.ts` moved a cost centre and restored it in the same test;
+  when that test failed in between, the kitchen was left costing against the
+  wrong centre and the *next* run failed on a different test that was only
+  asserting the seeded value. That one now resets the demo data before and
+  after, like the fourteen files that already did. `employee-file.spec.ts`
+  (salary, phone), `settings.spec.ts` (phone) and `hire.spec.ts` (creates a
+  person) still restore by hand. None has caused a failure yet, and `hire` is
+  followed by a file that resets — but the pattern is the same one, and the fix
+  is two lines each when somebody is next in there.
