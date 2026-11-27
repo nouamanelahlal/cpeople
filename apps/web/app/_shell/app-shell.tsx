@@ -207,7 +207,7 @@ export function AppShell({
           onFocus={() => setFocused(true)}
           onBlur={blur}
           style={{ boxShadow: expanded && !pinned ? '0 16px 48px rgba(15,25,55,0.16)' : 'none' }}
-          className={`absolute inset-y-0 start-0 flex w-[var(--rail-width)] flex-col gap-6 overflow-y-auto overflow-x-hidden border-e border-card-border bg-white px-4 py-6 transition-[width,box-shadow] duration-200 ease-out motion-reduce:transition-none max-[720px]:fixed max-[720px]:w-[280px] ${
+          className={`no-scrollbar absolute inset-y-0 start-0 flex w-[var(--rail-width)] flex-col gap-6 overflow-y-auto overflow-x-hidden border-e border-card-border bg-white px-4 py-6 transition-[width,box-shadow] duration-200 ease-out motion-reduce:transition-none max-[720px]:fixed max-[720px]:w-[280px] ${
             drawerOpen ? 'max-[720px]:flex' : 'max-[720px]:hidden'
           }`}
         >
