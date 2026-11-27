@@ -262,3 +262,111 @@ describe('rounding', () => {
     expect(roundMinutes(487, 0, 'up')).toBe(487);
   });
 });
+
+describe('a premium on hours that are not overtime', () => {
+  // HR-02 open point 17: whether SMG owes a premium on *scheduled* night hours
+  // — the pastry shift's 04:00 to 06:00 — is open, and the default is no. These
+  // tests are about the arithmetic being ready for either answer, so that the
+  // answer is a row in a table rather than a change to this file.
+  //
+  // The rate is invented, like every other figure here.
+  const NIGHT_PREMIUM: OvertimeBand = {
+    bandCode: 'NIGHT_PREMIUM',
+    dayType: 'working',
+    timeFrom: '21:00',
+    timeTo: '06:00',
+    ratePercent: 25,
+    appliesTo: 'all_hours',
+  };
+
+  const WITH_PREMIUM = [...BANDS, NIGHT_PREMIUM];
+
+  it('pays the pastry shift’s first two hours, which are not overtime', () => {
+    // 04:00 to 12:00 is eight hours, all of them ordinary. Two of them fall
+    // inside the night window, so they earn the premium and nothing else: the
+    // day is still worth no overtime at all.
+    const answer = overtimeFor({
+      spans: [{ from: toMinutes('04:00'), to: toMinutes('12:00') }],
+      dayType: 'working',
+      bands: WITH_PREMIUM,
+      normalMinutes: EIGHT_HOURS,
+    });
+
+    expect(answer.premiums['NIGHT_PREMIUM']).toBe(120);
+    expect(answer.overtimeTotal).toBe(0);
+    expect(answer.bands).toEqual({});
+    expect(answer.normal).toBe(EIGHT_HOURS);
+  });
+
+  it('pays the premium and the overtime separately when the shift runs long', () => {
+    // The same morning, plus an hour at midday. The premium is still the two
+    // early hours; the extra hour is ordinary overtime in daylight. Neither
+    // figure touches the other.
+    const answer = overtimeFor({
+      spans: [{ from: toMinutes('04:00'), to: toMinutes('13:00') }],
+      dayType: 'working',
+      bands: WITH_PREMIUM,
+      normalMinutes: EIGHT_HOURS,
+    });
+
+    expect(answer.premiums['NIGHT_PREMIUM']).toBe(120);
+    expect(answer.bands['OT_DAY']).toBe(60);
+    expect(answer.overtimeTotal).toBe(60);
+  });
+
+  it('pays both on an evening that runs into the night', () => {
+    // 14:00 to 23:00: eight ordinary hours, then an hour over. That last hour
+    // is after nine, so it is night overtime **and** premium hours — the one
+    // case where a minute earns from two bands, which is the point of paying a
+    // premium on top rather than instead.
+    const answer = overtimeFor({
+      spans: [{ from: toMinutes('14:00'), to: toMinutes('23:00') }],
+      dayType: 'working',
+      bands: WITH_PREMIUM,
+      normalMinutes: EIGHT_HOURS,
+    });
+
+    expect(answer.bands['OT_NIGHT']).toBe(60);
+    expect(answer.premiums['NIGHT_PREMIUM']).toBe(120);
+    expect(answer.overtimeTotal).toBe(60);
+
+    // The overtime bands still account for the overtime exactly once; the
+    // premium is extra pay on minutes already counted, not extra minutes.
+    const banded = Object.values(answer.bands).reduce((sum, value) => sum + value, 0);
+    expect(banded).toBe(answer.overtimeTotal);
+  });
+
+  it('changes nothing at all where no premium band exists', () => {
+    // The guard on the whole feature: with today's seeded rules — none of which
+    // is `all_hours` — every answer is the one it was before premiums existed.
+    const cases = [
+      { from: '04:00', to: '12:00', normal: EIGHT_HOURS },
+      { from: '19:00', to: '23:00', normal: 0 },
+      { from: '14:00', to: '23:00', normal: EIGHT_HOURS },
+      { from: '22:00', to: '26:00', normal: 0 },
+    ] as const;
+
+    for (const span of cases) {
+      const answer = overtimeFor({
+        spans: [{ from: toMinutes(span.from), to: toMinutes(span.to) }],
+        dayType: 'working',
+        bands: BANDS,
+        normalMinutes: span.normal,
+      });
+
+      expect(answer.premiums, `${span.from}–${span.to} owes no premium`).toEqual({});
+    }
+
+    // And the spec's own case still gives the spec's own answer.
+    const evening = overtimeFor({
+      spans: [{ from: toMinutes('19:00'), to: toMinutes('23:00') }],
+      dayType: 'working',
+      bands: BANDS,
+      normalMinutes: 0,
+    });
+
+    expect(evening.bands['OT_DAY']).toBe(120);
+    expect(evening.bands['OT_NIGHT']).toBe(120);
+    expect(evening.overtimeTotal).toBe(240);
+  });
+});

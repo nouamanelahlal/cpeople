@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices, type ReporterDescription } from '@playwright/test';
 
 // End-to-end tests for CPeople. Runs against the local web app (apps/web).
 // Fake data only: never point these tests at Test or Prod with real employee data.
@@ -33,7 +33,21 @@ export default defineConfig({
   // than the test allows — noise, not a defect. A test that fails twice is
   // still a failure, so nothing real is hidden by this.
   retries: process.env.CI ? 2 : 1,
-  reporter: [['html', { open: 'never' }], ['list']],
+  // What a run reports.
+  //
+  // On CI the `github` reporter annotates the failing line in the pull request,
+  // and the JSON is what the workflow reads to put failures **and retries** in
+  // the job summary. A test that only passes the second time is flaky, not
+  // passing: the run stays green, but nobody has to go looking to find out it
+  // happened.
+  reporter: process.env.CI
+    ? ([
+        ['github'],
+        ['list'],
+        ['html', { open: 'never' }],
+        ['json', { outputFile: 'playwright-report/results.json' }],
+      ] as const satisfies ReporterDescription[])
+    : [['html', { open: 'never' }], ['list']],
   use: {
     baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000',
     trace: 'on-first-retry',

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import type { TenantClient } from '@cpeople/db';
 import {
@@ -46,6 +47,10 @@ export interface BuiltDay {
   readonly lateMin: number;
   readonly earlyLeaveMin: number;
   readonly overtime: Record<string, number>;
+  /** Minutes owed a premium, per band. Empty until a band is paid on all hours. */
+  readonly premium: Record<string, number>;
+  /** The overtime rule rows this day was built against. */
+  readonly overtimeRuleIds: string[];
   readonly exceptions: { code: ExceptionCode; detail?: string }[];
   readonly leaveRequestId?: string;
   readonly calcVersion: string;
@@ -70,6 +75,8 @@ export interface BuildContext {
   /** Public holidays in the period, as plain dates. */
   readonly holidays: ReadonlySet<string>;
   readonly calcVersion: string;
+  /** The ids of the rule rows in force, so a day can name them. */
+  readonly ruleIds: string[];
 }
 
 @Injectable()
@@ -94,6 +101,7 @@ export class WorkDayBuilderService {
       timeFrom: rule.timeFrom,
       timeTo: rule.timeTo,
       ratePercent: Number(rule.ratePercent),
+      appliesTo: rule.appliesTo as 'overtime' | 'all_hours',
     }));
 
     return {
@@ -107,9 +115,16 @@ export class WorkDayBuilderService {
         dailyMaxMinutes: Number(settings?.dailyMaxHours ?? 12) * 60,
       },
       holidays: new Set(holidays.map((row) => plainDate(row.date))),
-      // What this day was built with. A rebuild after a rate change writes a
-      // new version, and the old days keep theirs until they are rebuilt.
-      calcVersion: `ot:${rules.length}:${rules[0]?.updatedAt.toISOString() ?? 'none'}`,
+      // What this day was built with: a fingerprint of the rules themselves,
+      // not of when they were last touched.
+      //
+      // Counting rows and taking the newest timestamp would catch most changes
+      // and collide on the rest — two different rule sets could share a version
+      // and a day would claim to have been built from rules it never saw. A
+      // hash over the rows and the settings cannot: any add, change or removal
+      // gives a different answer, and the same rules always give the same one.
+      calcVersion: fingerprint(rules, settings),
+      ruleIds: rules.map((rule) => rule.id).sort(),
     };
   }
 
@@ -156,6 +171,8 @@ export class WorkDayBuilderService {
         lateMin: 0,
         earlyLeaveMin: 0,
         overtime: {},
+        premium: {},
+        overtimeRuleIds: context.ruleIds,
         exceptions,
         ...(input.leaveRequestId ? { leaveRequestId: input.leaveRequestId } : {}),
         calcVersion: context.calcVersion,
@@ -224,6 +241,8 @@ export class WorkDayBuilderService {
       lateMin,
       earlyLeaveMin,
       overtime: overtime.bands,
+      premium: overtime.premiums,
+      overtimeRuleIds: context.ruleIds,
       exceptions,
       ...(input.leaveRequestId ? { leaveRequestId: input.leaveRequestId } : {}),
       calcVersion: context.calcVersion,
@@ -331,6 +350,63 @@ function shiftMinutes(
   const end = toMinutes(shift.end) + (shift.crossesMidnight ? 1440 : 0);
 
   return Math.max(end - start - shift.breakMinutes, 0);
+}
+
+/**
+ * A fingerprint of the rules a day was worked out from.
+ *
+ * Everything that changes the answer goes in, which is why the settings are
+ * here in full rather than the four that are most obviously about overtime: the
+ * normal day and the normal week decide what *counts* as overtime at all, so a
+ * company moving from a 44-hour week to a 40-hour one must not leave days
+ * claiming the version they had before.
+ *
+ * Sorted by id, so the same set of rules always hashes the same way whatever
+ * order the database returned them in.
+ */
+export function fingerprint(
+  rules: readonly {
+    id: string;
+    bandCode: string;
+    dayType: string;
+    timeFrom: string;
+    timeTo: string;
+    ratePercent: unknown;
+    appliesTo: string;
+    effectiveFrom: Date;
+    effectiveTo: Date | null;
+  }[],
+  settings: Record<string, unknown> | null,
+): string {
+  const material = JSON.stringify({
+    rules: [...rules]
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .map((rule) => [
+        rule.id,
+        rule.bandCode,
+        rule.dayType,
+        rule.timeFrom,
+        rule.timeTo,
+        String(rule.ratePercent),
+        rule.appliesTo,
+        plainDate(rule.effectiveFrom),
+        rule.effectiveTo === null ? null : plainDate(rule.effectiveTo),
+      ]),
+    settings:
+      settings === null
+        ? null
+        : {
+            thresholdMode: settings['thresholdMode'],
+            normalDailyHours: String(settings['normalDailyHours']),
+            normalWeeklyHours: String(settings['normalWeeklyHours']),
+            roundingMinutes: settings['roundingMinutes'],
+            roundingDirection: settings['roundingDirection'],
+            latenessToleranceMin: settings['latenessToleranceMin'],
+            dailyMaxHours: String(settings['dailyMaxHours']),
+          },
+  });
+
+  return `ot:${createHash('sha256').update(material, 'utf8').digest('hex')}`;
 }
 
 function date(iso: string): Date {

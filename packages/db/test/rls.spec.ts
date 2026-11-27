@@ -488,3 +488,59 @@ describe('M21 what is written once stays written', () => {
     expect(row?.status, 'an import must still be able to change status').toBe(true);
   });
 });
+
+describe('M21 a rate is never edited in place', () => {
+  // Parameter rows are effective-dated (CLAUDE.md rule 3): changing a rule
+  // writes a new row from a date and closes the old one. Leave rules already
+  // work that way in the application, and overtime rules have no screen yet —
+  // which is the moment to make it a fact rather than a habit, because the
+  // screen that edits them is still to be built.
+  //
+  // What a legitimate change touches stays updatable: closing a row, marking it
+  // confirmed, its note, and the timestamp the ORM writes. Everything that
+  // decides what a worked day is worth does not.
+  const locked = [
+    'band_code',
+    'day_type',
+    'time_from',
+    'time_to',
+    'rate_percent',
+    'applies_to',
+    'effective_from',
+  ] as const;
+
+  const open = ['effective_to', 'confirmed', 'note', 'updated_at'] as const;
+
+  it.each(locked)('overtime_rule.%s cannot be updated by the runtime role', async (column) => {
+    const [row] = await owner.$queryRawUnsafe<{ allowed: boolean }[]>(
+      `select has_column_privilege($1, 'overtime_rule', $2, 'UPDATE') as allowed`,
+      APP_DB_ROLE,
+      column,
+    );
+
+    expect(row?.allowed, `overtime_rule.${column} must be write-once`).toBe(false);
+  });
+
+  it.each(open)('overtime_rule.%s can still be updated', async (column) => {
+    const [row] = await owner.$queryRawUnsafe<{ allowed: boolean }[]>(
+      `select has_column_privilege($1, 'overtime_rule', $2, 'UPDATE') as allowed`,
+      APP_DB_ROLE,
+      column,
+    );
+
+    expect(row?.allowed, `overtime_rule.${column} is part of a legitimate change`).toBe(true);
+  });
+
+  it('refuses an in-place rate change even when the application tries one', async () => {
+    // The privileges above say what Postgres will allow; this proves it. A
+    // screen that edits a rate rather than writing a new row fails here.
+    const rule = await owner.overtimeRule.findFirst({ select: { id: true, tenantId: true } });
+    if (!rule) return;
+
+    await expect(
+      withTenant(runtime, rule.tenantId, (tx) =>
+        tx.overtimeRule.update({ where: { id: rule.id }, data: { ratePercent: 999 } }),
+      ),
+    ).rejects.toThrow();
+  });
+});

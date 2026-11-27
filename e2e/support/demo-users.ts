@@ -83,6 +83,17 @@ export async function signInAs(page: Page, role: DemoRole): Promise<void> {
  * not also be a test about translation.
  */
 export async function useEnglish(page: Page): Promise<void> {
+  // The sign-in page has a language button of its own, so a session that has
+  // expired by the time this runs would otherwise end in twenty seconds of
+  // waiting for a button that was never coming, and a failure that talks about
+  // translation rather than about the session. Say what actually happened.
+  if (/\/realms\//.test(page.url())) {
+    throw new Error(
+      `Signed out before the test began: the page is Keycloak's sign-in, not the app (${page.url()}). ` +
+        'A stored session expired or the realm was restarted; run the suite again.',
+    );
+  }
+
   const toEnglish = page.getByRole('button', { name: /^(Langue : English|Language: English)$/ });
 
   if ((await toEnglish.count()) > 0) {
@@ -110,24 +121,36 @@ export function sessionPath(role: DemoRole): string {
 /**
  * How long a saved session is reused before someone signs in again.
  *
- * Keycloak forgets an idle session after thirty minutes, and every sign-in costs
- * a round trip through three pages — two of them with an authenticator code that
- * cannot be used twice. Twenty minutes keeps a whole suite run down to one
- * sign-in per person while staying well inside what the realm allows.
+ * Keycloak forgets an **idle** session after thirty minutes, and every sign-in
+ * costs a round trip through three pages — two of them with an authenticator
+ * code that cannot be used twice. So a session is kept and shared, but not
+ * forever: fifteen minutes leaves half the realm's patience in hand, which a
+ * single slow test cannot eat through.
+ *
+ * This window only means anything because `openAs` consults it. Signing
+ * everybody in once before the run and never looking again is what let a
+ * session quietly age past thirty minutes in the middle of a suite that now
+ * takes nearly half an hour — the failure landed on whichever test happened to
+ * be running, complaining about a language button, which is a long way from the
+ * truth.
  */
-const SESSION_MINUTES = 20;
+const SESSION_MINUTES = 15;
 
 /**
  * Makes sure there is a session for one of them, signing in only when there is
  * not one to hand. Files that each want the same person therefore sign in once
  * between them, not once each.
  */
-export async function saveSession(browser: Browser, role: DemoRole): Promise<void> {
+export async function saveSession(
+  browser: Browser,
+  role: DemoRole,
+  options: { force?: boolean } = {},
+): Promise<void> {
   const path = sessionPath(role);
 
   try {
     const age = Date.now() - statSync(path).mtimeMs;
-    if (age < SESSION_MINUTES * 60_000) {
+    if (!options.force && age < SESSION_MINUTES * 60_000) {
       return;
     }
   } catch {
@@ -154,15 +177,42 @@ export async function openAs(
   role: DemoRole,
   options: { path?: string; viewport?: { width: number; height: number } } = {},
 ): Promise<Page> {
-  const context = await browser.newContext({
-    timezoneId: 'Africa/Casablanca',
-    storageState: sessionPath(role),
-    ...(options.viewport ? { viewport: options.viewport } : {}),
-  });
-  const page = await context.newPage();
+  // Before the session is used, not only before the run: a suite that takes
+  // half an hour outlives a session that the realm forgets after thirty idle
+  // minutes. This signs in again when the stored one is getting old, and costs
+  // nothing at all when it is not.
+  await saveSession(browser, role);
 
-  await page.goto(options.path ?? '/home');
+  const open = async (): Promise<Page> => {
+    const context = await browser.newContext({
+      timezoneId: 'Africa/Casablanca',
+      storageState: sessionPath(role),
+      ...(options.viewport ? { viewport: options.viewport } : {}),
+    });
+    const page = await context.newPage();
+
+    await page.goto(options.path ?? '/home');
+    return page;
+  };
+
+  let page = await open();
+
+  // And if the session turned out to be dead anyway — the realm restarted, say,
+  // which ends every session it had — sign in once more rather than failing the
+  // test that happened to be next. A second refusal is a real problem and is
+  // left to fail.
+  if (signedOut(page)) {
+    await page.context().close();
+    await saveSession(browser, role, { force: true });
+    page = await open();
+  }
+
   await expect(page.locator('h1')).toBeVisible();
 
   return page;
+}
+
+/** Whether a page is Keycloak's sign-in rather than the app. */
+function signedOut(page: Page): boolean {
+  return /\/realms\//.test(page.url());
 }

@@ -1664,6 +1664,17 @@ model WorkDay {
   /// Minutes per overtime band, as `{ "OT_DAY": 120, "OT_NIGHT": 60 }`.
   overtime Json
 
+  /// Minutes owed a premium, per band, for bands paid on all hours. Kept apart
+  /// from `overtime` because the same minute can appear in both: an hour of
+  /// overtime at eleven at night is night overtime *and* premium hours. Adding
+  /// the two together would count that minute twice.
+  premium Json?
+
+  /// The overtime rule rows in force for this day, as `LeaveCalculation` keeps
+  /// the leave rule and holidays it applied. `calcVersion` says whether the
+  /// rules have changed since; these say which rows they were.
+  overtimeRuleIds String[] @map("overtime_rule_ids") @db.Uuid
+
   status WorkDayStatus @default(ok)
   source WorkDaySource @default(device)
 
@@ -1737,6 +1748,12 @@ model OvertimeRule {
   timeTo   String @map("time_to")
 
   ratePercent Decimal @map("rate_percent") @db.Decimal(6, 2)
+
+  /// Which minutes the band is paid for: `overtime` (the default, and what
+  /// every row meant before premiums existed) or `all_hours`, which pays every
+  /// minute in the window — scheduled ones included — on top of any overtime
+  /// band for the same minute. HR-02 open point 17.
+  appliesTo String @default("overtime") @map("applies_to")
 
   effectiveFrom DateTime  @map("effective_from") @db.Date
   effectiveTo   DateTime? @map("effective_to") @db.Date
