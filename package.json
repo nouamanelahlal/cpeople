@@ -15,7 +15,7 @@
     "db:migrate": "pnpm --filter @cpeople/db run migrate",
     "db:deploy": "pnpm --filter @cpeople/db run migrate:deploy",
     "db:reset": "pnpm --filter @cpeople/db run migrate:reset",
-    "db:seed": "pnpm --filter @cpeople/db run seed",
+    "db:seed": "turbo run build --filter=@cpeople/db && pnpm --filter @cpeople/db run seed",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:report": "playwright show-report",
