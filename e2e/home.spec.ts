@@ -184,7 +184,10 @@ test.describe('NEW home dashboard', () => {
     const nav = page.getByRole('navigation', { name: 'Main' });
     const employees = nav.getByRole('link', { name: 'Employees' });
 
-    // Collapsed: the icons are there, their names are not.
+    // Collapsed: the icons are there, their names are not. The pointer is moved
+    // off the menu first: after signing in it can still rest where the last
+    // click was, over the rail, and a hovered rail is an open one.
+    await page.mouse.move(700, 400);
     await expect(nav).toHaveCSS('width', '76px');
     await expect(employees).not.toContainText('Employees');
 
