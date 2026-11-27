@@ -366,6 +366,35 @@ payslip since go-live would be wrong.
 
 ---
 
+## 18. Recovery leave: the unit, and what an hour is worth
+
+Settled for the build (spec §4.1), with one question left for SMG.
+
+**What is built.** A worked public holiday or rest day can be **converted to
+recovery** instead of being paid as overtime. `RECOVERY` is a seeded leave type
+marked "to confirm": paid by the employer, with a balance of its own.
+
+| | |
+|---|---|
+| **The unit is hours, not days.** | A recovery balance is minutes worked, and it is spent in minutes. When somebody takes recovery leave the hours come off using **that day's scheduled hours** — an eight-hour day costs eight hours. Days would be a lie here: four hours owed from a Sunday morning is not "half a day" to somebody whose shift is twelve hours. |
+| **The ratio is a setting**, default **1 hour worked = 1 hour of recovery.** | Seeded "to confirm". |
+| **Credits are insert-only** balance movements, each linked to the work day it came from and the exception that converted it. | The same rule as every other piece of evidence in this schema: a balance is worked out from movements, never edited. |
+
+**Still open — the question for SMG and the payroll expert.** Does SMG give
+recovery **1:1**, or at the **holiday or rest-day rate** — an hour worked on a
+public holiday earning an hour and a half off? The default is 1:1 because it is
+the smaller promise; if the answer is the rate, it is the same setting with a
+different number, and no code changes.
+
+> **No double payment, in both directions.** Once minutes are converted to
+> recovery they **stop producing overtime and holiday payroll variables**: the
+> company has agreed to pay them in time instead of money, and paying both would
+> be paying twice for the same hour. Undoing a conversion — with a reason, and
+> audited — puts those minutes back into pay. Both directions are unit-tested,
+> because this is the one place where a mistake quietly doubles somebody's day.
+
+---
+
 ## Later, not now
 
 Noted so it is not forgotten, and deliberately out of HR-02:
@@ -438,3 +467,11 @@ Noted so it is not forgotten, and deliberately out of HR-02:
   person) still restore by hand. None has caused a failure yet, and `hire` is
   followed by a file that resets — but the pattern is the same one, and the fix
   is two lines each when somebody is next in there.
+- **Two e2e files restore data by hand, and are flaky because of it.**
+  `contracts.spec.ts:126` ("marking a contract signed ticks the onboarding item
+  that waited for it") and `employee-file.spec.ts:115` ("HR changes a salary,
+  and the history says so") both failed once and passed on retry in the run
+  behind #26. They change data and change it back in the same test, which is
+  the pattern that already caused a real failure in `organisation.spec.ts`.
+  **Agreed fix, after step 6:** give them isolated data or a reset per test
+  instead of restoring by hand.
