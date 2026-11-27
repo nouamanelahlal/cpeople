@@ -2,7 +2,7 @@
 
 CPeople by ConSAP is a multi-tenant, multi-country HR & Payroll SaaS. Morocco is the first country pack. The first client is SMG (Maison Samira Maatouk Morocco), with go-live on **1 February 2027** (fallback 1 March 2027).
 
-Product, brand and scope decisions live in `docs/`. Read `docs/mvp-scope.md` before building any feature.
+Product, brand and scope decisions live in `docs/`. Read `docs/mvp-scope.md` before building any feature. The detailed functional and technical rules (configuration layers, country packs, leave, time, payroll engine, Morocco calculation, outputs, security) are in `docs/specs/CPeople-functional-technical-spec.md`.
 
 ## Stack
 - **Frontend:** `apps/web`, Next.js (App Router) + TypeScript + Tailwind with the ConSAP design tokens from `packages/ui`. i18n EN + FR for the MVP; AR with RTL later, so never hard-code left/right (use logical CSS properties).
