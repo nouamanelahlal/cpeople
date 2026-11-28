@@ -915,6 +915,13 @@ export const fr: Messages = {
       percent: '%',
       yearStart: 'L’année de congés commence le',
       yearStartNote: 'Sous la forme jour et mois : elle se répète chaque année.',
+      secondApprover: 'Après le responsable, la seconde approbation revient à',
+      secondApproverNote:
+        'Pour les types de congé qui demandent une seconde approbation. Quel que soit le choix, une demande sans personne au-dessus du demandeur va aux RH.',
+      secondApproverOptions: {
+        manager_of_manager: 'Le responsable du responsable (N+2)',
+        hr: 'Les RH',
+      },
       save: 'Enregistrer la politique',
       saved: 'Enregistré.',
     },
@@ -1219,6 +1226,7 @@ export const fr: Messages = {
         submitted: 'Demandé',
         approved_n1: 'Approuvé par le responsable',
         approved_n2: 'Approuvé par le second approbateur',
+        approved_hr: 'Approuvé par les RH',
         rejected: 'Refusé',
         withdrawn: 'Retirée',
         cancellation_requested: 'Annulation demandée',

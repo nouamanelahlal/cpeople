@@ -793,6 +793,10 @@ model LeaveSettings {
   /// rather than a constant, because it is a question for SMG and because the
   /// answer changes every balance in the company.
   accrualPeriod         String  @default("monthly") @map("accrual_period")
+  /// Who gives the second yes for the leave types that need one (M09). SMG
+  /// chose HR (HR-02 decision 1, 24 Nov 2026); other clients may keep the
+  /// manager's manager, which is why it is a setting.
+  secondApprover        LeaveSecondApprover @default(manager_of_manager) @map("second_approver")
 
   note      String?
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -817,6 +821,16 @@ model LeaveSettings {
 // ---------------------------------------------------------------------------
 
 /// Where a request has got to (HR-02 spec 2).
+/// Who approves after the line manager (M09).
+enum LeaveSecondApprover {
+  /// The line manager's own manager (N+2), with HR when there is none.
+  manager_of_manager
+  /// HR, for every request (HR-02 decision 1).
+  hr
+
+  @@map("leave_second_approver")
+}
+
 enum LeaveRequestStatus {
   /// With the manager.
   pending_n1
@@ -863,6 +877,9 @@ enum LeaveDecisionKind {
   submitted
   approved_n1
   approved_n2
+  /// HR approving a request waiting in HR's own queue: the second step of
+  /// "N+1 then HR" (HR-02 decision 1), or the only step when there is no manager.
+  approved_hr
   rejected
   withdrawn
   cancellation_requested
