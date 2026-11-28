@@ -77,6 +77,75 @@ export function undoRecovery(input: { creditedMin: number }): { minutes: number 
   return { minutes: -input.creditedMin };
 }
 
+/** What undoing a conversion would do, once the time may already be spent. */
+export interface UndoPlan {
+  /** Minutes of this credit that have already been taken as leave. */
+  readonly usedMin: number;
+  /** Whether this needs HR to override, because the balance would go negative. */
+  readonly blocked: boolean;
+  /** The movement that cancels the credit. Always the whole of it. */
+  readonly movementMin: number;
+  /** What the balance becomes: below zero when some of it is spent. */
+  readonly balanceAfterMin: number;
+  /**
+   * The worked minutes whose pay comes back.
+   *
+   * Less than the day where time has already been taken for it — that part is
+   * settled, and paying it as well is the double payment this guards against.
+   */
+  readonly restoredWorkedMin: number;
+}
+
+/**
+ * Undoing a conversion when some of the time is already spent.
+ *
+ * The simple case is somebody changing their mind the same afternoon: nothing
+ * taken, the credit cancels, the overtime comes back whole. The awkward one is
+ * a fortnight later, after three of the eight hours have been taken as leave —
+ * and the awkward one is the one that reaches payroll.
+ *
+ * **It is blocked by default.** The balance would go below zero, which means
+ * taking back time somebody has already had, and that is a conversation rather
+ * than a button. HR can override it with a reason, and then:
+ *
+ *  - the credit is cancelled **in full**, so the balance goes negative by what
+ *    was spent and the debt is visible on the employee's balance rather than
+ *    quietly absorbed;
+ *  - the overtime comes back **only for the part not already taken**. Three
+ *    hours settled in time plus five paid is the eight that were worked. Paying
+ *    all eight would be paying twice for the three.
+ *
+ * Whether a conversion should be undoable at all once the time is spent is
+ * HR-02 open point 19, for SMG.
+ */
+export function planUndo(input: {
+  creditedMin: number;
+  /** The employee's balance now, across every credit they hold. */
+  balanceMin: number;
+  /** The day's worked minutes, which is what the pay was built from. */
+  workedMin: number;
+  /** The ratio this credit was made at — not today's setting. */
+  ratio: number;
+  /** HR has said to do it anyway, and given a reason. */
+  override?: boolean;
+}): UndoPlan {
+  // What cannot be handed back, because the balance no longer holds it.
+  const usedMin = Math.max(input.creditedMin - Math.max(input.balanceMin, 0), 0);
+  const spent = Math.min(usedMin, input.creditedMin);
+
+  // Back through the ratio: an hour of leave taken at time-and-a-half settled
+  // forty minutes of work, not sixty.
+  const settledWorkedMin = input.ratio > 0 ? Math.round(spent / input.ratio) : 0;
+
+  return {
+    usedMin: spent,
+    blocked: spent > 0 && input.override !== true,
+    movementMin: -input.creditedMin,
+    balanceAfterMin: input.balanceMin - input.creditedMin,
+    restoredWorkedMin: Math.max(input.workedMin - settledWorkedMin, 0),
+  };
+}
+
 /**
  * What somebody has, from the movements that made it.
  *

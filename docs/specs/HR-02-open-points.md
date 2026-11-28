@@ -395,6 +395,30 @@ different number, and no code changes.
 
 ---
 
+## 19. Undoing a conversion after the time has been taken
+
+**Question.** A worked holiday was converted to recovery, and the employee has
+since taken some of those hours as leave. Can the conversion still be undone?
+
+**Why it matters.** Undoing it means taking back time somebody has already had.
+The arithmetic can be made to balance; what cannot be decided here is whether a
+company is willing to do that to a person a fortnight after the fact, and on
+whose say-so.
+
+| | |
+|---|---|
+| **Default** | **Blocked**, and the screen says how much has already been taken. HR can override it with a reason, which is audited. |
+| **What the override does** | The credit is cancelled **in full**, so the balance goes below zero and the debt is visible on the employee's recovery balance rather than quietly absorbed. The overtime comes back **only for the part not already taken** — three hours settled in time plus five hours paid is the eight that were worked. |
+| **Still open** | Whether HR should be able to override at all; whether a negative recovery balance is acceptable, or the shortfall should be settled another way (deducted from annual leave, or simply written off); and whether the employee is told. |
+
+> **Note for the build.** Both paths are built and unit-tested
+> (`packages/shared/test/recovery.spec.ts`), including the case where the credit
+> was made at a ratio that has since changed: what was spent is converted back
+> through **the ratio it was earned at**, not today's, or the balance drifts
+> every time somebody changes their mind after a settings change.
+
+---
+
 ## Later, not now
 
 Noted so it is not forgotten, and deliberately out of HR-02:

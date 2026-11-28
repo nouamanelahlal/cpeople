@@ -3,6 +3,7 @@ import {
   convertToRecovery,
   recoveryBalance,
   recoveryCostOfDay,
+  planUndo,
   recoveryMinutes,
   undoRecovery,
 } from '../src/recovery.js';
@@ -129,5 +130,99 @@ describe('the balance, and what spending it costs', () => {
     // Which is also why recovery cannot be taken on one: there is nothing to
     // be absent from.
     expect(recoveryCostOfDay({ scheduledMin: 0 })).toBe(0);
+  });
+});
+
+describe('undoing a conversion after some of the time is spent', () => {
+  // The simple case is somebody changing their mind the same afternoon. The
+  // awkward one is a fortnight later, when three of the eight hours have
+  // already been taken as leave — and the awkward one is the one that reaches
+  // payroll. Whether it should be possible at all is open point 19.
+  const EIGHT = 8 * 60;
+
+  it('is not blocked when none of it has been taken', () => {
+    const plan = planUndo({ creditedMin: EIGHT, balanceMin: EIGHT, workedMin: EIGHT, ratio: 1 });
+
+    expect(plan.blocked).toBe(false);
+    expect(plan.usedMin).toBe(0);
+    expect(plan.movementMin).toBe(-EIGHT);
+    expect(plan.balanceAfterMin).toBe(0);
+    // Nothing was settled in time, so the whole day comes back as pay.
+    expect(plan.restoredWorkedMin).toBe(EIGHT);
+  });
+
+  it('is blocked by default once part of it has been taken, and says how much', () => {
+    // 480 credited, 300 taken, 180 left. Taking back time somebody has already
+    // had is a conversation, not a button.
+    const plan = planUndo({ creditedMin: EIGHT, balanceMin: 180, workedMin: EIGHT, ratio: 1 });
+
+    expect(plan.blocked).toBe(true);
+    expect(plan.usedMin).toBe(300);
+  });
+
+  it('with HR’s override, cancels in full and pays only what was not taken', () => {
+    const plan = planUndo({
+      creditedMin: EIGHT,
+      balanceMin: 180,
+      workedMin: EIGHT,
+      ratio: 1,
+      override: true,
+    });
+
+    expect(plan.blocked).toBe(false);
+
+    // The credit goes in full, so the debt is visible rather than absorbed.
+    expect(plan.movementMin).toBe(-EIGHT);
+    expect(plan.balanceAfterMin).toBe(-300);
+
+    // And the pay comes back only for the part not already settled in time:
+    // three hours taken plus five paid is the eight that were worked.
+    expect(plan.restoredWorkedMin).toBe(180);
+  });
+
+  it('pays nothing back when the whole credit has been taken', () => {
+    const plan = planUndo({
+      creditedMin: EIGHT,
+      balanceMin: 0,
+      workedMin: EIGHT,
+      ratio: 1,
+      override: true,
+    });
+
+    expect(plan.usedMin).toBe(EIGHT);
+    expect(plan.balanceAfterMin).toBe(-EIGHT);
+    // Every minute was settled in time. Paying any of it would be paying twice.
+    expect(plan.restoredWorkedMin).toBe(0);
+  });
+
+  it('converts what was spent back through the ratio it was earned at', () => {
+    // At time-and-a-half, 720 minutes were credited for 480 worked. An hour of
+    // leave taken settles forty minutes of work, not sixty — so 360 minutes
+    // taken settles 240 worked, and 240 worked minutes are still owed in pay.
+    const plan = planUndo({
+      creditedMin: 720,
+      balanceMin: 360,
+      workedMin: 480,
+      ratio: 1.5,
+      override: true,
+    });
+
+    expect(plan.usedMin).toBe(360);
+    expect(plan.restoredWorkedMin).toBe(240);
+    expect(plan.balanceAfterMin).toBe(-360);
+  });
+
+  it('treats a balance already below zero as nothing left to hand back', () => {
+    const plan = planUndo({
+      creditedMin: EIGHT,
+      balanceMin: -60,
+      workedMin: EIGHT,
+      ratio: 1,
+      override: true,
+    });
+
+    expect(plan.usedMin).toBe(EIGHT);
+    expect(plan.restoredWorkedMin).toBe(0);
+    expect(plan.balanceAfterMin).toBe(-540);
   });
 });

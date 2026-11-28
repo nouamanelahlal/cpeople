@@ -67,12 +67,13 @@ export {
 export type { Minutes, OvertimeBand, OvertimeInput, OvertimeResult, WorkedSpan } from './overtime.js';
 export {
   convertToRecovery,
+  planUndo,
   recoveryBalance,
   recoveryCostOfDay,
   recoveryMinutes,
   undoRecovery,
 } from './recovery.js';
-export type { Converted, DayToConvert } from './recovery.js';
+export type { Converted, DayToConvert, UndoPlan } from './recovery.js';
 export { CURRENCY, DEFAULT_LOCALE, LOCALES, intlLocale, toLocale } from './locale.js';
 export { frenchNumberWords } from './number-words-fr.js';
 export type { Locale } from './locale.js';
