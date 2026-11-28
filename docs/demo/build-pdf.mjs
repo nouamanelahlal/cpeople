@@ -18,9 +18,12 @@ import { dirname, resolve } from 'node:path';
 const here = dirname(fileURLToPath(import.meta.url));
 const GOTENBERG = process.env.GOTENBERG_URL?.trim() || 'http://localhost:3001';
 
-// Which guide to build. Defaults to HR-01 so `pnpm demo:guide` keeps working.
+// Which document to build. A bare name is a guide in this folder, so
+// `pnpm demo:guide` keeps working; a name with a slash is a path from the
+// repository root, for anything else worth printing — a status, a report.
 const name = process.argv[2] ?? 'HR-01-presenter-guide';
-const source = readFileSync(resolve(here, `${name}.md`), 'utf8');
+const base = name.includes('/') ? resolve(here, '..', '..', name) : resolve(here, name);
+const source = readFileSync(`${base}.md`, 'utf8');
 const { html, images } = render(source);
 
 const form = new FormData();
@@ -59,7 +62,7 @@ if (!response.ok) {
   process.exit(1);
 }
 
-const out = resolve(here, `${name}.pdf`);
+const out = `${base}.pdf`;
 writeFileSync(out, Buffer.from(await response.arrayBuffer()));
 
 console.log(`build-pdf: wrote ${out} (${images.length} screenshots)`);
