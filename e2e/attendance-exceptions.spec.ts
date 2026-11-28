@@ -130,9 +130,11 @@ test.describe('M10 attendance exceptions', () => {
 
     await expect(page.getByText('Your team’s days. HR sees the whole company.')).toBeVisible();
 
-    // Rachid runs the kitchen, so no other department's day is in the list.
-    // The rows, not the whole page: the department filter lists every
-    // department, which is the org chart he can already see.
+    // Rachid runs the kitchen, so no other department's day is in the list —
+    // and the filter offers only the departments of the people he manages,
+    // because a filter that always returns nothing reads as a fault.
+    await expect(page.getByLabel('Department')).not.toContainText('Warehouse');
+
     const cards = page.locator('section').filter({ has: page.locator('h3') });
 
     for (let i = 0; i < (await cards.count()); i += 1) {

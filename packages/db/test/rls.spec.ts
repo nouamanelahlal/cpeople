@@ -714,3 +714,81 @@ describe('M10 an overtime rate is a percentage, and the database knows it', () =
     expect(await tryRate(0)).toBe('written');
   });
 });
+
+describe('M21 an empty branch inside an OR matches nothing', () => {
+  /**
+   * The trap that cost a screen (M10, exceptions).
+   *
+   * On its own, `{}` is "no filter" and matches every row — which is what makes
+   * `employeeScope()` returning `{}` correct for somebody who may see
+   * everybody. **Inside an `OR` it is the opposite.** An empty branch
+   * contributes nothing, so the `OR` quietly collapses to whatever its other
+   * branches say.
+   *
+   * The exceptions list asked for "every exception that hangs off a day the
+   * reader may see, or that hangs off no day at all" and built it as
+   * `OR: [{ workDay: scope }, { workDayId: null }]`. For HR the scope was
+   * empty, so the first branch disappeared and HR saw only the three rows with
+   * no day — while the counts beside them, built without the `OR`, said
+   * forty-four.
+   *
+   * Two rows and no relation at all are enough to show it.
+   */
+  beforeAll(async () => {
+    await withTenant(runtime, tenantA.id, (tx) =>
+      tx.attendanceImport.createMany({
+        data: [
+          { tenantId: tenantA.id, fileName: 'one.csv', createdBy: 'test', createdRole: 'hr-admin' },
+          { tenantId: tenantA.id, fileName: 'two.csv', createdBy: 'test', createdRole: 'hr-admin' },
+        ],
+      }),
+    );
+  });
+
+  afterAll(async () => {
+    await owner.attendanceImport.deleteMany({ where: { tenantId: tenantA.id } });
+  });
+
+  it('is every row when it stands alone', async () => {
+    const all = await withTenant(runtime, tenantA.id, (tx) => tx.attendanceImport.count());
+    const empty = await withTenant(runtime, tenantA.id, (tx) =>
+      tx.attendanceImport.count({ where: {} }),
+    );
+    const emptyRelation = await withTenant(runtime, tenantA.id, (tx) =>
+      tx.attendanceImport.count({ where: { tenant: {} } }),
+    );
+
+    expect(all).toBe(2);
+    expect(empty, 'an empty where is no filter').toBe(2);
+    expect(emptyRelation, 'an empty relation filter on its own is no filter either').toBe(2);
+  });
+
+  it('is nothing at all inside an OR, which is the trap', async () => {
+    // "Either anything, or nothing" should be everything. It is not: the empty
+    // branch drops out, and the OR becomes only its other half.
+    const either = await withTenant(runtime, tenantA.id, (tx) =>
+      tx.attendanceImport.count({ where: { OR: [{}, { fileName: 'one.csv' }] } }),
+    );
+
+    expect(either, 'an empty OR branch contributes nothing').toBe(1);
+  });
+
+  it('is written by saying what is meant, which costs nothing', async () => {
+    // Either spell the branch out...
+    const spelled = await withTenant(runtime, tenantA.id, (tx) =>
+      tx.attendanceImport.count({
+        where: { OR: [{ fileName: { not: '' } }, { fileName: 'one.csv' }] },
+      }),
+    );
+
+    expect(spelled).toBe(2);
+
+    // ...or, as the exceptions list does now, leave the filter out entirely
+    // when there is nothing to narrow by.
+    const unfiltered = await withTenant(runtime, tenantA.id, (tx) =>
+      tx.attendanceImport.count({ where: {} }),
+    );
+
+    expect(unfiltered).toBe(2);
+  });
+});

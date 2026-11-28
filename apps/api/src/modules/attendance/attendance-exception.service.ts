@@ -130,10 +130,19 @@ export class AttendanceExceptionService {
           : {}),
       };
 
-      // An empty relation filter is not "any day": Prisma reads `workDay: {}`
-      // on a nullable relation as matching nothing, so asking for it unfiltered
-      // quietly returned only the exceptions that have no day at all. Where
-      // there is nothing to narrow by, there is no relation filter.
+      // Whether there is anything to narrow the days by at all.
+      //
+      // This used to ask for "a day the reader may see, **or** no day at all"
+      // as `OR: [{ workDay: dayWhere }, { workDayId: null }]`, which is right
+      // until `dayWhere` is empty — and for HR, unfiltered, it always is. An
+      // empty branch inside an `OR` contributes **nothing** rather than
+      // everything, so the `OR` collapsed to its other half and HR saw only the
+      // three exceptions with no day, while the counts beside them said
+      // forty-four. (On its own, `{}` is no filter and matches every row. It is
+      // only inside an `OR` that it turns into its opposite.)
+      //
+      // So where there is nothing to narrow by, there is no filter at all.
+      // Pinned in packages/db/test/rls.spec.ts.
       const narrowed = Object.keys(dayWhere).length > 0;
 
       // An exception either hangs off a day — and is then the day's reader's
@@ -195,7 +204,14 @@ export class AttendanceExceptionService {
           where: everyone ? (narrowed ? { workDay: dayWhere } : {}) : { workDay: dayWhere },
           _count: { _all: true },
         }),
-        tx.department.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
+        // A manager's filter offers the departments of the people he manages,
+        // and nobody else's. Offering him a department he cannot see is a
+        // filter that always returns nothing, which reads as a fault.
+        tx.department.findMany({
+          where: everyone ? {} : { employees: { some: { id: { in: visible } } } },
+          select: { id: true, name: true },
+          orderBy: { name: 'asc' },
+        }),
       ]);
 
       const groups = new Map<string, { code: string; open: number; resolved: number }>();
