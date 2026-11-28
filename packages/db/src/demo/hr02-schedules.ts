@@ -114,12 +114,12 @@ export interface ScheduleSeedCounts {
 const CONTRIBUTION_RATES = [
   {
     code: 'CIMR_EE',
-    ratePercent: 0,
+    rate: 0,
     note: 'SMG does not run CIMR today (spec CT05). Zero switches the line off rather than guessing a rate. To confirm.',
   },
   {
     code: 'CIMR_ER',
-    ratePercent: 0,
+    rate: 0,
     note: 'SMG does not run CIMR today (spec CT05). Zero switches the line off rather than guessing a rate. To confirm.',
   },
 ] as const;
@@ -257,7 +257,7 @@ export async function seedHr02Schedules(
       data: {
         tenantId,
         code: rate.code,
-        ratePercent: rate.ratePercent,
+        rate: rate.rate,
         effectiveFrom: new Date(`${VALID_FROM}T00:00:00Z`),
         note: rate.note,
         confirmed: false,

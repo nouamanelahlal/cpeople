@@ -75,6 +75,26 @@ jobs site.
 Confirm both the **bands and the deductions**, and that the scale is **still the
 one in force for the 2026 finance law**.
 
+### And how the scale is applied, month by month ⚠
+
+A question of **method**, not of figures, and it changes the last centime of
+every payslip. The engine takes the annual scale, applies it to twelve times the
+month, and divides by twelve. A monthly table whose deductions are rounded
+first — 22,000 ÷ 12 = 1,833.33 — gives a different answer.
+
+Golden case **G03** (14,000 base, 7 years' service, 2 dependents) is where the
+two part company:
+
+| Method | Monthly income tax |
+|---|---|
+| Annual scale on 12 × the month, ÷ 12 — **what the engine does** | **2,201.27** |
+| Monthly table with the deduction rounded to 1,833.33 | 2,201.28 |
+
+One centime, every month, for every employee — and the one that is right is
+whichever the DGI expects on the declaration. Please confirm **which method**,
+and whether the monthly deduction is rounded and to how many decimals. Noted in
+the test file itself (`golden.spec.ts`, G03) and in spec §12.
+
 ### Professional expenses, CGI art. 59 ⚠
 
 | Key | Value | Cited source |
@@ -154,7 +174,9 @@ every overtime hour is calculated from them.
 **CIMR is not here.** It is a rate agreed between one employer and the fund, so
 it is a **per-company** value and lives in `tenant_contribution_rate` in the
 database, effective-dated per tenant (decision of 27 November 2026, CLAUDE.md
-rule 3). The pack takes `CIMR_EE_RATE` and `CIMR_ER_RATE` as inputs. SMG is
+rule 3). The pack takes `CIMR_EE_RATE` and `CIMR_ER_RATE` as inputs. Both are
+stored as **fractions** — 0.06 is six per cent — and the database refuses
+anything outside 0 to 1, so six per cent cannot be entered as `6`. SMG is
 seeded at zero, which switches both lines off rather than guessing — the spec
 records that SMG does not run CIMR today (CT05).
 

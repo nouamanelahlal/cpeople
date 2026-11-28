@@ -1821,8 +1821,11 @@ model TenantContributionRate {
   /// CIMR_EE, CIMR_ER, and the per-company contributions that follow it.
   code String
 
-  /// A decimal fraction, as the pack uses: 0.0600 is six per cent.
-  ratePercent Decimal @map("rate_percent") @db.Decimal(6, 4)
+  /// A **fraction**, as the pack uses, not a percentage: 0.0600 is six per
+  /// cent. The database checks it is between 0 and 1, because the mistake this
+  /// invites — typing 6 for "six per cent" — is a 600% contribution that no
+  /// arithmetic downstream would question.
+  rate Decimal @db.Decimal(6, 4)
 
   effectiveFrom DateTime  @map("effective_from") @db.Date
   effectiveTo   DateTime? @map("effective_to") @db.Date

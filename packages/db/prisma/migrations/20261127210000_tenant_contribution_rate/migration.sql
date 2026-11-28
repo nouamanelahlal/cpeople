@@ -11,7 +11,12 @@ CREATE TABLE "tenant_contribution_rate" (
   "id"             uuid PRIMARY KEY,
   "tenant_id"      uuid NOT NULL REFERENCES "tenant"("id") ON DELETE RESTRICT,
   "code"           text NOT NULL,
-  "rate_percent"   numeric(6, 4) NOT NULL,
+  -- A fraction, not a percentage: 0.0600 is six per cent. The name says so,
+  -- and the constraint makes sure of it — somebody typing 6 for "six per cent"
+  -- would otherwise get a 600% CIMR, which numeric(6,4) accepts without a
+  -- murmur and which nothing downstream would question.
+  "rate"           numeric(6, 4) NOT NULL CONSTRAINT "tenant_contribution_rate_is_a_fraction"
+                   CHECK ("rate" >= 0 AND "rate" <= 1),
   "effective_from" date NOT NULL,
   "effective_to"   date,
   "note"           text,
