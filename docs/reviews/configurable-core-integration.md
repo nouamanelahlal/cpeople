@@ -33,6 +33,27 @@ Three things stand out, and none of them is about volume:
 
 ---
 
+## 0a. Decisions taken on this report (28 November 2026)
+
+| # | Decision |
+|---|---|
+| 1 | **Missing settings are not catch-up work.** Each one is added to the schema *and* to the catalogue in the same PR as the feature that needs it. |
+| 2 | **The guard goes on**, after the fifteen real hits are fixed, `generated` is skipped and the seed data moves to fixtures. Screen text takes the **tenant display name from configuration** — never a client's name. |
+| 3 | **CFG-TIME-26 and -27 keep the behaviour that is built.** The schema lists every enum value, and validation **refuses the ones not yet built, with a message that says so** — rather than hiding them, which would make the catalogue and the schema disagree. |
+| 4 | **The ratio range `> 0 AND <= 3` is right.** The catalogue is updated to match the database, not the other way round. |
+| 5 | **#24 is not deleted.** `resolveConfig` exposes its settings as a chain view. The proposal for when the chain engine eventually replaces it is §5.5 below. |
+
+### Integration phase 1, in order
+
+**(a)** `packages/config` into the workspace with its tests in CI · **(b)** one
+merged pack format, every #28 value and source kept, all `unverified` · **(c)**
+the guard, as decision 2 · **(d)** `resolveConfig(tenant, asOf)` over the
+existing tables, with the config hash, the percent conversion and the chain
+view · **(e)** the CFG-PAY-03 period setting, before step 10 · **(f)** the 10 h
+daily maximum seed.
+
+---
+
 ## 1. Every `CFG-…` setting, and where it lives
 
 **Legend.** **Setting** = a row or column somebody can change without a
@@ -145,11 +166,13 @@ defaults:
 - **Names and defaults match** what was built for open points 18–20. The ratio
   is a real setting; the other two are the catalogue's defaults, implemented but
   not yet selectable.
-- **One difference to settle:** the catalogue says the ratio range is `0–3`; the
-  database says `> 0 AND <= 3`. Zero is excluded deliberately — a ratio of zero
-  credits no time at all, which is "do not offer recovery" rather than a ratio.
-  If the catalogue means to allow it as an off switch, CFG-TIME-24 is the better
-  place and the constraint should stay as it is.
+- **Ratio range: settled.** `> 0 AND <= 3` stands and the catalogue is updated
+  to match. Zero is excluded deliberately — a ratio of zero credits no time at
+  all, which is "do not offer recovery", and that is CFG-TIME-24's job.
+- **CFG-TIME-26 and -27: settled.** The built behaviour stays. The schema lists
+  every enum value and validation **refuses the ones not yet built, saying so** —
+  so the catalogue and the schema agree about what exists, and nobody configures
+  a value that silently does nothing.
 - **"Settled at the next conversion or at exit" is not built.** Nothing consumes
   a negative recovery balance. The balance can go below zero and is visible in
   the credit rows, but there is no employee-facing recovery balance screen, and
@@ -286,9 +309,11 @@ The other five:
 - a comment in `apps/web/app/settings/attendance/page.tsx`
 - two more OpenAPI examples
 
-**Recommendation:** turn the guard on **after** fixing those fifteen and
-widening `SKIP_DIRS` to include `generated`, with the seed moved to fixtures.
-Flagging 134 lines on day one would train everybody to ignore it.
+**Decided.** The guard goes on after those fifteen are fixed, `generated` is
+skipped and the seed moves to fixtures. **Screen text takes the tenant display
+name from configuration** — a sentence about "your company" or the tenant's own
+name, never a client's. Flagging 134 lines on day one would have trained
+everybody to ignore it.
 
 ---
 
@@ -350,20 +375,85 @@ golden test covering leave, so the move would otherwise be unguarded.
 Four settings exist in the database and not in the catalogue
 (`team_off_warning_percent`, `accrual_period`, `show_leave_type_to_colleagues`,
 `employees_edit_contact`). §0.2 rule 5 says the catalogue is the place to
-propose a setting before building it; these were built first. The fix is to add
-them, not to remove them — all four are real, used, and the kind of thing the
-next tenant will also want.
+propose a setting before building it; these were built first.
 
-### 5.5 One structural disagreement
+**Decided: no catch-up pass.** Each missing setting is added to the schema *and*
+to the catalogue in the same PR as the feature that needs it. These four are
+added when their areas are next touched — which keeps the catalogue honest
+without a tidying exercise nobody will finish.
 
-**The catalogue puts `CFG-WF-01` approval chains in `CORE` as an engine, and I
-think that is right — but it means replacing what step 2 built**, not extending
-it. `requires_second_approval` plus `second_approver` cannot express
-`[manager_level(1), role(HR)]` for one leave type and something else for
-another. PR #24 made the second approver a setting, which the catalogue
-explicitly checks for; the chain engine supersedes it. Worth saying out loud
-because it is the one place where the configurable core **deletes** working
-code rather than wrapping it.
+### 5.5 Proposal — CFG-WF-01 and PR #24, without deleting anything
+
+**For Youssef.** The catalogue puts approval chains in `CORE` as an engine. PR
+#24 built the second approver as two columns. Those are not rivals, and the
+second does not have to be thrown away to get the first.
+
+#### Now: a chain view over what exists
+
+`resolveConfig` derives a chain from the two columns rather than replacing
+them. Nothing in the database changes and nothing behaves differently:
+
+| `requires_second_approval` | `second_approver` | Chain the view returns |
+|---|---|---|
+| `false` | — | `[manager_level(1)]` |
+| `true` | `hr` | `[manager_level(1), role(HR)]` |
+| `true` | `manager_of_manager` | `[manager_level(1), manager_level(2)]` |
+
+For SMG that reads `[manager_level(1), role(HR)]` on every leave type, which is
+exactly what CFG-WF-01 asks for and exactly what #24 does today. Readers of the
+configuration see a chain; the approval code keeps reading the columns.
+
+#### The trigger: CFG-WF-05, not leave
+
+Two columns are enough for *one* object with *one* question. They stop being
+enough the moment a second object needs a different chain — which is
+**CFG-WF-05: overtime approval, attendance corrections, payroll-run approval**.
+A payroll run approved by a checker and then an approver (CFG-PAY-31,
+four-eyes) cannot be expressed as "does this need a second yes". That is the
+moment to build the engine, and not before.
+
+#### How existing settings convert
+
+A migration, not a rewrite, and it writes exactly what the view already derives:
+
+1. create `approval_chain` and `approval_chain_step`;
+2. for each tenant, insert the three chains in the table above that are
+   actually in use;
+3. point each `leave_type` at the chain its two columns already imply;
+4. keep `requires_second_approval` and `second_approver` **readable but
+   write-once**, the way `overtime_rule`'s rate columns are, so no code can
+   drift back to them while both exist;
+5. drop them a release later, once nothing reads them.
+
+Steps 1–3 are derivable from the table above with no judgement, which is the
+point: **the conversion cannot be wrong unless the view is already wrong**, and
+the view is tested from the day `resolveConfig` lands.
+
+#### What proves nothing changed for SMG
+
+Three things, in increasing order of what they would catch:
+
+1. **The existing leave e2e, unchanged.** `leave-requests.spec.ts` already
+   asserts the N+1 → HR flow end to end, including the e-mails and the audit
+   trail. If the engine changes who approves, these fail.
+2. **A conversion test**: for every seeded leave type, the chain derived by the
+   view equals the chain written by the migration. Run before and after, it
+   proves the migration is the view made durable.
+3. **A decision-replay test**, which is the one worth writing: take the fifteen
+   seeded leave requests with their stored `leave_decision` rows, resolve each
+   against the new engine, and assert **the same approver at the same step**.
+   The decisions are already stored — that is what step 2 built them for — so
+   this is a replay against real recorded history rather than a fixture.
+
+If all three pass, the engine is a different implementation of the same rule,
+and SMG sees nothing.
+
+#### What I would not do
+
+Build the engine now. It has one caller, one shape, and a working
+implementation; the second caller is in B3 or B4. Building it early means
+maintaining two paths through the approval code for a month, and the approval
+code is where a mistake sends somebody's leave to the wrong person.
 
 ### 5.6 What I would not change
 
