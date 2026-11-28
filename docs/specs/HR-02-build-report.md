@@ -87,3 +87,51 @@ button. Three fixes:
   passes, so the one artifact that showed flakiness was the one never kept — and
   `scripts/e2e-summary.mjs` writes failures *and* retries into the job summary.
 - Suite runs are no longer piped through anything that can hide an exit status.
+
+---
+
+## Notes for step 8 — before any rate gets an input box
+
+Step 8 builds the settings screens, and it is the first time anybody will
+**type** a rate rather than read one. Two things have to be true before that
+happens, decided 28 November 2026.
+
+### Every rate is typed and shown as a percentage
+
+**One shared input component**, used by every rate on every settings screen,
+with a **`%` suffix**. Somebody entering twenty-five per cent types `25`,
+everywhere, with no exceptions and nothing to remember.
+
+**The API converts to whatever the column stores** — a fraction or a percentage,
+depending on which one it is. That conversion lives on the server, once per
+field, and never in a screen.
+
+**The user never sees a fraction.** `0.06` is not shown, not typed, and not
+explained; it is six per cent on the way in and six per cent on the way out.
+
+### Why, and what is already underneath
+
+Two columns hold rates, in two shapes, and both are correctly named:
+
+| Column | Holds | 25% is stored as |
+|---|---|---|
+| `overtime_rule.rate_percent` | a **percentage** | `25.00` |
+| `tenant_contribution_rate.rate` | a **fraction** | `0.2500` |
+
+They are not being aligned — the storage is right as it stands and changing it
+would rewrite history for no gain. What was wrong was leaving the difference
+where a person could meet it. So the database now refuses both directions of the
+mistake, and a screen that forgets the rule above fails a test rather than a
+payslip:
+
+- `tenant_contribution_rate_is_a_fraction` — between 0 and 1, so six per cent
+  cannot be entered as `6`
+- `overtime_rule_rate_is_a_percentage` — zero, or between 1 and 300, so
+  twenty-five per cent can be neither `0.25` nor `2500`
+
+Note the asymmetry in the second one: a ceiling alone would not have caught
+`0.25`, because it sits comfortably inside any sane range. The floor is what
+catches the fraction, and zero stays allowed because a band switched off is a
+real thing to want.
+
+Both are covered in `packages/db/test/rls.spec.ts`.
