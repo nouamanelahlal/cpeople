@@ -242,6 +242,9 @@ export async function seedHr02Schedules(
       roundingDirection: 'up',
       latenessToleranceMin: 10,
       dailyMaxHours: 12,
+      // An hour for an hour, until SMG says otherwise: the smaller promise, and
+      // the one that is easiest to increase later (HR-02 open point 18).
+      recoveryRatio: 1,
       note: DEMO_NOTE,
       confirmed: false,
     },

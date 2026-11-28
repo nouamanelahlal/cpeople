@@ -1479,6 +1479,7 @@ export const fr: Messages = {
     MATERNITY: 'Congé de maternité',
     PATERNITY: 'Congé de paternité',
     EXCEPTIONAL: 'Congé exceptionnel',
+    RECOVERY: 'Récupération',
     OTHER: 'Autre absence',
   },
   signedOut: {

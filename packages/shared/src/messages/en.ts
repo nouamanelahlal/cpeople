@@ -1473,6 +1473,7 @@ export const en = {
     MATERNITY: 'Maternity leave',
     PATERNITY: 'Paternity leave',
     EXCEPTIONAL: 'Exceptional leave',
+    RECOVERY: 'Recovery leave',
     OTHER: 'Other absence',
   },
   signedOut: {
