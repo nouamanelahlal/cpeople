@@ -10,6 +10,65 @@ written from memory. The questions they stand in for are in
 
 ---
 
+## Steps 1–4 — the ground the rest stands on
+
+### Step 1 — a company of forty-four, and a switch that is enforced
+
+**PR #16.** The demo tenant was reseeded to the 44 people SMG described, across
+five departments, with employee numbers starting at 1001 — the numbers the
+attendance devices will send, which is why they are a setting and not a format
+baked into code.
+
+**Worth knowing:** "employees can see their base salary" is **enforced in the
+API**, not hidden in the screen. The figure is absent from the answer when the
+switch is off, rather than present and not drawn — the difference between a
+setting and a decoration. It also forced a real fix: the employee pay tab had
+been formatting a number that was no longer there and showing `MAD NaN`, so the
+row is masked instead.
+
+### Step 2 — leave requests that keep their evidence
+
+**PR #17**, with the §10 smoke test following in **#18**.
+
+Requests, the N+1 then N+2 then HR chain, the overlap block, the soft warnings,
+the Mailpit e-mails and the audit trail. The decision that shaped everything
+after it: **a request stores the arithmetic that produced it** — the day count,
+the half-day markers, and the versions of the rules and holidays used — at
+submission and again at approval.
+
+**Worth knowing:** because the calculation is stored rather than recomputed, a
+later change to a holiday or a work week cannot silently move an approved
+request. Instead the affected requests appear on a **"To review"** list showing
+the old and the new count, and HR accepts each one. Pending requests are
+recalculated and the requester told; approved ones keep what was agreed until
+somebody decides.
+
+### Step 3 — the rota decides what a day costs
+
+**PR #19.** Shift patterns, work schedules, and the weekly rest day, with the
+leave day-count reading them.
+
+**The defect worth remembering:** the seed wrote day counts from the *site's*
+working week while the API counted them from the *person's rota*. Every outlet
+and kitchen request disagreed with itself, and "To review" filled up on a fresh
+demo. The seed now counts the way the application does, all **15 demo requests
+agree**, and a test pins it: *"a fresh demo opens with nothing to review"*. A
+seed and an application that compute the same thing differently is a class of
+bug worth naming, because it looks like a data problem and is not.
+
+### Step 4 — a specification the provider can answer
+
+**PR #20.** Where punches come from, the column mapping as a **setting** rather
+than a release, a generated sample export, and the file specification as a
+four-sheet workbook to send to the device provider (P09, due 15 December).
+
+**Worth knowing:** the sample is generated from the seeded company every time
+rather than stored, so it cannot go stale when somebody reseeds — and it
+carries, on purpose, every anomaly the import must find. The provider reading
+the specification knows exactly what will be checked.
+
+---
+
 ## Step 5 — the import wizard, and what a worked day is worth
 
 **PR #21, merged.** Full suite 111 passed, 0 failed, 16 skipped.
@@ -65,6 +124,110 @@ the rule and holidays it applied.
 in place — a correction is a new effective-dated row. Nothing writes these rules
 yet, which is exactly why it was done now: the screen that will edit them is
 step 8.
+
+---
+
+## Step 6 — the exceptions, and the hours that are owed back
+
+Build spec §5.4, plus the recovery design SMG asked for mid-step.
+
+### Recovery: hours, not days
+
+A worked public holiday or rest day can be settled in **money**, as overtime, or
+in **time**, as recovery — and never both. `leave_recovery_credit` is
+insert-only, like the punches and the leave calculations: the balance is the sum
+of its movements and is never stored, so it cannot drift from the rows that
+explain it.
+
+**Minutes, not days.** Four hours owed from a Sunday morning is not "half a day"
+to somebody whose shift is twelve hours, so the balance is kept in the unit it
+was earned in and spent at the scheduled hours of the day it is taken.
+
+**The ratio is taken from when the credit was earned, not from today's
+setting.** At time-and-a-half, 720 minutes were credited for 480 worked, so an
+hour of leave taken settles *forty* minutes of work rather than sixty. Using the
+current setting would move the balance a little every time somebody changed
+their mind after a rate change.
+
+RECOVERY is seeded as an eighth leave type: paid, balance-tracked, with no
+entitlement and no accrual — nothing is given, only given back.
+
+### Undoing it, when the time is already spent
+
+**Blocked by default**, with the screen saying how much has gone. HR can
+override with a reason, and then the credit is cancelled **in full** — so the
+balance goes below zero and the debt is visible rather than quietly absorbed —
+while the pay comes back **only for the part not already taken**. Three hours
+settled in time plus five hours paid is the eight that were worked.
+
+**The restored bands add up exactly.** Scaling each band on its own and rounding
+loses or invents a minute: three bands of a 7 h 23 min day scaled to 180 minutes
+round to 179. The floors are handed out first and the remainder goes to the
+largest fractional parts, ties breaking on the larger band and then the code so
+the same day always gives the same answer. **A night premium earned by those
+same hours is cut by the same proportion** and apportioned the same way, so it
+adds up too. A property test covers every target from 1 to 443 minutes.
+
+### The exception list and its seven answers
+
+Grouped by kind, because the same question asked forty times has one answer and
+forty rows. Map a number to a person, add the punch that never arrived, mark an
+absence unpaid, confirm a worked holiday as overtime or convert it to recovery,
+undo that, and confirm or ignore the rest with a comment. **The reason is always
+required** and lands in the audit log under the name of whoever gave it; **a
+fixed day becomes `mixed`**, so tomorrow's file does not undo an afternoon
+somebody put right.
+
+### Three defects the tests found
+
+**An empty branch inside an `OR` matches nothing.** The list asked for "a day the
+reader may see, **or** no day at all" as
+`OR: [{ workDay: scope }, { workDayId: null }]`. For HR the scope is empty, the
+branch dropped out, and HR saw only the three exceptions with no day while the
+counts beside them said forty-four.
+
+> **This corrects an earlier explanation**, in a commit message and in a code
+> comment, which said Prisma reads `{ relation: {} }` on a *nullable* relation as
+> matching nothing. It does not. Measured: `{ workDay: {} }` on its own returns
+> every row — which is exactly what makes `employeeScope()` returning `{}`
+> correct everywhere else it is used. It is only **inside an `OR`** that an empty
+> branch turns into its opposite. The fix was right; the reason was not. Three db
+> tests now pin the real behaviour.
+
+**A manager could not reach their own team's exceptions.** The screen asked for
+the sample export first, which needs `attendance.import` — an HR capability. So
+the whole screen was gated behind a permission managers do not have, which is
+precisely what `attendance.view` exists to avoid. The sample is now fetched only
+for the tab that needs it.
+
+**A manager's department filter offered every department**, including ones whose
+days he cannot see — a filter that always returns nothing, which reads as a
+fault. It now offers the departments of the people he manages.
+
+### A new test that was born flaky, and why
+
+The import-and-group test needed a retry in the full suite but never standalone.
+It runs **first** alphabetically, so it inherited whatever the previous run left
+behind — and it was the one data-touching file in the suite that reset only
+*afterwards*. Three causes removed, none of them a longer timeout:
+
+1. it resets before as well as after, like every other such file;
+2. the import helper locates fields by id rather than by **translated label**, so
+   it no longer depends on which language the screen settled into;
+3. it asserts the form is present within thirty seconds with a plain message,
+   instead of waiting out a four-minute timeout on a field that was never coming.
+
+### Open points this step raised
+
+- **18 — recovery leave: the unit, and what an hour is worth.** Hours not days;
+  the ratio a setting defaulting to 1:1. Open: does SMG give 1:1, or the holiday
+  rate?
+- **19 — undoing a conversion after the time has been taken.** Open: should HR be
+  able to override at all; is a negative balance acceptable, or should the
+  shortfall be settled another way; is the employee told?
+- **20 — which hours count as already settled.** Proportionally by default;
+  dearest-first and cheapest-first are the alternatives. A setting candidate for
+  the payroll expert, not a fork in the code.
 
 ---
 
