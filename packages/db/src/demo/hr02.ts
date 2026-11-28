@@ -35,7 +35,7 @@ const LEAVE_TYPES = [
     requiresDocument: false,
     dayBasis: 'working',
     allowsHalfDays: true,
-    requiresSecondApproval: false,
+    requiresSecondApproval: true,
     tracksBalance: true,
     rule: {
       entitlementDays: 18,
@@ -64,7 +64,7 @@ const LEAVE_TYPES = [
     requiresDocument: true,
     dayBasis: 'calendar',
     allowsHalfDays: true,
-    requiresSecondApproval: false,
+    requiresSecondApproval: true,
     tracksBalance: false,
     // Sick leave is always after the fact, so it is the one type that may be
     // dated backwards.
@@ -90,7 +90,7 @@ const LEAVE_TYPES = [
     requiresDocument: true,
     dayBasis: 'calendar',
     allowsHalfDays: false,
-    requiresSecondApproval: false,
+    requiresSecondApproval: true,
     tracksBalance: false,
     rule: { minNoticeDays: 0, maxBackdateDays: 7 },
   },
@@ -101,7 +101,7 @@ const LEAVE_TYPES = [
     requiresDocument: true,
     dayBasis: 'calendar',
     allowsHalfDays: false,
-    requiresSecondApproval: false,
+    requiresSecondApproval: true,
     tracksBalance: false,
     rule: { minNoticeDays: 0, maxBackdateDays: 7 },
   },
@@ -123,7 +123,7 @@ const LEAVE_TYPES = [
     requiresDocument: false,
     dayBasis: 'working',
     allowsHalfDays: true,
-    requiresSecondApproval: false,
+    requiresSecondApproval: true,
     tracksBalance: false,
     rule: { minNoticeDays: 0, maxBackdateDays: 0 },
   },
@@ -232,6 +232,8 @@ export async function seedHr02Leave(
       // Where a request with nobody above the requester is sent. A team address,
       // so that it survives somebody leaving (HR-02 open point 11).
       hrEmail: 'hr@smg-demo.test',
+      // Every leave type: the line manager, then HR (HR-02 decision 1, 24 Nov 2026).
+      secondApprover: 'hr',
       note: DEMO_NOTE,
     },
   });

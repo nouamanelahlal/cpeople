@@ -55,6 +55,8 @@ export interface PublicHoliday {
 export interface LeavePolicy {
   readonly teamOffWarningPercent: number;
   readonly leaveYearStart: string;
+  /** Who approves after the line manager (M09; HR-02 decision 1). */
+  readonly secondApprover: 'manager_of_manager' | 'hr';
   readonly note?: string;
   readonly hrEmail?: string;
 }

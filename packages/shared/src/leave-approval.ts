@@ -97,19 +97,28 @@ export function approvalChain(input: {
   };
 }
 
+/** Who gives the second yes (M09): a company setting, not a rule in code. */
+export type SecondApprover = 'manager_of_manager' | 'hr';
+
 /**
  * Where a request goes once the line manager has said yes.
  *
  * A type that needs no second yes is approved there and then. One that does goes
- * to N+2 — and where there is no N+2, to HR, rather than quietly skipping the
- * second approval the client asked for.
+ * to the company's second approver: HR when the company chose HR (SMG, HR-02
+ * decision 1), otherwise N+2 — and where there is no N+2, to HR, rather than
+ * quietly skipping the second approval the client asked for.
  */
 export function afterFirstApproval(input: {
   readonly requiresSecondApproval: boolean;
   readonly n2Id?: string | null;
+  readonly secondApprover?: SecondApprover;
 }): 'approved' | 'pending_n2' | 'pending_hr' {
   if (!input.requiresSecondApproval) {
     return 'approved';
+  }
+
+  if (input.secondApprover === 'hr') {
+    return 'pending_hr';
   }
 
   return input.n2Id ? 'pending_n2' : 'pending_hr';
