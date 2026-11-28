@@ -21,6 +21,17 @@ test.beforeEach(({ browserName: _browserName }, testInfo) => {
   testInfo.setTimeout(240_000);
 });
 
+/**
+ * This file runs first in the suite, so it inherits whatever the last run left
+ * behind unless it says otherwise. Every other file that changes data resets
+ * before and after; this one did only afterwards, which is how it managed to
+ * be flaky on its very first day.
+ */
+test.beforeAll(({ browserName: _browserName }, testInfo) => {
+  if (testInfo.project.name !== 'desktop-chromium') return;
+  resetDemoData();
+});
+
 test.afterAll(({ browserName: _browserName }, testInfo) => {
   if (testInfo.project.name !== 'desktop-chromium') return;
   resetDemoData();
@@ -160,8 +171,18 @@ test.describe('M10 attendance exceptions', () => {
 async function importTheSample(page: Page): Promise<void> {
   const sample = await (await page.request.get('/attendance/sample.csv')).text();
 
-  await page.getByLabel('What the file is called').fill('Sample_Attendance_Export_2026-11.csv');
-  await page.getByLabel('Paste the file').fill(sample);
+  // The form is only on the page when the reader may import, so check that
+  // first and in seconds. Waiting out a four-minute timeout on a field that is
+  // never coming says nothing about why.
+  await expect(
+    page.locator('#content'),
+    'the import form is not on the page — is this the refusal card?',
+  ).toBeVisible({ timeout: 30_000 });
+
+  // By id rather than by label: the label is translated, and this helper has
+  // no business depending on which language the screen settled into.
+  await page.locator('#fileName').fill('Sample_Attendance_Export_2026-11.csv');
+  await page.locator('#content').fill(sample);
   await page.getByRole('button', { name: 'Try it' }).click();
 
   await expect(page.getByRole('heading', { name: 'What the file says' })).toBeVisible({
