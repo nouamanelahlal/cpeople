@@ -196,6 +196,39 @@ export async function apiStream(path: string): Promise<Response> {
  * would have done. Only for a token that really has run out, so a misconfigured
  * API cannot turn this into a loop.
  */
+/**
+ * What a GET came back with, where "it did not work" needs more than `null`.
+ *
+ * `apiGetOrNull` cannot tell a refusal from a failure, so a screen built on it
+ * has one message for both — and the one it picks is almost always "this is not
+ * yours", which blames the reader for the API being restarted. That is exactly
+ * what happened on the attendance screen: HR was told attendance was for HR.
+ */
+export type ApiResult<T> =
+  | { readonly ok: true; readonly value: T }
+  | { readonly ok: false; readonly refused: boolean };
+
+/** A GET that says *why* it failed: refused, or simply not answering. */
+export async function apiGetResult<T>(path: string): Promise<ApiResult<T>> {
+  try {
+    return { ok: true, value: await apiGet<T>(path) };
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401 && (await tokenRanOut())) {
+      const back = await requestPath();
+      redirect(`/api/auth/refresh?callbackUrl=${encodeURIComponent(back)}`);
+    }
+
+    console.error('API request failed', error);
+
+    // Only a refusal is the reader's own business. Anything else — the API
+    // down, a timeout, a 500 — is ours, and saying so is the difference between
+    // "you may not" and "try again in a moment".
+    const refused = error instanceof ApiError && (error.status === 403 || error.status === 404);
+
+    return { ok: false, refused };
+  }
+}
+
 export async function apiGetOrNull<T>(path: string): Promise<T | null> {
   try {
     return await apiGet<T>(path);

@@ -1,5 +1,5 @@
 import type { JSX, ReactNode } from 'react';
-import { apiGetOrNull } from '../../../lib/api';
+import { apiGetOrNull, apiGetResult } from '../../../lib/api';
 import {
   exceptionText,
   importRefusalText,
@@ -36,9 +36,9 @@ export default async function AttendanceImportPage({
 
   // Asked for its own sake: it is also how this page finds out whether the
   // reader may import at all.
-  const sample = await apiGetOrNull<{ rows: number }>('/attendance/sample');
+  const allowed = await apiGetResult<{ rows: number }>('/attendance/sample');
 
-  if (sample === null) {
+  if (!allowed.ok) {
     return (
       <AppPage
         context={context}
@@ -47,7 +47,9 @@ export default async function AttendanceImportPage({
         subtitle={t.attendance.import.note}
       >
         <Card>
-          <p className="m-0 text-sm text-body">{t.attendance.notYours}</p>
+          <p className="m-0 text-sm text-body">
+            {allowed.refused ? t.attendance.notYours : t.attendance.unavailable}
+          </p>
         </Card>
       </AppPage>
     );
