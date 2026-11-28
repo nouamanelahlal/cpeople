@@ -1,4 +1,4 @@
-import { Body, Controller, ForbiddenException, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUserService } from '../../common/access/current-user.service.js';
 import {
@@ -8,6 +8,10 @@ import {
 } from './attendance-source.service.js';
 import { AttendanceImportService, type ImportReport } from './attendance-import.service.js';
 import { FileSpecService } from './file-spec.service.js';
+import {
+  AttendanceExceptionService,
+  type ExceptionList,
+} from './attendance-exception.service.js';
 import { SampleExportService, type SampleSummary } from './sample-export.service.js';
 
 /**
@@ -27,6 +31,7 @@ export class AttendanceController {
     private readonly sample: SampleExportService,
     private readonly spec: FileSpecService,
     private readonly imports: AttendanceImportService,
+    private readonly exceptions: AttendanceExceptionService,
   ) {}
 
   @Post('imports/preview')
@@ -47,6 +52,41 @@ export class AttendanceController {
   })
   commit(@Param('id') id: string): Promise<ImportReport> {
     return this.imports.commit(id);
+  }
+
+  @Get('exceptions')
+  @ApiOperation({ summary: 'What the device could not explain, grouped by kind' })
+  exceptionList(
+    @Query('code') code?: string,
+    @Query('department') department?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('status') status?: string,
+  ): Promise<ExceptionList> {
+    return this.exceptions.list({
+      ...(code ? { code } : {}),
+      ...(department ? { department } : {}),
+      ...(from ? { from } : {}),
+      ...(to ? { to } : {}),
+      ...(status ? { status } : {}),
+    });
+  }
+
+  @Post('exceptions/:id/resolve')
+  @ApiOperation({ summary: 'Answer one, with a reason that is kept' })
+  resolveException(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      resolution?: string;
+      comment?: string;
+      employeeId?: string;
+      at?: string;
+      direction?: string;
+      override?: boolean;
+    },
+  ): Promise<{ ok: true }> {
+    return this.exceptions.resolve(id, body);
   }
 
   @Get('sources')

@@ -65,6 +65,17 @@ export {
   weeklyOvertime,
 } from './overtime.js';
 export type { Minutes, OvertimeBand, OvertimeInput, OvertimeResult, WorkedSpan } from './overtime.js';
+export {
+  apportion,
+  convertToRecovery,
+  planUndo,
+  recoveryBalance,
+  recoveryCostOfDay,
+  recoveryMinutes,
+  restoreAfterUndo,
+  undoRecovery,
+} from './recovery.js';
+export type { Converted, DayToConvert, UndoPlan } from './recovery.js';
 export { CURRENCY, DEFAULT_LOCALE, LOCALES, intlLocale, toLocale } from './locale.js';
 export { frenchNumberWords } from './number-words-fr.js';
 export type { Locale } from './locale.js';

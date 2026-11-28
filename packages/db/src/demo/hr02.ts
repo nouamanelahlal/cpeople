@@ -117,6 +117,22 @@ const LEAVE_TYPES = [
     rule: { minNoticeDays: 0, maxBackdateDays: 7 },
   },
   {
+    code: 'RECOVERY',
+    name: 'Récupération',
+    paid: true,
+    requiresDocument: false,
+    dayBasis: 'working',
+    allowsHalfDays: true,
+    requiresSecondApproval: true,
+    // It draws on a balance, but one kept in **hours** rather than days, and
+    // earned rather than granted: an hour worked on a holiday or a rest day
+    // that the company settles in time instead of money (HR-02 open point 18).
+    // There is no entitlement and no accrual — nothing is given, only given
+    // back — so the rule below carries no days.
+    tracksBalance: true,
+    rule: { minNoticeDays: 1, maxBackdateDays: 0 },
+  },
+  {
     code: 'OTHER',
     name: 'Autre absence',
     paid: false,

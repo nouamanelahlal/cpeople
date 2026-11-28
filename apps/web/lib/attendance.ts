@@ -57,3 +57,52 @@ export function exceptionText(code: string, t: Messages): string {
   const codes = t.attendance.exceptions.codes as Record<string, string | undefined>;
   return codes[code] ?? code;
 }
+
+/** One thing the device could not explain, as the screen needs it. */
+export interface ExceptionRow {
+  readonly id: string;
+  readonly code: string;
+  readonly status: string;
+  readonly detail?: string;
+  readonly date?: string;
+  readonly employee?: { id: string; name: string; employeeNumber: string; department?: string };
+  readonly workedMin?: number;
+  readonly overtimeMin?: number;
+  readonly recoveryMin?: number;
+  readonly resolutions: Resolution[];
+  readonly resolution?: string;
+  readonly comment?: string;
+  readonly resolvedBy?: string;
+  readonly resolvedAt?: string;
+}
+
+export type Resolution =
+  | 'map'
+  | 'ignore'
+  | 'addPunch'
+  | 'unpaidAbsence'
+  | 'confirmOvertime'
+  | 'convertToRecovery'
+  | 'undoRecovery'
+  | 'confirm';
+
+export interface ExceptionList {
+  readonly groups: { code: string; open: number; resolved: number }[];
+  readonly rows: ExceptionRow[];
+  readonly departments: { id: string; name: string }[];
+  readonly mayCorrect: boolean;
+  /** `team` where the reader is a manager, which the screen says out loud. */
+  readonly scope: 'all' | 'team';
+  readonly total: number;
+}
+
+/** Why an answer was refused, in the reader's language. */
+export function exceptionRefusalText(kind: string, t: Messages, values: Record<string, string> = {}): string {
+  const errors = t.attendance.exceptions.errors as Record<string, string | undefined>;
+  const template = errors[kind] ?? errors['failed'] ?? kind;
+
+  return Object.entries(values).reduce(
+    (text, [key, value]) => text.replace(`{${key}}`, value),
+    template,
+  );
+}

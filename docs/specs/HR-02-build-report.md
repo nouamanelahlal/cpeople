@@ -135,3 +135,47 @@ catches the fraction, and zero stays allowed because a band switched off is a
 real thing to want.
 
 Both are covered in `packages/db/test/rls.spec.ts`.
+
+---
+
+## Notes for step 10 — closing a month
+
+Decided 28 November 2026, before the close is built.
+
+### An open exception blocks the close. All of them.
+
+The checklist that closes a month treats **any open attendance exception as
+blocking** — not a warning, not a count on a dashboard. That includes the two
+that look harmless:
+
+- **`OVER_DAILY_MAX`** — somebody worked longer than a day is allowed to be. It
+  is open precisely because nobody has said whether that is right.
+- **`WORKED_HOLIDAY`** and **`WORKED_REST_DAY`** — the day is worth overtime at
+  a holiday rate, or it is owed back as time, and until somebody chooses it is
+  worth neither. Closing the month with it open picks one of those answers by
+  accident.
+
+**No overtime reaches payroll without a recorded decision.** That is the rule,
+and it is the reason every fix in §5.4 requires a reason: the decision and the
+person who made it are what a payslip is defended with three months later.
+
+### What the test has to prove
+
+When step 10 is built, the test is not "the close warns about exceptions". It
+is:
+
+1. a month with one open exception of **each** code **cannot** be closed;
+2. answering it — including with `confirm`, which changes no figures — lets the
+   close proceed;
+3. the payroll variables for that month contain **no** overtime minutes from a
+   day whose exception is still open.
+
+The third is the one worth writing first. The first two are about a button; the
+third is about what reaches somebody's pay.
+
+### Where this bites
+
+`absences-for-payroll.service.ts` already answers "what did this month cost in
+absence". The overtime equivalent will read `work_day`, and the natural
+implementation reads every day in the period. It must not: it reads every day
+whose exceptions are all answered, and the close refuses while any remain.

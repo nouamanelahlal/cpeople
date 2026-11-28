@@ -81,6 +81,7 @@ model Tenant {
   overtimeRules        OvertimeRule[]
   overtimeSettings     OvertimeSettings?
   contributionRates    TenantContributionRate[]
+  recoveryCredits      LeaveRecoveryCredit[]
 
   @@map("tenant")
 }
@@ -335,6 +336,7 @@ model Employee {
   punches                 Punch[]
   employeeNumberAlias     EmployeeNumberAlias[]
   workDays                WorkDay[]
+  recoveryCredits         LeaveRecoveryCredit[]
 
   @@unique([tenantId, employeeNumber])
   @@unique([tenantId, nationalId])
@@ -783,16 +785,16 @@ model LeaveSettings {
   /// Warn when more than this share of a department is off on the same day. A
   /// warning shown to the requester and the approver; it refuses nothing
   /// (HR-02 open point 6).
-  teamOffWarningPercent Int     @default(33) @map("team_off_warning_percent")
+  teamOffWarningPercent Int                 @default(33) @map("team_off_warning_percent")
   /// The day the leave year starts, as MM-DD. Not a date: it repeats.
-  leaveYearStart        String  @default("01-01") @map("leave_year_start")
+  leaveYearStart        String              @default("01-01") @map("leave_year_start")
   /// Where a request with nobody to approve it is sent. A team address rather
   /// than a person, so that it survives somebody leaving (HR-02 open point 11).
-  hrEmail               String? @map("hr_email")
+  hrEmail               String?             @map("hr_email")
   /// How often leave is earned: "monthly", "quarterly" or "annual". A setting
   /// rather than a constant, because it is a question for SMG and because the
   /// answer changes every balance in the company.
-  accrualPeriod         String  @default("monthly") @map("accrual_period")
+  accrualPeriod         String              @default("monthly") @map("accrual_period")
   /// Who gives the second yes for the leave types that need one (M09). SMG
   /// chose HR (HR-02 decision 1, 24 Nov 2026); other clients may keep the
   /// manager's manager, which is why it is a setting.
@@ -1688,6 +1690,10 @@ model WorkDay {
   /// the two together would count that minute twice.
   premium Json?
 
+  /// Minutes this day gave back as time off instead of pay. Non-zero means the
+  /// day was settled in time, and its overtime was cleared when it was.
+  recoveryMin Int @default(0) @map("recovery_min")
+
   /// The overtime rule rows in force for this day, as `LeaveCalculation` keeps
   /// the leave rule and holidays it applied. `calcVersion` says whether the
   /// rules have changed since; these say which rows they were.
@@ -1707,9 +1713,10 @@ model WorkDay {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  tenant     Tenant                @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  employee   Employee              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  exceptions AttendanceException[]
+  tenant          Tenant                @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  employee        Employee              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  exceptions      AttendanceException[]
+  recoveryCredits LeaveRecoveryCredit[]
 
   @@unique([tenantId, employeeId, date])
   @@index([tenantId])
@@ -1741,8 +1748,9 @@ model AttendanceException {
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  workDay WorkDay? @relation(fields: [workDayId], references: [id], onDelete: Cascade)
+  tenant          Tenant                @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  workDay         WorkDay?              @relation(fields: [workDayId], references: [id], onDelete: Cascade)
+  recoveryCredits LeaveRecoveryCredit[]
 
   @@index([tenantId])
   @@index([tenantId, status, code])
@@ -1806,6 +1814,12 @@ model OvertimeSettings {
   latenessToleranceMin Int     @default(10) @map("lateness_tolerance_min")
   dailyMaxHours        Decimal @default(12) @map("daily_max_hours") @db.Decimal(5, 2)
 
+  /// What an hour worked on a holiday or a rest day is worth in time off, when
+  /// it is taken as recovery instead of paid as overtime. 1 is an hour for an
+  /// hour. Whether SMG gives 1:1 or the holiday rate is HR-02 open point 18,
+  /// so this is seeded at 1 and marked to confirm — the smaller promise.
+  recoveryRatio Decimal @default(1) @map("recovery_ratio") @db.Decimal(4, 2)
+
   note      String?
   confirmed Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -1859,4 +1873,53 @@ model TenantContributionRate {
   @@index([tenantId])
   @@index([tenantId, code, effectiveFrom])
   @@map("tenant_contribution_rate")
+}
+
+/// An hour owed back, because an hour was worked when it should not have been
+/// (M10 / HR-04, HR-02 open point 18).
+///
+/// A worked public holiday or rest day can be paid as overtime **or** taken as
+/// recovery, and never both — the company has agreed to settle it in time or in
+/// money, and paying twice for the same hour is the mistake this whole table
+/// exists to make visible.
+///
+/// Minutes, not days. Four hours owed from a Sunday morning is not "half a day"
+/// to somebody whose shift is twelve hours, so the balance is kept in the unit
+/// it was earned in and spent at the scheduled hours of the day it is taken.
+///
+/// Insert-only, like every other piece of evidence here. Undoing a conversion
+/// writes a second row with the minutes negated and a reason of its own; it
+/// never edits or deletes the first. The balance is the sum of the rows, and
+/// the history of how it got there is the rows themselves.
+model LeaveRecoveryCredit {
+  id         String @id @default(uuid(7)) @db.Uuid
+  tenantId   String @map("tenant_id") @db.Uuid
+  employeeId String @map("employee_id") @db.Uuid
+
+  /// The day that was worked, and the exception that asked what to do about it.
+  workDayId   String  @map("work_day_id") @db.Uuid
+  exceptionId String? @map("exception_id") @db.Uuid
+
+  /// Negative when a conversion is undone, so the rows sum to the balance.
+  minutes Int
+
+  /// What the minutes were multiplied by, kept with the row: the setting can
+  /// change afterwards, and this row must still explain itself.
+  ratio Decimal @db.Decimal(4, 2)
+
+  /// Required. "Why is this hour owed to me" always has an answer.
+  reason String
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy String   @map("created_by")
+
+  tenant    Tenant               @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  employee  Employee             @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  workDay   WorkDay              @relation(fields: [workDayId], references: [id], onDelete: Cascade)
+  exception AttendanceException? @relation(fields: [exceptionId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, employeeId])
+  @@index([tenantId, workDayId])
+  @@map("leave_recovery_credit")
 }

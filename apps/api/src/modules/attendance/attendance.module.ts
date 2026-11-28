@@ -4,6 +4,7 @@ import { AuditModule } from '../../common/audit/audit.module.js';
 import { PrismaModule } from '../../common/prisma/prisma.module.js';
 import { AttendanceController } from './attendance.controller.js';
 import { AttendanceImportService } from './attendance-import.service.js';
+import { AttendanceExceptionService } from './attendance-exception.service.js';
 import { AttendanceSourceService } from './attendance-source.service.js';
 import { FileSpecService } from './file-spec.service.js';
 import { SampleExportService } from './sample-export.service.js';
@@ -25,6 +26,7 @@ import { WorkDayBuilderService } from './workday-builder.service.js';
     FileSpecService,
     WorkDayBuilderService,
     AttendanceImportService,
+    AttendanceExceptionService,
   ],
   exports: [SampleExportService, AttendanceSourceService],
 })
