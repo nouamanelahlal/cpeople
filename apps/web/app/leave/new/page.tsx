@@ -43,6 +43,9 @@ export default async function NewLeavePage({
 
   const refused = readRefusal(query['error']);
   const chosen = one(query['leaveTypeId']) ?? types[0]?.id ?? '';
+  // The "second approval" mark tells types apart. When every type needs it — SMG,
+  // HR-02 decision 1: the manager, then HR, for all leave — it tells nothing.
+  const everyTypeNeedsTwo = types.length > 0 && types.every((type) => type.requiresSecondApproval);
 
   return (
     <AppPage
@@ -68,7 +71,9 @@ export default async function NewLeavePage({
                 {types.map((type) => (
                   <option key={type.id} value={type.id}>
                     {leaveTypeName(type, t)}
-                    {type.requiresSecondApproval ? ` — ${t.leaveSettings.types.columns.secondApproval}` : ''}
+                    {type.requiresSecondApproval && !everyTypeNeedsTwo
+                      ? ` — ${t.leaveSettings.types.columns.secondApproval}`
+                      : ''}
                   </option>
                 ))}
               </select>
