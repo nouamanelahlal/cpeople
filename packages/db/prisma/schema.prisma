@@ -1690,6 +1690,10 @@ model WorkDay {
   /// the two together would count that minute twice.
   premium Json?
 
+  /// Minutes this day gave back as time off instead of pay. Non-zero means the
+  /// day was settled in time, and its overtime was cleared when it was.
+  recoveryMin Int @default(0) @map("recovery_min")
+
   /// The overtime rule rows in force for this day, as `LeaveCalculation` keeps
   /// the leave rule and holidays it applied. `calcVersion` says whether the
   /// rules have changed since; these say which rows they were.
