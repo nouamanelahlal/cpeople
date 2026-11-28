@@ -168,3 +168,87 @@ export function recoveryBalance(movements: readonly { minutes: number }[]): numb
 export function recoveryCostOfDay(input: { scheduledMin: number }): number {
   return Math.max(input.scheduledMin, 0);
 }
+
+/**
+ * Spreading a total across bands, in whole minutes that actually add up.
+ *
+ * Scaling each band on its own and rounding loses or invents a minute: three
+ * bands of a 7 h 23 min day scaled to 180 minutes round to 179. A minute is not
+ * much until it is somebody's minute, at a holiday rate, every month.
+ *
+ * So the floors are handed out first and the remainder goes to the bands with
+ * the **largest fractional parts** — the oldest apportionment rule there is,
+ * and the one that keeps the total exact while staying closest to the
+ * proportions. Ties break on the larger band and then on the code, so the same
+ * input always gives the same answer.
+ *
+ * Which hours should count as already settled — proportionally, as here, or the
+ * dearest first, or the cheapest — is HR-02 open point 20, for the payroll
+ * expert. It is a setting waiting to happen, not a fork in the code.
+ */
+export function apportion(
+  bands: Readonly<Record<string, number>>,
+  targetMin: number,
+): Record<string, number> {
+  const entries = Object.entries(bands).filter(([, minutes]) => minutes > 0);
+  const total = entries.reduce((sum, [, minutes]) => sum + minutes, 0);
+
+  if (total <= 0 || targetMin <= 0) return {};
+  if (targetMin >= total) return Object.fromEntries(entries);
+
+  const shares = entries.map(([code, minutes]) => {
+    const exact = (minutes * targetMin) / total;
+    const whole = Math.floor(exact);
+
+    return { code, minutes, whole, fraction: exact - whole };
+  });
+
+  let left = targetMin - shares.reduce((sum, share) => sum + share.whole, 0);
+
+  const order = [...shares].sort(
+    (a, b) => b.fraction - a.fraction || b.minutes - a.minutes || a.code.localeCompare(b.code),
+  );
+
+  for (const share of order) {
+    if (left <= 0) break;
+    share.whole += 1;
+    left -= 1;
+  }
+
+  return Object.fromEntries(
+    shares.filter((share) => share.whole > 0).map((share) => [share.code, share.whole]),
+  );
+}
+
+/**
+ * What a day is still worth in money after part of it was taken as time.
+ *
+ * Both maps are cut by the same proportion, because both were earned by the
+ * same hours: a night premium on a day half settled in time is half owed. The
+ * overtime lands exactly on the unsettled minutes; the premium keeps the same
+ * share of itself, apportioned the same way so it also adds up.
+ */
+export function restoreAfterUndo(input: {
+  overtime: Readonly<Record<string, number>>;
+  premium?: Readonly<Record<string, number>>;
+  /** Minutes of the day that are still owed in money. */
+  restoredWorkedMin: number;
+  /** Minutes the day was worth before any of it was settled in time. */
+  workedMin: number;
+}): { overtime: Record<string, number>; premium: Record<string, number> } {
+  const share = input.workedMin > 0 ? input.restoredWorkedMin / input.workedMin : 0;
+
+  const overtimeTotal = Object.values(input.overtime).reduce((sum, value) => sum + value, 0);
+
+  // On a holiday or a rest day every minute is overtime, which is the only kind
+  // of day a conversion applies to — so this target is the unsettled minutes
+  // themselves. The `min` keeps it honest on any other shape of day.
+  const overtimeTarget = Math.min(input.restoredWorkedMin, overtimeTotal);
+
+  const premiumTotal = Object.values(input.premium ?? {}).reduce((sum, value) => sum + value, 0);
+
+  return {
+    overtime: apportion(input.overtime, overtimeTarget),
+    premium: apportion(input.premium ?? {}, Math.round(premiumTotal * share)),
+  };
+}

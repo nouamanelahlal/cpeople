@@ -66,11 +66,13 @@ export {
 } from './overtime.js';
 export type { Minutes, OvertimeBand, OvertimeInput, OvertimeResult, WorkedSpan } from './overtime.js';
 export {
+  apportion,
   convertToRecovery,
   planUndo,
   recoveryBalance,
   recoveryCostOfDay,
   recoveryMinutes,
+  restoreAfterUndo,
   undoRecovery,
 } from './recovery.js';
 export type { Converted, DayToConvert, UndoPlan } from './recovery.js';

@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import type { TenantClient } from '@cpeople/db';
-import { convertToRecovery, planUndo, recoveryBalance } from '@cpeople/shared';
+import { convertToRecovery, planUndo, recoveryBalance, restoreAfterUndo } from '@cpeople/shared';
 import { CurrentUserService, type CurrentUser } from '../../common/access/current-user.service.js';
 import { visibleEmployeeIds } from '../../common/access/visible-employees.js';
 import { AuditService } from '../../common/audit/audit.service.js';
@@ -584,21 +584,25 @@ export class AttendanceExceptionService {
       context,
     });
 
-    // After an undo, the pay covers only what was not already taken as time.
-    const share = cap === undefined || built.workedMin === 0 ? 1 : cap / built.workedMin;
-    const scale = (bands: Record<string, number>): Record<string, number> =>
-      share >= 1
-        ? bands
-        : Object.fromEntries(
-            Object.entries(bands).map(([code, minutes]) => [code, Math.round(minutes * share)]),
-          );
+    // After an undo, the pay covers only what was not already taken as time —
+    // in whole minutes that add up to it exactly, rather than each band rounded
+    // on its own and the total a minute out.
+    const restored =
+      cap === undefined
+        ? { overtime: built.overtime, premium: built.premium }
+        : restoreAfterUndo({
+            overtime: built.overtime,
+            premium: built.premium,
+            restoredWorkedMin: cap,
+            workedMin: built.workedMin,
+          });
 
     await tx.workDay.update({
       where: { id: day.id },
       data: {
         workedMin: built.workedMin,
-        overtime: scale(built.overtime),
-        premium: scale(built.premium),
+        overtime: restored.overtime,
+        premium: restored.premium,
         overtimeRuleIds: built.overtimeRuleIds,
         calcVersion: built.calcVersion,
         builtAt: new Date(),

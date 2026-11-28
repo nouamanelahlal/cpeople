@@ -419,6 +419,35 @@ whose say-so.
 
 ---
 
+## 20. Which hours count as already settled
+
+**Question.** A worked holiday was converted to recovery and part of the time
+has been taken. The conversion is then undone (open point 19). Of the hours
+worked that day, **which ones** count as the ones already settled in time?
+
+**Why it matters.** The hours of a holiday are not all worth the same. An hour
+after nine at night pays at a different rate from an hour at noon, so "three of
+the eight hours are already settled" has three possible answers and three
+different payslips.
+
+| | |
+|---|---|
+| **Default** | **Proportionally.** Every band gives up the same share, so an evening that was 60% night hours is still 60% night hours after the undo. |
+| **The alternatives** | **Dearest first** — the night hours are treated as settled, and what comes back is the cheap daytime remainder. Better for the employer. **Cheapest first** — the daytime hours are settled and the night hours come back. Better for the employee. |
+| **Where it would be set** | A setting beside the recovery ratio, not a fork in the code: the apportionment already runs through one function. |
+| **Still open** | Which of the three, and whether Moroccan practice or SMG's agreement settles it. For the payroll expert as much as for SMG. |
+
+> **Note for the build.** Whichever answer comes back, the restored minutes add
+> up **exactly** to what is still owed. Scaling each band on its own and
+> rounding loses or invents a minute — three bands of a 7 h 23 min day scaled to
+> 180 minutes round to 179 — so the floors are handed out first and the
+> remainder goes to the largest fractional parts. A premium earned by the same
+> hours is cut by the same proportion. Pinned in
+> `packages/shared/test/recovery.spec.ts`, including a property test over every
+> target from 1 to 443.
+
+---
+
 ## Later, not now
 
 Noted so it is not forgotten, and deliberately out of HR-02:

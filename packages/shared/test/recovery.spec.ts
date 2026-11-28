@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  apportion,
   convertToRecovery,
   recoveryBalance,
   recoveryCostOfDay,
   planUndo,
   recoveryMinutes,
+  restoreAfterUndo,
   undoRecovery,
 } from '../src/recovery.js';
 
@@ -224,5 +226,93 @@ describe('undoing a conversion after some of the time is spent', () => {
     expect(plan.usedMin).toBe(EIGHT);
     expect(plan.restoredWorkedMin).toBe(0);
     expect(plan.balanceAfterMin).toBe(-540);
+  });
+});
+
+describe('restoring pay in whole minutes that add up', () => {
+  // Scaling each band on its own and rounding loses or invents a minute. A
+  // minute is not much until it is somebody's minute, at a holiday rate, every
+  // month — so the restored bands have to total the unsettled minutes exactly.
+
+  it('spreads an awkward total without losing a minute', () => {
+    // 7 h 23 min worked (443), of which 180 are still owed in money.
+    // The exact shares are 81.264, 58.104 and 40.632 — the floors come to 179,
+    // and the spare minute goes to the largest fraction, which is OT_DAY.
+    const bands = { OT_REST_DAY: 200, OT_REST_NIGHT: 143, OT_DAY: 100 };
+    const out = apportion(bands, 180);
+
+    expect(out).toEqual({ OT_REST_DAY: 81, OT_REST_NIGHT: 58, OT_DAY: 41 });
+    expect(Object.values(out).reduce((a, b) => a + b, 0)).toBe(180);
+  });
+
+  it('adds up exactly whatever the split and whatever the target', () => {
+    // The property that matters, over every awkward target of a 443-minute day.
+    const bands = { A: 200, B: 143, C: 100 };
+
+    for (let target = 1; target <= 443; target += 1) {
+      const out = apportion(bands, target);
+      const total = Object.values(out).reduce((a, b) => a + b, 0);
+
+      expect(total, `target ${target}`).toBe(target);
+    }
+  });
+
+  it('gives the same answer every time, ties and all', () => {
+    // Two identical bands: the tie breaks on the code, so the answer does not
+    // wander between runs.
+    const once = apportion({ B_BAND: 50, A_BAND: 50 }, 75);
+    const twice = apportion({ A_BAND: 50, B_BAND: 50 }, 75);
+
+    expect(once).toEqual(twice);
+    expect(Object.values(once).reduce((a, b) => a + b, 0)).toBe(75);
+  });
+
+  it('gives everything back when nothing was settled, and nothing when all was', () => {
+    const bands = { OT_REST_DAY: 200, OT_DAY: 100 };
+
+    expect(apportion(bands, 300)).toEqual(bands);
+    expect(apportion(bands, 999)).toEqual(bands);
+    expect(apportion(bands, 0)).toEqual({});
+    expect(apportion({}, 100)).toEqual({});
+  });
+
+  it('cuts the night premium by the same proportion, and that adds up too', () => {
+    // A holiday of 443 minutes, half of it already taken as time. The premium
+    // was earned by the same hours, so half of it is still owed.
+    const restored = restoreAfterUndo({
+      overtime: { OT_REST_DAY: 300, OT_REST_NIGHT: 143 },
+      premium: { NIGHT_PREMIUM: 143 },
+      restoredWorkedMin: 180,
+      workedMin: 443,
+    });
+
+    const overtimeTotal = Object.values(restored.overtime).reduce((a, b) => a + b, 0);
+    expect(overtimeTotal).toBe(180);
+
+    // 143 x 180/443 is 58.1, so 58 minutes of premium are still owed.
+    expect(restored.premium).toEqual({ NIGHT_PREMIUM: 58 });
+  });
+
+  it('leaves a day with no premium alone', () => {
+    const restored = restoreAfterUndo({
+      overtime: { OT_REST_DAY: 480 },
+      restoredWorkedMin: 180,
+      workedMin: 480,
+    });
+
+    expect(restored.overtime).toEqual({ OT_REST_DAY: 180 });
+    expect(restored.premium).toEqual({});
+  });
+
+  it('owes nothing at all when the whole day was taken as time', () => {
+    const restored = restoreAfterUndo({
+      overtime: { OT_REST_DAY: 480 },
+      premium: { NIGHT_PREMIUM: 120 },
+      restoredWorkedMin: 0,
+      workedMin: 480,
+    });
+
+    expect(restored.overtime).toEqual({});
+    expect(restored.premium).toEqual({});
   });
 });
