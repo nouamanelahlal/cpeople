@@ -659,3 +659,58 @@ describe('M12 a contribution rate is a fraction, and the database knows it', () 
     await owner.tenantContributionRate.delete({ where: { id: row.id } });
   });
 });
+
+describe('M10 an overtime rate is a percentage, and the database knows it', () => {
+  // `overtime_rule.rate_percent` holds 25 for twenty-five per cent, while
+  // `tenant_contribution_rate.rate` holds 0.0600 for six. Each is right on its
+  // own terms; the pair invites typing one in the shape of the other, and
+  // numeric(6,2) takes either without complaint.
+  //
+  // The two mistakes run in opposite directions, so a ceiling alone is not
+  // enough: 0.25 sits comfortably inside any sane range. The floor is one per
+  // cent — a quarter of a per cent is not a policy, it is a fraction that
+  // escaped — and zero stays allowed, because a band switched off is a real
+  // thing to want.
+  async function tryRate(rate: number): Promise<'written' | 'refused'> {
+    const tenant = await owner.tenant.findFirst({ select: { id: true } });
+    if (!tenant) return 'refused';
+
+    try {
+      const row = await withTenant(runtime, tenant.id, (tx) =>
+        tx.overtimeRule.create({
+          data: {
+            tenantId: tenant.id,
+            bandCode: 'TEST_BAND',
+            dayType: 'working',
+            timeFrom: '06:00',
+            timeTo: '21:00',
+            ratePercent: rate,
+            effectiveFrom: new Date('2026-01-01T00:00:00Z'),
+          },
+        }),
+      );
+
+      await owner.overtimeRule.delete({ where: { id: row.id } });
+      return 'written';
+    } catch {
+      return 'refused';
+    }
+  }
+
+  it('refuses the fraction somebody meant as a percentage', async () => {
+    expect(await tryRate(0.25), '0.25 is 25% written as a fraction').toBe('refused');
+  });
+
+  it('refuses a percentage multiplied by a hundred', async () => {
+    expect(await tryRate(2500), '2500 is 25% written as basis points').toBe('refused');
+  });
+
+  it('refuses more than triple pay', async () => {
+    expect(await tryRate(350)).toBe('refused');
+  });
+
+  it('accepts a percentage, and a band switched off', async () => {
+    expect(await tryRate(25)).toBe('written');
+    expect(await tryRate(0)).toBe('written');
+  });
+});
