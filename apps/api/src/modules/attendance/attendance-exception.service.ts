@@ -130,6 +130,12 @@ export class AttendanceExceptionService {
           : {}),
       };
 
+      // An empty relation filter is not "any day": Prisma reads `workDay: {}`
+      // on a nullable relation as matching nothing, so asking for it unfiltered
+      // quietly returned only the exceptions that have no day at all. Where
+      // there is nothing to narrow by, there is no relation filter.
+      const narrowed = Object.keys(dayWhere).length > 0;
+
       // An exception either hangs off a day — and is then the day's reader's
       // business — or off nothing, which only the whole company's reader sees.
       const where: Parameters<typeof tx.attendanceException.findMany>[0] extends
@@ -142,7 +148,9 @@ export class AttendanceExceptionService {
           ? { status: query.status }
           : {}),
         ...(everyone
-          ? { OR: [{ workDay: dayWhere }, { workDayId: null }] }
+          ? narrowed
+            ? { workDay: dayWhere }
+            : {}
           : { workDay: dayWhere }),
       };
 
@@ -181,7 +189,10 @@ export class AttendanceExceptionService {
         }),
         tx.attendanceException.groupBy({
           by: ['code', 'status'],
-          where: everyone ? {} : { workDay: dayWhere },
+          // The same reach as the rows, minus the code and status filters: the
+          // chips are how somebody picks a kind, so they have to show the kinds
+          // that are there rather than only the one already chosen.
+          where: everyone ? (narrowed ? { workDay: dayWhere } : {}) : { workDay: dayWhere },
           _count: { _all: true },
         }),
         tx.department.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),

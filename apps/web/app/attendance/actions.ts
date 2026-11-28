@@ -74,3 +74,34 @@ function reasonOf(error: unknown): string {
     return 'failed';
   }
 }
+
+/**
+ * Answering one exception.
+ *
+ * The reason is required by the API, not only by the form: a day changed by
+ * hand has to be able to say why, months later, to somebody disputing a
+ * payslip. The refusal travels back in the address so the screen can say it in
+ * the reader's language.
+ */
+export async function answerException(formData: FormData): Promise<void> {
+  const id = String(formData.get('id') ?? '');
+
+  const body = {
+    resolution: String(formData.get('resolution') ?? ''),
+    comment: String(formData.get('comment') ?? ''),
+    ...(formData.get('employeeId') ? { employeeId: String(formData.get('employeeId')) } : {}),
+    ...(formData.get('at') ? { at: String(formData.get('at')) } : {}),
+    ...(formData.get('direction') ? { direction: String(formData.get('direction')) } : {}),
+    ...(formData.get('override') === '1' ? { override: true } : {}),
+  };
+
+  try {
+    await apiPost(`/attendance/exceptions/${id}/resolve`, body);
+  } catch (error) {
+    console.error('answering an exception failed', error);
+    redirect(`/attendance?tab=exceptions&error=${reasonOf(error)}`);
+  }
+
+  revalidatePath('/attendance');
+  redirect('/attendance?tab=exceptions&answered=1');
+}
