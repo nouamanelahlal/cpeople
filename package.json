@@ -16,6 +16,7 @@
     "db:deploy": "pnpm --filter @cpeople/db run migrate:deploy",
     "db:reset": "pnpm --filter @cpeople/db run migrate:reset",
     "db:seed": "turbo run build --filter=@cpeople/db && pnpm --filter @cpeople/db run seed",
+    "pack:validate": "pnpm --filter @cpeople/payroll-engine build && node packages/payroll-engine/dist/cli/validate-pack.js",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:report": "playwright show-report",

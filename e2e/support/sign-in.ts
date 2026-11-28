@@ -133,9 +133,28 @@ export async function submitPassword(page: Page, password: string): Promise<void
   await submitStep(page);
 }
 
-/** The authenticator-code step. */
+/**
+ * The authenticator-code step, when the realm asks for one.
+ *
+ * It does not always: a workshop runs with two-step sign-in switched off
+ * (`pnpm demo:prepare`), and the suite has to work either way rather than
+ * assuming which it is. So this waits for whichever comes first — the code
+ * field, or the app itself — and then decides. Asking `#otp` whether it exists
+ * the instant the password is submitted is a race: the answer is "not yet"
+ * either way, and the test that believes it hangs for its whole timeout
+ * waiting for a field that is never coming.
+ */
 export async function submitCode(page: Page, secret: string): Promise<void> {
-  await page.locator('#otp').fill(authenticatorCode(secret));
+  const otp = page.locator('#otp');
+
+  await Promise.race([
+    otp.waitFor({ state: 'visible', timeout: 20_000 }).catch(() => undefined),
+    page.waitForURL(/\/home$/, { timeout: 20_000 }).catch(() => undefined),
+  ]);
+
+  if (!(await otp.isVisible())) return;
+
+  await otp.fill(authenticatorCode(secret));
   await submitStep(page);
 }
 

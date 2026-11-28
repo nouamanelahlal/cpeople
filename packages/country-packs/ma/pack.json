@@ -1,0 +1,1414 @@
+{
+  "format": "cpeople-country-pack/1",
+  "manifest": {
+    "country": "MA",
+    "name": {
+      "en": "Morocco",
+      "fr": "Maroc"
+    },
+    "version": "2026.1.0",
+    "status": "prototype",
+    "currency": "MAD",
+    "minorUnits": 2,
+    "defaultLanguage": "fr",
+    "modules": [
+      "core",
+      "leave",
+      "time",
+      "payroll",
+      "declarations"
+    ],
+    "lawBasis": [
+      "Labour Code (law 65-99)",
+      "CNSS (Dahir 1-72-184)",
+      "AMO (law 65-00)",
+      "General Tax Code (CGI) art. 57, 59, 73, 74",
+      "Finance law 2026",
+      "Decree 2.25.983 on the minimum wage"
+    ],
+    "owner": "ConSAP — Morocco payroll lead (to appoint)",
+    "nextReview": "2027-01-01",
+    "notes": "Prototype (spec §7): calculates in Dev & Test with a SPECIMEN mark, refused in production. Every value is unverified until SMG's accountant or a payroll expert signs it off (spec open point O3). Not seeded yet: transport and meal exemption ceilings (O17), work on public holidays, leave pay average, exit pay. Religious holidays are entered per year, never calculated."
+  },
+  "fields": [
+    {
+      "key": "CIN",
+      "label": {
+        "en": "National ID card (CIN)",
+        "fr": "Carte d'identité nationale (CIN)"
+      },
+      "appliesTo": "employee",
+      "mandatory": true,
+      "sensitive": true,
+      "status": "unverified",
+      "pattern": "^[A-Z]{1,2}\\d{5,6}$"
+    },
+    {
+      "key": "CNSS_NUMBER",
+      "label": {
+        "en": "CNSS number",
+        "fr": "N° d'immatriculation CNSS"
+      },
+      "appliesTo": "employee",
+      "mandatory": false,
+      "sensitive": true,
+      "status": "unverified",
+      "pattern": "^\\d{9}$"
+    },
+    {
+      "key": "CIMR_NUMBER",
+      "label": {
+        "en": "CIMR number",
+        "fr": "N° CIMR"
+      },
+      "appliesTo": "employee",
+      "mandatory": false,
+      "sensitive": false,
+      "status": "unverified"
+    },
+    {
+      "key": "ICE",
+      "label": {
+        "en": "ICE (common company identifier)",
+        "fr": "ICE (identifiant commun de l'entreprise)"
+      },
+      "appliesTo": "employer",
+      "mandatory": true,
+      "sensitive": false,
+      "status": "unverified",
+      "pattern": "^\\d{15}$"
+    },
+    {
+      "key": "IF",
+      "label": {
+        "en": "Tax identifier (IF)",
+        "fr": "Identifiant fiscal (IF)"
+      },
+      "appliesTo": "employer",
+      "mandatory": true,
+      "sensitive": false,
+      "status": "unverified"
+    },
+    {
+      "key": "RC",
+      "label": {
+        "en": "Trade register (RC)",
+        "fr": "Registre de commerce (RC)"
+      },
+      "appliesTo": "employer",
+      "mandatory": true,
+      "sensitive": false,
+      "status": "unverified"
+    },
+    {
+      "key": "CNSS_AFFILIATION",
+      "label": {
+        "en": "CNSS affiliation number",
+        "fr": "N° d'affiliation CNSS"
+      },
+      "appliesTo": "employer",
+      "mandatory": true,
+      "sensitive": false,
+      "status": "unverified"
+    }
+  ],
+  "holidays": [
+    {
+      "date": "01-01",
+      "label": {
+        "en": "New Year's Day",
+        "fr": "Nouvel An"
+      }
+    },
+    {
+      "date": "01-11",
+      "label": {
+        "en": "Proclamation of Independence",
+        "fr": "Manifeste de l'Indépendance"
+      }
+    },
+    {
+      "date": "01-14",
+      "label": {
+        "en": "Amazigh New Year",
+        "fr": "Nouvel An amazigh"
+      }
+    },
+    {
+      "date": "05-01",
+      "label": {
+        "en": "Labour Day",
+        "fr": "Fête du Travail"
+      }
+    },
+    {
+      "date": "07-30",
+      "label": {
+        "en": "Throne Day",
+        "fr": "Fête du Trône"
+      }
+    },
+    {
+      "date": "08-14",
+      "label": {
+        "en": "Oued Ed-Dahab Day",
+        "fr": "Allégeance Oued Ed-Dahab"
+      }
+    },
+    {
+      "date": "08-20",
+      "label": {
+        "en": "Revolution of the King and the People",
+        "fr": "Révolution du Roi et du Peuple"
+      }
+    },
+    {
+      "date": "08-21",
+      "label": {
+        "en": "Youth Day",
+        "fr": "Fête de la Jeunesse"
+      }
+    },
+    {
+      "date": "11-06",
+      "label": {
+        "en": "Green March Day",
+        "fr": "Marche Verte"
+      }
+    },
+    {
+      "date": "11-18",
+      "label": {
+        "en": "Independence Day",
+        "fr": "Fête de l'Indépendance"
+      }
+    },
+    {
+      "date": "10-31",
+      "label": {
+        "en": "Unity Day (Aïd Al Wahda)",
+        "fr": "Aïd Al Wahda"
+      },
+      "note": "Listed in the Kawadir v0.5 prototype, not in the HR-02 seed: to confirm before use."
+    }
+  ],
+  "leaveTypes": [
+    {
+      "code": "ANNUAL",
+      "label": {
+        "en": "Annual paid leave",
+        "fr": "Congé annuel payé"
+      },
+      "category": "annual",
+      "paid": true,
+      "unit": "days",
+      "reference": "Labour Code art. 231; 1.5 days a month, 2 under 18; +1.5 per 5 years up to 30 (art. 232). Accelerators LV01, LV02.",
+      "status": "unverified",
+      "days": "18"
+    },
+    {
+      "code": "WEDDING",
+      "label": {
+        "en": "Employee's wedding",
+        "fr": "Mariage du salarié"
+      },
+      "category": "family",
+      "paid": true,
+      "unit": "days",
+      "reference": "Labour Code art. 274; LV03",
+      "status": "unverified",
+      "days": "4",
+      "requiresDocument": true
+    },
+    {
+      "code": "CHILD_WEDDING",
+      "label": {
+        "en": "Wedding of a child",
+        "fr": "Mariage d'un enfant"
+      },
+      "category": "family",
+      "paid": true,
+      "unit": "days",
+      "reference": "Labour Code art. 274; LV04",
+      "status": "unverified",
+      "days": "2",
+      "requiresDocument": true
+    },
+    {
+      "code": "DEATH_CLOSE",
+      "label": {
+        "en": "Death of spouse, child, grandchild or ascendant",
+        "fr": "Décès du conjoint, d'un enfant, petit-enfant ou ascendant"
+      },
+      "category": "family",
+      "paid": true,
+      "unit": "days",
+      "reference": "Labour Code art. 274; LV05",
+      "status": "unverified",
+      "days": "3",
+      "requiresDocument": true
+    },
+    {
+      "code": "DEATH_SIBLING",
+      "label": {
+        "en": "Death of a brother or sister",
+        "fr": "Décès d'un frère ou d'une sœur"
+      },
+      "category": "family",
+      "paid": true,
+      "unit": "days",
+      "reference": "Labour Code art. 274; LV06",
+      "status": "unverified",
+      "days": "2",
+      "requiresDocument": true
+    },
+    {
+      "code": "CIRCUMCISION",
+      "label": {
+        "en": "Circumcision of a child",
+        "fr": "Circoncision d'un enfant"
+      },
+      "category": "family",
+      "paid": true,
+      "unit": "days",
+      "reference": "Labour Code art. 274; LV07",
+      "status": "unverified",
+      "days": "2",
+      "requiresDocument": true
+    },
+    {
+      "code": "SURGERY",
+      "label": {
+        "en": "Surgery of spouse or dependent child",
+        "fr": "Opération chirurgicale du conjoint ou d'un enfant à charge"
+      },
+      "category": "family",
+      "paid": true,
+      "unit": "days",
+      "reference": "Labour Code art. 274; LV08",
+      "status": "unverified",
+      "days": "2",
+      "requiresDocument": true
+    },
+    {
+      "code": "PATERNITY",
+      "label": {
+        "en": "Birth leave (father)",
+        "fr": "Congé de naissance (père)"
+      },
+      "category": "parental",
+      "paid": true,
+      "unit": "days",
+      "reference": "Labour Code art. 269; LV09 (to validate)",
+      "status": "unverified",
+      "days": "3",
+      "requiresDocument": true
+    },
+    {
+      "code": "MATERNITY",
+      "label": {
+        "en": "Maternity leave",
+        "fr": "Congé de maternité"
+      },
+      "category": "parental",
+      "paid": false,
+      "unit": "weeks",
+      "reference": "Labour Code art. 152; CNSS daily allowance; LV10",
+      "status": "unverified",
+      "days": "14",
+      "requiresDocument": true
+    },
+    {
+      "code": "CHILD_RAISING",
+      "label": {
+        "en": "Unpaid leave to raise a child",
+        "fr": "Congé sans solde pour élever un enfant"
+      },
+      "category": "parental",
+      "paid": false,
+      "unit": "days",
+      "reference": "Labour Code art. 156; LV12",
+      "status": "unverified"
+    },
+    {
+      "code": "SICK",
+      "label": {
+        "en": "Sick leave",
+        "fr": "Congé de maladie"
+      },
+      "category": "sickness",
+      "paid": true,
+      "unit": "days",
+      "reference": "Labour Code art. 271; CNSS; LV13",
+      "status": "unverified",
+      "requiresDocument": true
+    },
+    {
+      "code": "WORK_ACCIDENT",
+      "label": {
+        "en": "Work accident or occupational illness",
+        "fr": "Accident du travail ou maladie professionnelle"
+      },
+      "category": "sickness",
+      "paid": false,
+      "unit": "days",
+      "reference": "Law 18-12; LV14",
+      "status": "unverified",
+      "requiresDocument": true
+    },
+    {
+      "code": "UNPAID",
+      "label": {
+        "en": "Unpaid leave",
+        "fr": "Congé sans solde"
+      },
+      "category": "unpaid",
+      "paid": false,
+      "unit": "days",
+      "reference": "Contract and company policy; LV15",
+      "status": "unverified"
+    }
+  ],
+  "payroll": {
+    "inputs": [
+      {
+        "key": "MONTHLY_SALARY",
+        "label": {
+          "en": "Monthly base salary",
+          "fr": "Salaire de base mensuel"
+        }
+      },
+      {
+        "key": "DAYS_PAID",
+        "label": {
+          "en": "Days paid (of 26)",
+          "fr": "Jours payés (sur 26)"
+        },
+        "default": "26"
+      },
+      {
+        "key": "SERVICE_YEARS",
+        "label": {
+          "en": "Full years of service at period end",
+          "fr": "Années d'ancienneté révolues en fin de période"
+        },
+        "default": "0"
+      },
+      {
+        "key": "TAX_DEPENDENTS",
+        "label": {
+          "en": "Dependents for income tax",
+          "fr": "Personnes à charge pour l'IR"
+        },
+        "default": "0"
+      },
+      {
+        "key": "CIMR_EE_RATE",
+        "label": {
+          "en": "CIMR employee rate",
+          "fr": "Taux CIMR salarial"
+        },
+        "default": "0"
+      },
+      {
+        "key": "CIMR_ER_RATE",
+        "label": {
+          "en": "CIMR employer rate",
+          "fr": "Taux CIMR patronal"
+        },
+        "default": "0"
+      },
+      {
+        "key": "OT_DAY_HOURS",
+        "label": {
+          "en": "Approved overtime hours, day",
+          "fr": "Heures supplémentaires approuvées, jour"
+        },
+        "default": "0"
+      },
+      {
+        "key": "OT_DAY_PREMIUM",
+        "label": {
+          "en": "Overtime premium, day (from the tenant's overtime rule)",
+          "fr": "Majoration, jour (règle d'heures supplémentaires du client)"
+        },
+        "default": "0"
+      },
+      {
+        "key": "OT_NIGHT_HOURS",
+        "label": {
+          "en": "Approved overtime hours, night",
+          "fr": "Heures supplémentaires approuvées, nuit"
+        },
+        "default": "0"
+      },
+      {
+        "key": "OT_NIGHT_PREMIUM",
+        "label": {
+          "en": "Overtime premium, night (from the tenant's overtime rule)",
+          "fr": "Majoration, nuit (règle d'heures supplémentaires du client)"
+        },
+        "default": "0"
+      },
+      {
+        "key": "OT_REST_DAY_HOURS",
+        "label": {
+          "en": "Approved overtime hours, rest day",
+          "fr": "Heures supplémentaires approuvées, jour de repos"
+        },
+        "default": "0"
+      },
+      {
+        "key": "OT_REST_DAY_PREMIUM",
+        "label": {
+          "en": "Overtime premium, rest day (from the tenant's overtime rule)",
+          "fr": "Majoration, jour de repos (règle d'heures supplémentaires du client)"
+        },
+        "default": "0"
+      },
+      {
+        "key": "OT_REST_NIGHT_HOURS",
+        "label": {
+          "en": "Approved overtime hours, rest day at night",
+          "fr": "Heures supplémentaires approuvées, jour de repos la nuit"
+        },
+        "default": "0"
+      },
+      {
+        "key": "OT_REST_NIGHT_PREMIUM",
+        "label": {
+          "en": "Overtime premium, rest day at night (from the tenant's overtime rule)",
+          "fr": "Majoration, jour de repos la nuit (règle d'heures supplémentaires du client)"
+        },
+        "default": "0"
+      },
+      {
+        "key": "NIGHT_PREMIUM_HOURS",
+        "label": {
+          "en": "Hours worked inside a premium band that are not overtime",
+          "fr": "Heures travaillées dans une plage à majoration, hors heures supplémentaires"
+        },
+        "default": "0"
+      },
+      {
+        "key": "NIGHT_PREMIUM_RATE",
+        "label": {
+          "en": "Premium rate for those hours (from the tenant's overtime rule)",
+          "fr": "Taux de majoration de ces heures (règle d'heures supplémentaires du client)"
+        },
+        "default": "0"
+      }
+    ],
+    "parameters": [
+      {
+        "key": "PAYROLL_DAYS",
+        "type": "decimal",
+        "value": "26",
+        "validFrom": "2025-01-01",
+        "status": "unverified",
+        "source": "Moroccan payroll practice: 26 paid days a month (accelerators OT03; spec CP-PAY-040). TODO(verify-official-rate)",
+        "label": {
+          "en": "Days in a payroll month",
+          "fr": "Jours d'un mois de paie"
+        }
+      },
+      {
+        "key": "PAYROLL_HOURS",
+        "type": "decimal",
+        "value": "191",
+        "validFrom": "2025-01-01",
+        "status": "unverified",
+        "source": "Moroccan payroll practice: 2,288 h a year ÷ 12 (accelerators OT03). TODO(verify-official-rate)",
+        "label": {
+          "en": "Hours in a payroll month",
+          "fr": "Heures d'un mois de paie"
+        }
+      },
+      {
+        "key": "SMIG_HOURLY",
+        "type": "decimal",
+        "value": "17.10",
+        "validFrom": "2025-01-01",
+        "status": "unverified",
+        "source": "Decree on the minimum wage, 2025 rate (secondary sources). TODO(verify-official-rate)",
+        "validTo": "2025-12-31",
+        "label": {
+          "en": "Minimum wage per hour",
+          "fr": "SMIG horaire"
+        }
+      },
+      {
+        "key": "SMIG_HOURLY",
+        "type": "decimal",
+        "value": "17.92",
+        "validFrom": "2026-01-01",
+        "status": "unverified",
+        "source": "Decree 2.25.983 of 29 Dec 2025 (BO 7469), from 1 Jan 2026, read on secondary sources (dreamjob.ma/droit-du-travail/smig-maroc). TODO(verify-official-rate)",
+        "label": {
+          "en": "Minimum wage per hour",
+          "fr": "SMIG horaire"
+        }
+      },
+      {
+        "key": "CNSS_CEILING",
+        "type": "decimal",
+        "value": "6000",
+        "validFrom": "2025-01-01",
+        "status": "unverified",
+        "source": "CNSS rates and ceiling as published for 2024–2026 (Dahir 1-72-184; AMO law 65-00), read on secondary sources 25 Nov 2026 (upsilon-consulting.com/cotisations-cnss-maroc-2026). TODO(verify-official-rate)",
+        "label": {
+          "en": "CNSS monthly ceiling",
+          "fr": "Plafond mensuel CNSS"
+        }
+      },
+      {
+        "key": "CNSS_EE_RATE",
+        "type": "decimal",
+        "value": "0.0448",
+        "validFrom": "2025-01-01",
+        "status": "unverified",
+        "source": "CNSS rates and ceiling as published for 2024–2026 (Dahir 1-72-184; AMO law 65-00), read on secondary sources 25 Nov 2026 (upsilon-consulting.com/cotisations-cnss-maroc-2026). TODO(verify-official-rate) Short term 0.52% + long term 3.96%.",
+        "label": {
+          "en": "CNSS employee rate",
+          "fr": "Taux CNSS salarial"
+        }
+      },
+      {
+        "key": "CNSS_ER_RATE",
+        "type": "decimal",
+        "value": "0.0898",
+        "validFrom": "2025-01-01",
+        "status": "unverified",
+        "source": "CNSS rates and ceiling as published for 2024–2026 (Dahir 1-72-184; AMO law 65-00), read on secondary sources 25 Nov 2026 (upsilon-consulting.com/cotisations-cnss-maroc-2026). TODO(verify-official-rate) Short term 1.05% + long term 7.93%.",
+        "label": {
+          "en": "CNSS employer rate",
+          "fr": "Taux CNSS patronal"
+        }
+      },
+      {
+        "key": "AF_ER_RATE",
+        "type": "decimal",
+        "value": "0.0640",
+        "validFrom": "2025-01-01",
+        "status": "unverified",
+        "source": "CNSS rates and ceiling as published for 2024–2026 (Dahir 1-72-184; AMO law 65-00), read on secondary sources 25 Nov 2026 (upsilon-consulting.com/cotisations-cnss-maroc-2026). TODO(verify-official-rate)",
+        "label": {
+          "en": "Family allowances, employer",
+          "fr": "Allocations familiales, patronal"
+        }
+      },
+      {
+        "key": "AMO_EE_RATE",
+        "type": "decimal",
+        "value": "0.0226",
+        "validFrom": "2025-01-01",
+        "status": "unverified",
+        "source": "CNSS rates and ceiling as published for 2024–2026 (Dahir 1-72-184; AMO law 65-00), read on secondary sources 25 Nov 2026 (upsilon-consulting.com/cotisations-cnss-maroc-2026). TODO(verify-official-rate)",
+        "label": {
+          "en": "AMO employee rate",
+          "fr": "Taux AMO salarial"
+        }
+      },
+      {
+        "key": "AMO_ER_RATE",
+        "type": "decimal",
+        "value": "0.0411",
+        "validFrom": "2025-01-01",
+        "status": "unverified",
+        "source": "CNSS rates and ceiling as published for 2024–2026 (Dahir 1-72-184; AMO law 65-00), read on secondary sources 25 Nov 2026 (upsilon-consulting.com/cotisations-cnss-maroc-2026). TODO(verify-official-rate) Includes the 1.85% solidarity contribution.",
+        "label": {
+          "en": "AMO employer rate",
+          "fr": "Taux AMO patronal"
+        }
+      },
+      {
+        "key": "TFP_ER_RATE",
+        "type": "decimal",
+        "value": "0.0160",
+        "validFrom": "2025-01-01",
+        "status": "unverified",
+        "source": "CNSS rates and ceiling as published for 2024–2026 (Dahir 1-72-184; AMO law 65-00), read on secondary sources 25 Nov 2026 (upsilon-consulting.com/cotisations-cnss-maroc-2026). TODO(verify-official-rate)",
+        "label": {
+          "en": "Vocational training tax",
+          "fr": "Taxe de formation professionnelle"
+        }
+      },
+      {
+        "key": "PROF_EXP_THRESHOLD_ANNUAL",
+        "type": "decimal",
+        "value": "78000",
+        "validFrom": "2025-01-01",
+        "status": "unverified",
+        "source": "CGI art. 59, professional expenses as reformed in 2023 (secondary sources, 25 Nov 2026). Spec open point O15: base and cap of the 35% band. TODO(verify-official-rate)",
+        "label": {
+          "en": "Professional expenses: annual threshold",
+          "fr": "Frais professionnels : seuil annuel"
+        }
+      },
+      {
+        "key": "PROF_EXP_RATE_LOW",
+        "type": "decimal",
+        "value": "0.35",
+        "validFrom": "2025-01-01",
+        "status": "unverified",
+        "source": "CGI art. 59, professional expenses as reformed in 2023 (secondary sources, 25 Nov 2026). Spec open point O15: base and cap of the 35% band. TODO(verify-official-rate)",
+        "label": {
+          "en": "Professional expenses: rate up to the threshold",
+          "fr": "Frais professionnels : taux jusqu'au seuil"
+        }
+      },
+      {
+        "key": "PROF_EXP_RATE_HIGH",
+        "type": "decimal",
+        "value": "0.25",
+        "validFrom": "2025-01-01",
+        "status": "unverified",
+        "source": "CGI art. 59, professional expenses as reformed in 2023 (secondary sources, 25 Nov 2026). Spec open point O15: base and cap of the 35% band. TODO(verify-official-rate)",
+        "label": {
+          "en": "Professional expenses: rate above the threshold",
+          "fr": "Frais professionnels : taux au-delà du seuil"
+        }
+      },
+      {
+        "key": "PROF_EXP_CAP_ANNUAL",
+        "type": "decimal",
+        "value": "35000",
+        "validFrom": "2025-01-01",
+        "status": "unverified",
+        "source": "CGI art. 59, professional expenses as reformed in 2023 (secondary sources, 25 Nov 2026). Spec open point O15: base and cap of the 35% band. TODO(verify-official-rate)",
+        "label": {
+          "en": "Professional expenses: annual cap",
+          "fr": "Frais professionnels : plafond annuel"
+        }
+      },
+      {
+        "key": "FAMILY_DEDUCTION_ANNUAL",
+        "type": "decimal",
+        "value": "500",
+        "validFrom": "2025-01-01",
+        "status": "unverified",
+        "source": "CGI art. 74 as amended by finance law 2025 (secondary sources). TODO(verify-official-rate)",
+        "validTo": "2025-12-31",
+        "label": {
+          "en": "Family deduction per dependent, per year",
+          "fr": "Réduction pour charge de famille, par personne et par an"
+        }
+      },
+      {
+        "key": "FAMILY_DEDUCTION_ANNUAL",
+        "type": "decimal",
+        "value": "600",
+        "validFrom": "2026-01-01",
+        "status": "unverified",
+        "source": "CGI art. 74 as amended by finance law 2026 (upsilon-consulting.com/loi-de-finances-2026-au-maroc; Ecovis note LF 2026). TODO(verify-official-rate)",
+        "label": {
+          "en": "Family deduction per dependent, per year",
+          "fr": "Réduction pour charge de famille, par personne et par an"
+        }
+      },
+      {
+        "key": "FAMILY_MAX_DEPENDENTS",
+        "type": "decimal",
+        "value": "6",
+        "validFrom": "2025-01-01",
+        "status": "unverified",
+        "source": "CGI art. 74 (accelerators CT09). TODO(verify-official-rate)",
+        "label": {
+          "en": "Dependents counted at most",
+          "fr": "Personnes à charge retenues au plus"
+        }
+      },
+      {
+        "key": "IR_ANNUAL",
+        "type": "brackets",
+        "validFrom": "2025-01-01",
+        "status": "unverified",
+        "source": "CGI art. 73 scale applicable since 1 Jan 2025, unchanged by finance law 2026 (upsilon-consulting.com/ir-salarial-bareme-2026-maroc, dreamjob.ma worked example). TODO(verify-official-rate)",
+        "label": {
+          "en": "Income tax scale (annual)",
+          "fr": "Barème de l'IR (annuel)"
+        },
+        "rows": [
+          {
+            "upTo": "40000",
+            "rate": "0",
+            "deduct": "0"
+          },
+          {
+            "upTo": "60000",
+            "rate": "0.10",
+            "deduct": "4000"
+          },
+          {
+            "upTo": "80000",
+            "rate": "0.20",
+            "deduct": "10000"
+          },
+          {
+            "upTo": "100000",
+            "rate": "0.30",
+            "deduct": "18000"
+          },
+          {
+            "upTo": "180000",
+            "rate": "0.34",
+            "deduct": "22000"
+          },
+          {
+            "rate": "0.37",
+            "deduct": "27400"
+          }
+        ]
+      },
+      {
+        "key": "SENIORITY_RATES",
+        "type": "bands",
+        "validFrom": "2025-01-01",
+        "status": "unverified",
+        "source": "Labour Code (law 65-99) art. 350; accelerators PE02. TODO(verify-official-rate)",
+        "label": {
+          "en": "Seniority bonus rates by years of service",
+          "fr": "Taux de la prime d'ancienneté selon l'ancienneté"
+        },
+        "rows": [
+          {
+            "from": "2",
+            "rate": "0.05"
+          },
+          {
+            "from": "5",
+            "rate": "0.10"
+          },
+          {
+            "from": "12",
+            "rate": "0.15"
+          },
+          {
+            "from": "20",
+            "rate": "0.20"
+          },
+          {
+            "from": "25",
+            "rate": "0.25"
+          }
+        ]
+      }
+    ],
+    "wageTypes": [
+      {
+        "code": "1000",
+        "label": {
+          "en": "Base salary",
+          "fr": "Salaire de base"
+        },
+        "class": "earning",
+        "owner": "pack",
+        "bases": {
+          "GROSS": 1,
+          "SOCIAL": 1,
+          "TAXABLE": 1,
+          "SENIORITY_BASE": 1
+        },
+        "payslip": {
+          "section": "earnings",
+          "order": 10
+        },
+        "glKey": "SALARIES"
+      },
+      {
+        "code": "1100",
+        "label": {
+          "en": "Seniority bonus",
+          "fr": "Prime d'ancienneté"
+        },
+        "class": "earning",
+        "owner": "pack",
+        "bases": {
+          "GROSS": 1,
+          "SOCIAL": 1,
+          "TAXABLE": 1
+        },
+        "payslip": {
+          "section": "earnings",
+          "order": 20
+        },
+        "glKey": "SALARIES"
+      },
+      {
+        "code": "1200",
+        "label": {
+          "en": "Overtime, day",
+          "fr": "Heures supplémentaires, jour"
+        },
+        "class": "earning",
+        "owner": "pack",
+        "bases": {
+          "GROSS": 1,
+          "SOCIAL": 1,
+          "TAXABLE": 1
+        },
+        "payslip": {
+          "section": "earnings",
+          "order": 30
+        },
+        "glKey": "SALARIES"
+      },
+      {
+        "code": "1210",
+        "label": {
+          "en": "Overtime, night",
+          "fr": "Heures supplémentaires, nuit"
+        },
+        "class": "earning",
+        "owner": "pack",
+        "bases": {
+          "GROSS": 1,
+          "SOCIAL": 1,
+          "TAXABLE": 1
+        },
+        "payslip": {
+          "section": "earnings",
+          "order": 31
+        },
+        "glKey": "SALARIES"
+      },
+      {
+        "code": "1220",
+        "label": {
+          "en": "Overtime, rest day",
+          "fr": "Heures supplémentaires, jour de repos"
+        },
+        "class": "earning",
+        "owner": "pack",
+        "bases": {
+          "GROSS": 1,
+          "SOCIAL": 1,
+          "TAXABLE": 1
+        },
+        "payslip": {
+          "section": "earnings",
+          "order": 32
+        },
+        "glKey": "SALARIES"
+      },
+      {
+        "code": "1230",
+        "label": {
+          "en": "Overtime, rest day at night",
+          "fr": "Heures supplémentaires, jour de repos la nuit"
+        },
+        "class": "earning",
+        "owner": "pack",
+        "bases": {
+          "GROSS": 1,
+          "SOCIAL": 1,
+          "TAXABLE": 1
+        },
+        "payslip": {
+          "section": "earnings",
+          "order": 33
+        },
+        "glKey": "SALARIES"
+      },
+      {
+        "code": "1240",
+        "label": {
+          "en": "Night premium on scheduled hours",
+          "fr": "Majoration de nuit sur heures planifiées"
+        },
+        "class": "earning",
+        "owner": "pack",
+        "bases": {
+          "GROSS": 1,
+          "SOCIAL": 1,
+          "TAXABLE": 1
+        },
+        "payslip": {
+          "section": "earnings",
+          "order": 34
+        },
+        "glKey": "SALARIES"
+      },
+      {
+        "code": "5100",
+        "label": {
+          "en": "CNSS employee",
+          "fr": "CNSS salariale"
+        },
+        "class": "deduction",
+        "owner": "pack",
+        "bases": {
+          "EE_DEDUCTIONS": 1,
+          "TAX_DEDUCTIBLE": 1
+        },
+        "payslip": {
+          "section": "deductions",
+          "order": 10
+        },
+        "glKey": "CNSS_PAYABLE"
+      },
+      {
+        "code": "5110",
+        "label": {
+          "en": "AMO employee",
+          "fr": "AMO salariale"
+        },
+        "class": "deduction",
+        "owner": "pack",
+        "bases": {
+          "EE_DEDUCTIONS": 1,
+          "TAX_DEDUCTIBLE": 1
+        },
+        "payslip": {
+          "section": "deductions",
+          "order": 20
+        },
+        "glKey": "CNSS_PAYABLE"
+      },
+      {
+        "code": "5120",
+        "label": {
+          "en": "CIMR employee",
+          "fr": "CIMR salariale"
+        },
+        "class": "deduction",
+        "owner": "pack",
+        "bases": {
+          "EE_DEDUCTIONS": 1,
+          "TAX_DEDUCTIBLE": 1
+        },
+        "payslip": {
+          "section": "deductions",
+          "order": 30
+        },
+        "glKey": "CIMR_PAYABLE"
+      },
+      {
+        "code": "9010",
+        "label": {
+          "en": "Professional expenses",
+          "fr": "Frais professionnels"
+        },
+        "class": "info",
+        "owner": "pack",
+        "bases": {
+          "TAX_DEDUCTIBLE": 1
+        },
+        "payslip": {
+          "section": "tax",
+          "order": 10
+        }
+      },
+      {
+        "code": "9020",
+        "label": {
+          "en": "Net taxable income",
+          "fr": "Salaire net imposable"
+        },
+        "class": "info",
+        "owner": "pack",
+        "payslip": {
+          "section": "tax",
+          "order": 20,
+          "showZero": true
+        }
+      },
+      {
+        "code": "9030",
+        "label": {
+          "en": "Income tax before family deduction",
+          "fr": "IR brut"
+        },
+        "class": "info",
+        "owner": "pack",
+        "payslip": {
+          "section": "tax",
+          "order": 30,
+          "showZero": true
+        }
+      },
+      {
+        "code": "9040",
+        "label": {
+          "en": "Family deduction",
+          "fr": "Réduction pour charges de famille"
+        },
+        "class": "info",
+        "owner": "pack",
+        "payslip": {
+          "section": "tax",
+          "order": 40
+        }
+      },
+      {
+        "code": "5200",
+        "label": {
+          "en": "Income tax (IR)",
+          "fr": "Impôt sur le revenu (IR)"
+        },
+        "class": "deduction",
+        "owner": "pack",
+        "bases": {
+          "EE_DEDUCTIONS": 1
+        },
+        "payslip": {
+          "section": "deductions",
+          "order": 40,
+          "showZero": true
+        },
+        "glKey": "IR_PAYABLE"
+      },
+      {
+        "code": "9900",
+        "label": {
+          "en": "Net pay",
+          "fr": "Net à payer"
+        },
+        "class": "net",
+        "owner": "pack",
+        "payslip": {
+          "section": "net",
+          "order": 10,
+          "showZero": true
+        },
+        "glKey": "NET_PAYABLE"
+      },
+      {
+        "code": "7100",
+        "label": {
+          "en": "CNSS employer",
+          "fr": "CNSS patronale"
+        },
+        "class": "employer",
+        "owner": "pack",
+        "payslip": {
+          "section": "employer",
+          "order": 10
+        },
+        "glKey": "EMPLOYER_CHARGES"
+      },
+      {
+        "code": "7110",
+        "label": {
+          "en": "Family allowances",
+          "fr": "Allocations familiales"
+        },
+        "class": "employer",
+        "owner": "pack",
+        "payslip": {
+          "section": "employer",
+          "order": 20
+        },
+        "glKey": "EMPLOYER_CHARGES"
+      },
+      {
+        "code": "7120",
+        "label": {
+          "en": "AMO employer",
+          "fr": "AMO patronale"
+        },
+        "class": "employer",
+        "owner": "pack",
+        "payslip": {
+          "section": "employer",
+          "order": 30
+        },
+        "glKey": "EMPLOYER_CHARGES"
+      },
+      {
+        "code": "7130",
+        "label": {
+          "en": "Vocational training tax",
+          "fr": "Taxe de formation professionnelle"
+        },
+        "class": "employer",
+        "owner": "pack",
+        "payslip": {
+          "section": "employer",
+          "order": 40
+        },
+        "glKey": "EMPLOYER_CHARGES"
+      },
+      {
+        "code": "7140",
+        "label": {
+          "en": "CIMR employer",
+          "fr": "CIMR patronale"
+        },
+        "class": "employer",
+        "owner": "pack",
+        "payslip": {
+          "section": "employer",
+          "order": 50
+        },
+        "glKey": "EMPLOYER_CHARGES"
+      }
+    ],
+    "treatmentClasses": [
+      {
+        "code": "MA_TAXABLE",
+        "label": {
+          "en": "Taxable earning (subject to CNSS, AMO and IR)",
+          "fr": "Gain imposable (soumis CNSS, AMO et IR)"
+        },
+        "class": "earning",
+        "bases": {
+          "GROSS": 1,
+          "SOCIAL": 1,
+          "TAXABLE": 1
+        }
+      },
+      {
+        "code": "MA_REIMBURSEMENT",
+        "label": {
+          "en": "Expense reimbursement (not pay)",
+          "fr": "Remboursement de frais (hors salaire)"
+        },
+        "class": "earning",
+        "bases": {
+          "REIMBURSEMENTS": 1
+        }
+      },
+      {
+        "code": "MA_DEDUCTION",
+        "label": {
+          "en": "Deduction from net pay (advance, loan)",
+          "fr": "Retenue sur le net (avance, prêt)"
+        },
+        "class": "deduction",
+        "bases": {
+          "EE_DEDUCTIONS": 1
+        }
+      }
+    ],
+    "schema": [
+      {
+        "id": "base_salary",
+        "kind": "line",
+        "wageType": "1000",
+        "amount": "input('MONTHLY_SALARY') * input('DAYS_PAID') / param('PAYROLL_DAYS')",
+        "base": "input('MONTHLY_SALARY')",
+        "quantity": "input('DAYS_PAID')",
+        "note": "Spec §12 step 1; proration on 26 days (CP-PAY-040), to validate."
+      },
+      {
+        "id": "seniority",
+        "kind": "line",
+        "wageType": "1100",
+        "when": "band('SENIORITY_RATES', input('SERVICE_YEARS')) > 0",
+        "amount": "base('SENIORITY_BASE') * band('SENIORITY_RATES', input('SERVICE_YEARS'))",
+        "base": "base('SENIORITY_BASE')",
+        "rate": "band('SENIORITY_RATES', input('SERVICE_YEARS'))",
+        "note": "Spec §12 step 2. Seniority base = base salary only: open point O16."
+      },
+      {
+        "id": "overtime_1",
+        "kind": "line",
+        "wageType": "1200",
+        "when": "input('OT_DAY_HOURS') > 0",
+        "amount": "input('MONTHLY_SALARY') * (1 + band('SENIORITY_RATES', input('SERVICE_YEARS'))) / param('PAYROLL_HOURS') * (1 + input('OT_DAY_PREMIUM')) * input('OT_DAY_HOURS')",
+        "quantity": "input('OT_DAY_HOURS')",
+        "rate": "input('OT_DAY_PREMIUM')",
+        "note": "Hourly rate = (salary + seniority) ÷ 191 (OT03); the premium comes from the tenant's overtime rule. Base: open point O16."
+      },
+      {
+        "id": "overtime_2",
+        "kind": "line",
+        "wageType": "1210",
+        "when": "input('OT_NIGHT_HOURS') > 0",
+        "amount": "input('MONTHLY_SALARY') * (1 + band('SENIORITY_RATES', input('SERVICE_YEARS'))) / param('PAYROLL_HOURS') * (1 + input('OT_NIGHT_PREMIUM')) * input('OT_NIGHT_HOURS')",
+        "quantity": "input('OT_NIGHT_HOURS')",
+        "rate": "input('OT_NIGHT_PREMIUM')",
+        "note": "As above."
+      },
+      {
+        "id": "overtime_3",
+        "kind": "line",
+        "wageType": "1220",
+        "when": "input('OT_REST_DAY_HOURS') > 0",
+        "amount": "input('MONTHLY_SALARY') * (1 + band('SENIORITY_RATES', input('SERVICE_YEARS'))) / param('PAYROLL_HOURS') * (1 + input('OT_REST_DAY_PREMIUM')) * input('OT_REST_DAY_HOURS')",
+        "quantity": "input('OT_REST_DAY_HOURS')",
+        "rate": "input('OT_REST_DAY_PREMIUM')",
+        "note": "As above."
+      },
+      {
+        "id": "overtime_4",
+        "kind": "line",
+        "wageType": "1230",
+        "when": "input('OT_REST_NIGHT_HOURS') > 0",
+        "amount": "input('MONTHLY_SALARY') * (1 + band('SENIORITY_RATES', input('SERVICE_YEARS'))) / param('PAYROLL_HOURS') * (1 + input('OT_REST_NIGHT_PREMIUM')) * input('OT_REST_NIGHT_HOURS')",
+        "quantity": "input('OT_REST_NIGHT_HOURS')",
+        "rate": "input('OT_REST_NIGHT_PREMIUM')",
+        "note": "As above."
+      },
+      {
+        "id": "night_premium_1",
+        "kind": "line",
+        "wageType": "1240",
+        "when": "input('NIGHT_PREMIUM_HOURS') > 0",
+        "amount": "input('MONTHLY_SALARY') * (1 + band('SENIORITY_RATES', input('SERVICE_YEARS'))) / param('PAYROLL_HOURS') * input('NIGHT_PREMIUM_RATE') * input('NIGHT_PREMIUM_HOURS')",
+        "quantity": "input('NIGHT_PREMIUM_HOURS')",
+        "rate": "input('NIGHT_PREMIUM_RATE')",
+        "note": "Scheduled hours inside a premium band (an `all_hours` overtime rule). The hours are already in the monthly salary, so only the premium is paid here — the rate is not 1 + rate. Whether SMG owes such a premium at all is HR-02 open point 17; the rate comes from the tenant's rule, never from this pack."
+      },
+      {
+        "id": "taxable_variables",
+        "kind": "variables",
+        "treatmentClasses": [
+          "MA_TAXABLE"
+        ],
+        "note": "Company earnings (commission, weekend premium, bonuses). Exempt allowances (transport, meal) wait for their ceilings: open point O17."
+      },
+      {
+        "id": "cnss_employee",
+        "kind": "line",
+        "wageType": "5100",
+        "amount": "min(base('SOCIAL'), param('CNSS_CEILING')) * param('CNSS_EE_RATE')",
+        "base": "min(base('SOCIAL'), param('CNSS_CEILING'))",
+        "rate": "param('CNSS_EE_RATE')"
+      },
+      {
+        "id": "amo_employee",
+        "kind": "line",
+        "wageType": "5110",
+        "amount": "base('SOCIAL') * param('AMO_EE_RATE')",
+        "base": "base('SOCIAL')",
+        "rate": "param('AMO_EE_RATE')"
+      },
+      {
+        "id": "cimr_employee",
+        "kind": "line",
+        "wageType": "5120",
+        "when": "input('CIMR_EE_RATE') > 0",
+        "amount": "base('SOCIAL') * input('CIMR_EE_RATE')",
+        "base": "base('SOCIAL')",
+        "rate": "input('CIMR_EE_RATE')",
+        "note": "Inactive for SMG (CT05). CIMR base and tax deductibility to validate."
+      },
+      {
+        "id": "professional_expenses",
+        "kind": "line",
+        "wageType": "9010",
+        "amount": "if(base('TAXABLE') * 12 <= param('PROF_EXP_THRESHOLD_ANNUAL'), base('TAXABLE') * param('PROF_EXP_RATE_LOW'), min(base('TAXABLE') * param('PROF_EXP_RATE_HIGH'), param('PROF_EXP_CAP_ANNUAL') / 12))",
+        "base": "base('TAXABLE')",
+        "note": "Spec §12 step 12; open point O15."
+      },
+      {
+        "id": "net_taxable",
+        "kind": "line",
+        "wageType": "9020",
+        "amount": "max(base('TAXABLE') - base('TAX_DEDUCTIBLE'), 0)",
+        "keepZero": true
+      },
+      {
+        "id": "income_tax_gross",
+        "kind": "line",
+        "wageType": "9030",
+        "amount": "bracket('IR_ANNUAL', wt('9020') * 12) / 12",
+        "base": "wt('9020')",
+        "keepZero": true,
+        "note": "The annual scale applied to the annualised monthly income, ÷ 12. The method (annualised vs a monthly table with rounded deductions) is to validate: they can differ by 0.01."
+      },
+      {
+        "id": "family_deduction",
+        "kind": "line",
+        "wageType": "9040",
+        "amount": "min(wt('9030'), min(input('TAX_DEPENDENTS'), param('FAMILY_MAX_DEPENDENTS')) * param('FAMILY_DEDUCTION_ANNUAL') / 12)",
+        "quantity": "min(input('TAX_DEPENDENTS'), param('FAMILY_MAX_DEPENDENTS'))"
+      },
+      {
+        "id": "income_tax",
+        "kind": "line",
+        "wageType": "5200",
+        "amount": "wt('9030') - wt('9040')",
+        "base": "wt('9020')",
+        "keepZero": true
+      },
+      {
+        "id": "other_variables",
+        "kind": "variables",
+        "treatmentClasses": [
+          "MA_DEDUCTION",
+          "MA_REIMBURSEMENT"
+        ]
+      },
+      {
+        "id": "net_pay",
+        "kind": "line",
+        "wageType": "9900",
+        "amount": "base('GROSS') - base('EE_DEDUCTIONS') + base('REIMBURSEMENTS')",
+        "keepZero": true
+      },
+      {
+        "id": "cnss_employer",
+        "kind": "line",
+        "wageType": "7100",
+        "amount": "min(base('SOCIAL'), param('CNSS_CEILING')) * param('CNSS_ER_RATE')",
+        "base": "min(base('SOCIAL'), param('CNSS_CEILING'))",
+        "rate": "param('CNSS_ER_RATE')"
+      },
+      {
+        "id": "family_allowances",
+        "kind": "line",
+        "wageType": "7110",
+        "amount": "base('SOCIAL') * param('AF_ER_RATE')",
+        "base": "base('SOCIAL')",
+        "rate": "param('AF_ER_RATE')"
+      },
+      {
+        "id": "amo_employer",
+        "kind": "line",
+        "wageType": "7120",
+        "amount": "base('SOCIAL') * param('AMO_ER_RATE')",
+        "base": "base('SOCIAL')",
+        "rate": "param('AMO_ER_RATE')"
+      },
+      {
+        "id": "training_tax",
+        "kind": "line",
+        "wageType": "7130",
+        "amount": "base('SOCIAL') * param('TFP_ER_RATE')",
+        "base": "base('SOCIAL')",
+        "rate": "param('TFP_ER_RATE')"
+      },
+      {
+        "id": "cimr_employer",
+        "kind": "line",
+        "wageType": "7140",
+        "when": "input('CIMR_ER_RATE') > 0",
+        "amount": "base('SOCIAL') * input('CIMR_ER_RATE')",
+        "base": "base('SOCIAL')",
+        "rate": "input('CIMR_ER_RATE')"
+      }
+    ],
+    "checks": [
+      {
+        "id": "BELOW_MINIMUM_WAGE",
+        "level": "block",
+        "when": "input('MONTHLY_SALARY') < param('SMIG_HOURLY') * param('PAYROLL_HOURS')",
+        "message": {
+          "en": "Base salary is below the minimum wage for a full-time month.",
+          "fr": "Le salaire de base est inférieur au SMIG d'un mois à temps plein."
+        }
+      },
+      {
+        "id": "DAYS_ABOVE_MONTH",
+        "level": "block",
+        "when": "input('DAYS_PAID') > param('PAYROLL_DAYS')",
+        "message": {
+          "en": "More days paid than a payroll month holds.",
+          "fr": "Plus de jours payés qu'un mois de paie n'en compte."
+        }
+      },
+      {
+        "id": "DEPENDENTS_CAPPED",
+        "level": "info",
+        "when": "input('TAX_DEPENDENTS') > param('FAMILY_MAX_DEPENDENTS')",
+        "message": {
+          "en": "Only the legal maximum of dependents is counted for income tax.",
+          "fr": "Seul le maximum légal de personnes à charge est retenu pour l'IR."
+        }
+      }
+    ]
+  }
+}

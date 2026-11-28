@@ -18,6 +18,23 @@
     font-family: var(--font-sans);
   }
 
+  /* The side rail scrolls, and never shows a scrollbar for it.
+     
+     A system scrollbar is drawn *inside* the element, so on Windows it takes
+     about fifteen of the rail's seventy-six pixels — which is most of the room
+     the icons have, and why the pills looked squeezed and off-centre. Hiding it
+     keeps the rail exactly 76px collapsed and 260px open, scrollbar or not.
+     Only the bar is hidden: the wheel, a touch drag, the keyboard and
+     scroll-into-focus all still work, which is the difference between this and
+     `overflow: hidden`. */
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Tabular figures everywhere an amount, a date or a count is shown. */
   .num {
     font-variant-numeric: tabular-nums;

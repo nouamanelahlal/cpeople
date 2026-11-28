@@ -1,5 +1,5 @@
 import type { JSX, ReactNode } from 'react';
-import { apiGetOrNull } from '../../lib/api';
+import { apiGetResult } from '../../lib/api';
 import { formatter, type Formatter } from '../../lib/format';
 import { AppPage, appContext } from '../_shell/app-page';
 
@@ -30,22 +30,28 @@ export default async function AttendancePage(): Promise<JSX.Element> {
   const { t } = context;
 
   const f = formatter(context.locale, t, 'Africa/Casablanca');
-  const sample = await apiGetOrNull<SampleSummary>('/attendance/sample');
+  const loaded = await apiGetResult<SampleSummary>('/attendance/sample');
 
-  if (sample === null) {
+  if (!loaded.ok) {
+    // Refused and unavailable are different things, and saying the wrong one
+    // sends somebody to ask for a permission they already have.
     return (
       <AppPage
         context={context}
         current="attendance"
         title={t.attendance.title}
-        subtitle={t.attendance.notYours}
+        subtitle={t.attendance.subtitle}
       >
         <Card>
-          <p className="m-0 text-sm text-body">{t.attendance.notYours}</p>
+          <p className="m-0 text-sm text-body">
+            {loaded.refused ? t.attendance.notYours : t.attendance.unavailable}
+          </p>
         </Card>
       </AppPage>
     );
   }
+
+  const sample = loaded.value;
 
   return (
     <AppPage

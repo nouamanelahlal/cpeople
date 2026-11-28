@@ -105,6 +105,25 @@ export interface ScheduleSeedCounts {
   readonly overtimeBands: number;
 }
 
+/**
+ * Per-company contribution rates (CLAUDE.md rule 3).
+ *
+ * Not legal values and not in the country pack: a CIMR rate is agreed between
+ * one employer and the fund, so it is this company's figure and nobody else's.
+ */
+const CONTRIBUTION_RATES = [
+  {
+    code: 'CIMR_EE',
+    rate: 0,
+    note: 'SMG does not run CIMR today (spec CT05). Zero switches the line off rather than guessing a rate. To confirm.',
+  },
+  {
+    code: 'CIMR_ER',
+    rate: 0,
+    note: 'SMG does not run CIMR today (spec CT05). Zero switches the line off rather than guessing a rate. To confirm.',
+  },
+] as const;
+
 export async function seedHr02Schedules(
   prisma: CPeoplePrismaClient,
   tenantId: string,
@@ -228,6 +247,25 @@ export async function seedHr02Schedules(
     },
   });
 
+  // The company's own contribution rates, which are not law and do not belong
+  // in the country pack (CLAUDE.md rule 3). SMG does not run CIMR today — the
+  // spec says so (CT05) — so both rates are seeded at zero, which switches the
+  // lines off in the engine without pretending to know a figure. A company that
+  // does run it enters its own, agreed with the fund.
+  for (const rate of CONTRIBUTION_RATES) {
+    await prisma.tenantContributionRate.create({
+      data: {
+        tenantId,
+        code: rate.code,
+        rate: rate.rate,
+        effectiveFrom: new Date(`${VALID_FROM}T00:00:00Z`),
+        note: rate.note,
+        confirmed: false,
+        createdBy: 'seed',
+      },
+    });
+  }
+
   return {
     shifts: SHIFTS.length,
     schedules: SCHEDULES.length,
@@ -248,6 +286,7 @@ export async function clearHr02Schedules(
   await prisma.punch.deleteMany({ where });
   await prisma.attendanceImport.deleteMany({ where });
   await prisma.employeeNumberAlias.deleteMany({ where });
+  await prisma.tenantContributionRate.deleteMany({ where });
   await prisma.overtimeRule.deleteMany({ where });
   await prisma.overtimeSettings.deleteMany({ where });
   await prisma.shiftAssignment.deleteMany({ where });

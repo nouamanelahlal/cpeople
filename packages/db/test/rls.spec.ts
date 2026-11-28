@@ -544,3 +544,118 @@ describe('M21 a rate is never edited in place', () => {
     ).rejects.toThrow();
   });
 });
+
+describe('M12 a company rate is never edited in place either', () => {
+  // CIMR and the per-company contributions that follow it are effective-dated
+  // the same way overtime rules are, and for the same reason: changing a rate
+  // in place would rewrite what past payslips were calculated from. A change is
+  // a new row from a date; the row it replaces is closed. That is what makes
+  // these rows their own insert-only history of what the company was charged.
+  const locked = ['code', 'rate', 'effective_from'] as const;
+  const open = ['effective_to', 'confirmed', 'note', 'updated_at'] as const;
+
+  it.each(locked)(
+    'tenant_contribution_rate.%s cannot be updated by the runtime role',
+    async (column) => {
+      const [row] = await owner.$queryRawUnsafe<{ allowed: boolean }[]>(
+        `select has_column_privilege($1, 'tenant_contribution_rate', $2, 'UPDATE') as allowed`,
+        APP_DB_ROLE,
+        column,
+      );
+
+      expect(row?.allowed, `tenant_contribution_rate.${column} must be write-once`).toBe(false);
+    },
+  );
+
+  it.each(open)('tenant_contribution_rate.%s can still be updated', async (column) => {
+    const [row] = await owner.$queryRawUnsafe<{ allowed: boolean }[]>(
+      `select has_column_privilege($1, 'tenant_contribution_rate', $2, 'UPDATE') as allowed`,
+      APP_DB_ROLE,
+      column,
+    );
+
+    expect(row?.allowed, `tenant_contribution_rate.${column} is a legitimate change`).toBe(true);
+  });
+
+  it('refuses an in-place rate change even when the application tries one', async () => {
+    const rate = await owner.tenantContributionRate.findFirst({
+      select: { id: true, tenantId: true },
+    });
+    if (!rate) return;
+
+    await expect(
+      withTenant(runtime, rate.tenantId, (tx) =>
+        tx.tenantContributionRate.update({
+          where: { id: rate.id },
+          data: { rate: 0.99 },
+        }),
+      ),
+    ).rejects.toThrow();
+  });
+});
+
+describe('M12 a contribution rate is a fraction, and the database knows it', () => {
+  // 0.0600 is six per cent. The invitation to get this wrong is obvious —
+  // "six per cent" is typed as 6 — and numeric(6,4) accepts it without a
+  // murmur, so a 600% CIMR would reach a payslip and nothing downstream would
+  // question it. The column is called `rate` rather than `ratePercent`, and
+  // the check is there for the day the name is not read.
+  it('refuses a rate above 1', async () => {
+    const tenant = await owner.tenant.findFirst({ select: { id: true } });
+    if (!tenant) return;
+
+    await expect(
+      withTenant(runtime, tenant.id, (tx) =>
+        tx.tenantContributionRate.create({
+          data: {
+            tenantId: tenant.id,
+            code: 'TEST_TOO_BIG',
+            rate: 6,
+            effectiveFrom: new Date('2026-01-01T00:00:00Z'),
+            createdBy: 'test',
+          },
+        }),
+      ),
+    ).rejects.toThrow();
+  });
+
+  it('refuses a rate below zero', async () => {
+    const tenant = await owner.tenant.findFirst({ select: { id: true } });
+    if (!tenant) return;
+
+    await expect(
+      withTenant(runtime, tenant.id, (tx) =>
+        tx.tenantContributionRate.create({
+          data: {
+            tenantId: tenant.id,
+            code: 'TEST_NEGATIVE',
+            rate: -0.01,
+            effectiveFrom: new Date('2026-01-01T00:00:00Z'),
+            createdBy: 'test',
+          },
+        }),
+      ),
+    ).rejects.toThrow();
+  });
+
+  it('accepts a fraction, which is what a rate is', async () => {
+    const tenant = await owner.tenant.findFirst({ select: { id: true } });
+    if (!tenant) return;
+
+    const row = await withTenant(runtime, tenant.id, (tx) =>
+      tx.tenantContributionRate.create({
+        data: {
+          tenantId: tenant.id,
+          code: 'TEST_FINE',
+          rate: 0.06,
+          effectiveFrom: new Date('2026-01-01T00:00:00Z'),
+          createdBy: 'test',
+        },
+      }),
+    );
+
+    expect(Number(row.rate)).toBeCloseTo(0.06, 4);
+
+    await owner.tenantContributionRate.delete({ where: { id: row.id } });
+  });
+});

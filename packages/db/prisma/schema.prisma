@@ -80,6 +80,7 @@ model Tenant {
   attendanceExceptions AttendanceException[]
   overtimeRules        OvertimeRule[]
   overtimeSettings     OvertimeSettings?
+  contributionRates    TenantContributionRate[]
 
   @@map("tenant")
 }
@@ -1814,4 +1815,48 @@ model OvertimeSettings {
 
   @@index([tenantId])
   @@map("overtime_settings")
+}
+
+/// A contribution rate that belongs to **this company**, not to the country
+/// (CLAUDE.md rule 3).
+///
+/// CIMR is the first of them: the rate is agreed between an employer and the
+/// fund, so two companies in Morocco pay different ones and neither figure is
+/// law. Values like this must never sit in the country pack — the pack is one
+/// country's law, shared by every tenant in it, and a company's own rate there
+/// would be wrong for everybody else and invisible to the company it belongs
+/// to. The pack takes them as inputs instead.
+///
+/// Effective-dated like every other parameter: a change is a new row from a
+/// date, and the row it replaces is closed. The rate itself is never edited —
+/// the runtime role has no UPDATE on the columns that decide what is owed — so
+/// the rows are their own insert-only history of what was charged when.
+model TenantContributionRate {
+  id       String @id @default(uuid(7)) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+
+  /// CIMR_EE, CIMR_ER, and the per-company contributions that follow it.
+  code String
+
+  /// A **fraction**, as the pack uses, not a percentage: 0.0600 is six per
+  /// cent. The database checks it is between 0 and 1, because the mistake this
+  /// invites — typing 6 for "six per cent" — is a 600% contribution that no
+  /// arithmetic downstream would question.
+  rate Decimal @db.Decimal(6, 4)
+
+  effectiveFrom DateTime  @map("effective_from") @db.Date
+  effectiveTo   DateTime? @map("effective_to") @db.Date
+
+  note      String?
+  confirmed Boolean @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy String   @map("created_by")
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tenantId, code, effectiveFrom])
+  @@map("tenant_contribution_rate")
 }

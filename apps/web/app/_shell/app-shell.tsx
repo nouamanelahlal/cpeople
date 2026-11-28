@@ -126,6 +126,23 @@ export function AppShell({
   const [focused, setFocused] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const rail = useRef<HTMLElement | null>(null);
+
+  /**
+   * How tall the rail's contents are.
+   *
+   * The rail is positioned absolutely so that opening it on hover lies over the
+   * page instead of shoving it sideways — which also means it adds nothing to
+   * the height of the page. On a long screen that is invisible: the page is
+   * taller than the menu anyway, and scrolling down reaches the bottom of both.
+   * On a short one — declarations, attendance — the page has nothing to scroll,
+   * and the last few items sit below the fold with no way down to them.
+   *
+   * So the slot the rail sits in is told how tall the rail actually is, and the
+   * page grows to it. Scrolling then reaches the bottom of the menu from
+   * anywhere on the page, the way it already did on the home screen.
+   */
+  const [railContent, setRailContent] = useState(0);
 
   // A pinned menu is a preference, so it survives the next page and the next day.
   // The server cannot know it, so it renders the menu collapsed and this reads the
@@ -135,6 +152,24 @@ export function AppShell({
   useEffect(() => () => clearTimeout(timer.current), []);
 
   const expanded = hovered || focused || pinned || drawerOpen;
+
+  useEffect(() => {
+    const element = rail.current;
+    if (!element) return;
+
+    // `scrollHeight` settles in one pass: it is the content's height when that
+    // is the taller, and the box's own when it is not, so feeding it back as a
+    // minimum cannot grow the box a second time.
+    const measure = (): void => setRailContent(element.scrollHeight);
+
+    measure();
+
+    const watch = new ResizeObserver(measure);
+    watch.observe(element);
+    for (const child of element.children) watch.observe(child);
+
+    return () => watch.disconnect();
+  }, [expanded, pinned]);
 
   function togglePin(): void {
     writePin(!pinned);
@@ -162,6 +197,7 @@ export function AppShell({
         {
           '--rail-slot': `${pinned ? OPEN : RAIL}px`,
           '--rail-width': `${expanded ? OPEN : RAIL}px`,
+          '--rail-content': `${railContent}px`,
         } as CSSProperties
       }
     >
@@ -198,16 +234,17 @@ export function AppShell({
       )}
 
       <div
-        className="relative z-20 w-[var(--rail-slot)] shrink-0 grow-0 basis-[var(--rail-slot)] transition-[flex-basis,width] duration-200 ease-out motion-reduce:transition-none max-[720px]:fixed max-[720px]:inset-y-0 max-[720px]:start-0 max-[720px]:z-40 max-[720px]:w-0 max-[720px]:basis-0" 
+        className="relative z-20 w-[var(--rail-slot)] shrink-0 grow-0 basis-[var(--rail-slot)] min-[721px]:min-h-[var(--rail-content)] transition-[flex-basis,width] duration-200 ease-out motion-reduce:transition-none max-[720px]:fixed max-[720px]:inset-y-0 max-[720px]:start-0 max-[720px]:z-40 max-[720px]:w-0 max-[720px]:basis-0" 
       >
         <nav
+          ref={rail}
           aria-label={labels.mainNav}
           onMouseEnter={enter}
           onMouseLeave={leave}
           onFocus={() => setFocused(true)}
           onBlur={blur}
           style={{ boxShadow: expanded && !pinned ? '0 16px 48px rgba(15,25,55,0.16)' : 'none' }}
-          className={`absolute inset-y-0 start-0 flex w-[var(--rail-width)] flex-col gap-6 overflow-y-auto overflow-x-hidden border-e border-card-border bg-white px-4 py-6 transition-[width,box-shadow] duration-200 ease-out motion-reduce:transition-none max-[720px]:fixed max-[720px]:w-[280px] ${
+          className={`no-scrollbar absolute inset-y-0 start-0 flex w-[var(--rail-width)] flex-col gap-6 overflow-y-auto overflow-x-hidden border-e border-card-border bg-white px-4 py-6 transition-[width,box-shadow] duration-200 ease-out motion-reduce:transition-none max-[720px]:fixed max-[720px]:w-[280px] ${
             drawerOpen ? 'max-[720px]:flex' : 'max-[720px]:hidden'
           }`}
         >

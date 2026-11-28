@@ -50,6 +50,13 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      # A country pack decides what a payslip says, so a malformed one must fail
+      # the build rather than be found by somebody's payslip. The validator
+      # refuses a float where a decimal belongs, overlapping effective-dated
+      # rows, a formula that reads something undefined, and a pack claiming to
+      # be validated while it still holds unverified values.
+      - name: Validate the country packs
+        run: pnpm pack:validate packages/country-packs/ma/pack.json
 
   e2e:
     name: Playwright end-to-end

@@ -63,10 +63,9 @@ export async function signInAs(page: Page, role: DemoRole): Promise<void> {
   await submitEmail(page, user.email);
   await submitPassword(page, TEST_PASSWORD);
 
-  // The code step only when the realm asks for one. A workshop runs with
-  // two-step sign-in switched off (pnpm demo:prepare), and the suite has to
-  // work either way rather than assuming which it is.
-  if ('otpSecret' in user && (await page.locator('#otp').count()) > 0) {
+  // `submitCode` is the one that knows whether the realm asked for a code, so
+  // this only says whether this person has a secret to answer with.
+  if ('otpSecret' in user) {
     await submitCode(page, user.otpSecret);
   }
 
